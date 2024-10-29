@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { supabase } from "./supabaseClient";
-import { v4 as uuidv4 } from "uuid";
 
 interface User {
   user_id: string;
@@ -9,6 +8,7 @@ interface User {
   user_name: string;
   x: number;
   y: number;
+  last_active: string;
 }
 
 interface GameSceneConfig {
@@ -19,6 +19,7 @@ interface GameSceneConfig {
 }
 
 interface SmallVillageScreenProps {
+  userId: string;
   characterIndex: number;
   characterName: string;
   onExit: () => void;
@@ -47,7 +48,10 @@ class SmallVillageScene extends Phaser.Scene {
   private sprite: Phaser.GameObjects.Sprite | null = null;
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private nameText: Phaser.GameObjects.Text | null = null;
-  private userSprites: Record<string, Phaser.GameObjects.Sprite> = {};
+  private userSprites: Record<
+    string,
+    { sprite: Phaser.GameObjects.Sprite; nameText: Phaser.GameObjects.Text }
+  > = {};
 
   private userId: string = "";
   private characterIndex: number = 0;
@@ -84,9 +88,8 @@ class SmallVillageScene extends Phaser.Scene {
     this.sprite = this.physics.add
       .sprite(width / 2, height / 2, "characters", frameIndex)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
-      .setCollideWorldBounds(true);
-
-    this.sprite.setOrigin(0.5, 0.5);
+      .setCollideWorldBounds(true)
+      .setOrigin(0.5, 0.5);
 
     this.nameText = this.add
       .text(
@@ -101,6 +104,11 @@ class SmallVillageScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
+    this.userSprites[this.userId] = {
+      sprite: this.sprite,
+      nameText: this.nameText,
+    };
+
     try {
       await supabase.from("users").insert({
         user_id: this.userId,
@@ -114,10 +122,6 @@ class SmallVillageScene extends Phaser.Scene {
     }
 
     this.createAnimations();
-
-    this.users.forEach((user) => {
-      this.addUserSprite(user);
-    });
   }
 
   addUserSprite(user: User) {
@@ -129,15 +133,26 @@ class SmallVillageScene extends Phaser.Scene {
     );
     userSprite.setScale(GAME_CONFIG.SPRITE.SCALE);
     userSprite.setOrigin(0.5, 0.5);
-    this.userSprites[user.user_id] = userSprite;
 
-    this.add
+    const nameText = this.add
       .text(user.x, user.y + GAME_CONFIG.TEXT.NAME_OFFSET_Y, user.user_name, {
         fontSize: GAME_CONFIG.TEXT.FONT_SIZE,
         color: GAME_CONFIG.TEXT.COLOR,
         align: "center",
       })
       .setOrigin(0.5, 0.5);
+
+    this.userSprites[user.user_id] = { sprite: userSprite, nameText };
+  }
+
+  removeUserSprite(userId: string) {
+    const userSprite = this.userSprites[userId];
+    if (userSprite) {
+      userSprite.nameText.destroy();
+      userSprite.sprite.destroy();
+
+      delete this.userSprites[userId];
+    }
   }
 
   createAnimations() {
@@ -198,10 +213,11 @@ class SmallVillageScene extends Phaser.Scene {
   private updateOtherUsers() {
     const MIN_DISTANCE = 2;
 
-    Object.entries(this.userSprites).forEach(([userId, sprite]) => {
+    Object.entries(this.userSprites).forEach(([userId, userSprite]) => {
       let isMoving = false;
       const userData = this.users.find((u) => u.user_id === userId);
       if (userData) {
+        const sprite = userSprite.sprite;
         const distanceX = Math.abs(userData.x - sprite.x);
         const distanceY = Math.abs(userData.y - sprite.y);
         const characterIndex = userData.character_index;
@@ -210,9 +226,7 @@ class SmallVillageScene extends Phaser.Scene {
         if (distanceX > MIN_DISTANCE) {
           if (userData.x < sprite.x) {
             isMoving = true;
-            if (currentAnimKey !== `walk_left_${characterIndex}`) {
-              sprite.play(`walk_left_${characterIndex}`, true);
-            }
+            sprite.play(`walk_left_${characterIndex}`, true);
           } else {
             isMoving = true;
             if (currentAnimKey !== `walk_right_${characterIndex}`) {
@@ -224,14 +238,10 @@ class SmallVillageScene extends Phaser.Scene {
         if (distanceY > MIN_DISTANCE) {
           if (userData.y < sprite.y) {
             isMoving = true;
-            if (currentAnimKey !== `walk_up_${characterIndex}`) {
-              sprite.play(`walk_up_${characterIndex}`, true);
-            }
+            sprite.play(`walk_up_${characterIndex}`, true);
           } else {
             isMoving = true;
-            if (currentAnimKey !== `walk_down_${characterIndex}`) {
-              sprite.play(`walk_down_${characterIndex}`, true);
-            }
+            sprite.play(`walk_down_${characterIndex}`, true);
           }
         }
 
@@ -296,23 +306,36 @@ class SmallVillageScene extends Phaser.Scene {
   updateUsers(users: User[]) {
     this.users = users;
     users.forEach((user) => {
-      if (user.user_id !== this.userId) {
-        if (!this.userSprites[user.user_id]) {
-          this.addUserSprite(user);
-        }
+      if (user.user_id === this.userId) {
+        return;
+      }
+      if (!this.userSprites[user.user_id]) {
+        this.addUserSprite(user);
       }
     });
+  }
+
+  removeUser(userId: string) {
+    this.removeUserSprite(userId);
+  }
+
+  remoeAllUsers() {
+    Object.values(this.userSprites).forEach((userSprite) => {
+      userSprite.sprite.destroy();
+      userSprite.nameText.destroy();
+    });
+    this.userSprites = {};
   }
 }
 
 const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
+  userId,
   characterIndex,
   characterName,
   onExit,
 }) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
-  const userId = uuidv4();
   const [chatMessage, setChatMessage] = useState("");
 
   const deleteUserDataFromDatebase = useCallback(async () => {
@@ -329,17 +352,31 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     }
   }, []);
 
+  const handleBeforeUnload = useCallback(async () => {
+    await deleteUserDataFromDatebase();
+  }, []);
+
   useEffect(() => {
-    const handleBeforeUnload = async () => {
-      await deleteUserDataFromDatebase();
-    };
-
-    window.addEventListener("resize", handleResize);
     window.addEventListener("beforeunload", handleBeforeUnload);
-
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sendHeartbeat = async () => {
+    // update last_active
+    await supabase
+      .from("users")
+      .update({ last_active: new Date().toISOString() })
+      .match({ user_id: userId });
+  };
+
+  useEffect(() => {
+    const interval = setInterval(sendHeartbeat, 10_1000);
+    return () => {
+      clearInterval(interval);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -353,15 +390,36 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           return;
         }
 
+        // 10초 이상 활동하지 않은 유저 삭제
+        const users = data || [];
+        const now = new Date();
+        const usersToDelete = users.filter(
+          (user: User) =>
+            new Date(user.last_active) < new Date(now.getTime() - 10_000)
+        );
+        // db에서 삭제
+        usersToDelete.forEach(async (user: User) => {
+          await supabase
+            .from("users")
+            .delete()
+            .match({ user_id: user.user_id });
+        });
+
+        // 10초 이내 활동한 유저들만 추출
+        const onlineUsers = users.filter(
+          (user: User) =>
+            new Date(user.last_active) > new Date(now.getTime() - 10_000)
+        );
+        // scene에 유저 추가
         const scene = gameInstance.current?.scene.getScene(
           "SmallVillageScene"
         ) as SmallVillageScene;
         if (scene) {
-          scene.updateUsers(data || []);
+          scene.updateUsers(onlineUsers);
         }
       });
 
-    const channel = supabase
+    supabase
       .channel("realtime:public:users")
       .on(
         "postgres_changes",
@@ -403,19 +461,45 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             "SmallVillageScene"
           ) as SmallVillageScene;
           if (scene) {
-            scene.updateUsers(
-              scene.users.filter((user) => user.user_id !== payload.old.user_id)
+            scene.removeUser(
+              (payload.old as User).user_id || payload.old.user_id
             );
           }
         }
       )
       .subscribe();
 
+    // 현재 온라인 유저를 추적하는 presence 채널 구독
+    const channel = supabase
+      .channel("online-users")
+      .on("presence", { event: "sync" }, () => {
+        // 현재 온라인인 모든 유저
+        const presenceState = channel.presenceState();
+        console.log("Sync:", presenceState);
+      })
+      .on("presence", { event: "join" }, ({ key, newPresences }) => {
+        // 새로운 유저가 참여
+        console.log("Join:", newPresences);
+      })
+      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+        // 유저가 나감
+        console.log("Leave:", leftPresences);
+      });
+
+    // presence 상태 추적 시작
+    channel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        // 현재 유저의 상태를 online으로 설정
+        await channel.track({
+          user_id: userId,
+          online_at: new Date().toISOString(),
+        });
+      }
+    });
+
     return () => {
       console.log("Unsubscribing from the channel.");
-      deleteUserDataFromDatebase();
-      supabase.removeChannel(channel);
-
+      supabase.removeAllChannels();
       gameInstance.current?.destroy(true);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -458,6 +542,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   const handleExit = async () => {
     console.log("User exited the game.");
+
+    // delete user data from database
+    await deleteUserDataFromDatebase();
+
     // call onExit function
     onExit();
   };
