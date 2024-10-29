@@ -341,7 +341,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     supabase
@@ -418,7 +418,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
       gameInstance.current?.destroy(true);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const { innerWidth: width, innerHeight: height } = window;
