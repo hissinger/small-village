@@ -144,10 +144,10 @@ class SmallVillageScene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       const baseFrame = 3 * i;
 
-      this.createWalkAnimation(`walk_down_${i}`, baseFrame, 2);
-      this.createWalkAnimation(`walk_left_${i}`, baseFrame + 12, 2);
-      this.createWalkAnimation(`walk_right_${i}`, baseFrame + 24, 2);
-      this.createWalkAnimation(`walk_up_${i}`, baseFrame + 36, 2);
+      this.createWalkAnimation(`walk_down_${i}`, baseFrame, 3);
+      this.createWalkAnimation(`walk_left_${i}`, baseFrame + 12, 3);
+      this.createWalkAnimation(`walk_right_${i}`, baseFrame + 24, 3);
+      this.createWalkAnimation(`walk_up_${i}`, baseFrame + 36, 3);
     }
   }
 
