@@ -25,6 +25,9 @@ interface SmallVillageScreenProps {
   onExit: () => void;
 }
 
+const INACTIVE_TIMEOUT_MS = 10_000;
+const HEARTBEAT_INTERVAL_MS = 15_000;
+
 const GAME_CONFIG = {
   SPRITE: {
     SCALE: 4,
@@ -374,7 +377,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   };
 
   useEffect(() => {
-    const interval = setInterval(sendHeartbeat, 10_1000);
+    const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
     return () => {
       clearInterval(interval);
     };
@@ -395,7 +398,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         const now = new Date();
         const usersToDelete = users.filter(
           (user: User) =>
-            new Date(user.last_active) < new Date(now.getTime() - 10_000)
+            new Date(user.last_active) <
+            new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
         );
         // db에서 삭제
         usersToDelete.forEach(async (user: User) => {
@@ -408,7 +412,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         // 10초 이내 활동한 유저들만 추출
         const onlineUsers = users.filter(
           (user: User) =>
-            new Date(user.last_active) > new Date(now.getTime() - 10_000)
+            new Date(user.last_active) >
+            new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
         );
         // scene에 유저 추가
         const scene = gameInstance.current?.scene.getScene(
@@ -457,13 +462,17 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "users" },
         (payload) => {
+          if (userId === payload.old.user_id) {
+            // exit the game
+            handleExit();
+            return;
+          }
+
           const scene = gameInstance.current?.scene.getScene(
             "SmallVillageScene"
           ) as SmallVillageScene;
           if (scene) {
-            scene.removeUser(
-              (payload.old as User).user_id || payload.old.user_id
-            );
+            scene.removeUser((payload.old as User).user_id);
           }
         }
       )
