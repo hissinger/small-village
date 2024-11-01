@@ -47,12 +47,13 @@ interface SmallVillageScreenProps {
 const INACTIVE_TIMEOUT_MS = 10_000;
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const TABLE_USES = "users";
+const NUM_CHARACTERS = 40;
 
 const GAME_CONFIG = {
   SPRITE: {
-    SCALE: 4,
-    FRAME_WIDTH: 16,
-    FRAME_HEIGHT: 16,
+    SCALE: 2,
+    FRAME_WIDTH: 20,
+    FRAME_HEIGHT: 32,
   },
   MOVEMENT: {
     SPEED: 2,
@@ -70,7 +71,7 @@ const GAME_CONFIG = {
     ALIGN: "center",
   },
   ANIMATION: {
-    FRAME_RATE: 5,
+    FRAME_RATE: 3,
   },
 } as const;
 
@@ -108,10 +109,13 @@ class SmallVillageScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.spritesheet("characters", "/assets/characters.png", {
-      frameWidth: GAME_CONFIG.SPRITE.FRAME_WIDTH,
-      frameHeight: GAME_CONFIG.SPRITE.FRAME_HEIGHT,
-    });
+    for (let i = 0; i < NUM_CHARACTERS; i++) {
+      const index = i.toString().padStart(3, "0");
+      this.load.spritesheet(`character_${i}`, `/assets/${index}.png`, {
+        frameWidth: GAME_CONFIG.SPRITE.FRAME_WIDTH,
+        frameHeight: GAME_CONFIG.SPRITE.FRAME_HEIGHT,
+      });
+    }
   }
 
   async create() {
@@ -121,9 +125,8 @@ class SmallVillageScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, width, height);
     this.physics.world.setBounds(0, 0, width, height);
 
-    const frameIndex = this.characterIndex * 3;
     this.sprite = this.physics.add
-      .sprite(width / 2, height / 2, "characters", frameIndex)
+      .sprite(width / 2, height / 2, `character_${this.characterIndex}`, 0)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
@@ -200,8 +203,8 @@ class SmallVillageScene extends Phaser.Scene {
     const userSprite = this.physics.add.sprite(
       user.x,
       user.y,
-      "characters",
-      user.character_index * 3
+      `character_${user.character_index}`,
+      0
     );
     userSprite.setScale(GAME_CONFIG.SPRITE.SCALE);
     userSprite.setOrigin(0.5, 0.5);
@@ -247,24 +250,23 @@ class SmallVillageScene extends Phaser.Scene {
   }
 
   createAnimations() {
-    for (let i = 0; i < 3; i++) {
-      const baseFrame = 3 * i;
-
-      this.createWalkAnimation(`walk_down_${i}`, baseFrame, 3);
-      this.createWalkAnimation(`walk_left_${i}`, baseFrame + 12, 3);
-      this.createWalkAnimation(`walk_right_${i}`, baseFrame + 24, 3);
-      this.createWalkAnimation(`walk_up_${i}`, baseFrame + 36, 3);
+    for (let i = 0; i < NUM_CHARACTERS; i++) {
+      this.createWalkAnimation(i, `walk_down_${i}`, 0, 3);
+      this.createWalkAnimation(i, `walk_left_${i}`, 3, 3);
+      this.createWalkAnimation(i, `walk_right_${i}`, 6, 3);
+      this.createWalkAnimation(i, `walk_up_${i}`, 9, 3);
     }
   }
 
   createWalkAnimation(
+    characterIndex: number,
     key: string,
     startFrame: number,
     frameCount: number
   ): void {
     this.anims.create({
       key,
-      frames: this.anims.generateFrameNumbers("characters", {
+      frames: this.anims.generateFrameNumbers(`character_${characterIndex}`, {
         start: startFrame,
         end: startFrame + frameCount - 1,
       }),
