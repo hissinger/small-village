@@ -1,8 +1,19 @@
-import React, { memo, useCallback, useEffect, useRef } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { supabase } from "./supabaseClient";
 import ExitButton from "./ExitButton";
 import ChatInput from "./ChatInput";
+import WebRTCCall from "./WebRTCCall";
+import {
+  CHANNEL_MESSAGE,
+  Message,
+  useMessage,
+  MessageType,
+  RECEIVER_ALL,
+} from "./MessageContext";
+import useOnlineUsers from "./hooks/useOnlineUsers";
+import CallRequestModal from "./CallRequestModal";
+import CallReceiveModal from "./CallReceiveModal";
 
 interface User {
   user_id: string;
@@ -13,14 +24,10 @@ interface User {
   last_active: string;
 }
 
-interface OnlineUser {
-  user_id: string;
-  online_at: string;
-}
-
-interface Message {
-  user_id: string;
-  message: string;
+enum CallState {
+  CALLING = "request",
+  RINGING = "calling",
+  INCALL = "incall",
 }
 
 interface GameSceneConfig {
@@ -40,8 +47,6 @@ interface SmallVillageScreenProps {
 const INACTIVE_TIMEOUT_MS = 10_000;
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const TABLE_USES = "users";
-const CHANNEL_ONLINE_USERS = "online-users";
-const CHANNEL_CHAT = "chat";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -86,11 +91,13 @@ class SmallVillageScene extends Phaser.Scene {
   private userId: string = "";
   private characterIndex: number = 0;
   private characterName: string = "";
+  private onUserClick: (user: User) => void;
 
   users: User[] = [];
 
-  constructor() {
+  constructor(onUserClick: (user: User) => void) {
     super({ key: "SmallVillageScene" });
+    this.onUserClick = onUserClick;
   }
 
   init(data: GameSceneConfig) {
@@ -144,6 +151,8 @@ class SmallVillageScene extends Phaser.Scene {
       .setAlpha(0);
 
     try {
+      // 강제로 사용자 데이터를 업데이트
+      await supabase.from(TABLE_USES).delete().match({ user_id: this.userId });
       await supabase.from(TABLE_USES).insert({
         user_id: this.userId,
         user_name: this.characterName,
@@ -196,6 +205,11 @@ class SmallVillageScene extends Phaser.Scene {
     );
     userSprite.setScale(GAME_CONFIG.SPRITE.SCALE);
     userSprite.setOrigin(0.5, 0.5);
+
+    // 클릭 이벤트 추가
+    userSprite.setInteractive().on("pointerdown", () => {
+      this.onUserClick(user);
+    });
 
     const nameText = this.add
       .text(user.x, user.y + GAME_CONFIG.NAME.OFFSET_Y, user.user_name, {
@@ -422,6 +436,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 }) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [callPartner, setCallPartner] = useState<User | null>(null);
+  const [isInitiator, setIsInitiator] = useState(false);
+  const [callState, setCallState] = useState<CallState | null>(null);
+  const { sendMessage, addMessageHandler, removeMessageHandler } = useMessage();
+  const [showCallRequestModal, setShowCallRequestModal] = useState(false);
+  const [showCallReceiveModal, setShowCallReceiveModal] = useState(false);
 
   const getScene = (): SmallVillageScene | null => {
     return gameInstance.current?.scene.getScene(
@@ -508,7 +529,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       });
 
     const usersChannelName = `realtime:public:${TABLE_USES}`;
-    supabase
+    const usersChannel = supabase
       .channel(usersChannelName)
       .on(
         "postgres_changes",
@@ -553,81 +574,69 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       )
       .subscribe();
 
-    // 현재 온라인 유저를 추적하는 presence 채널 구독
-    const channelOnlineUsers = supabase
-      .channel(CHANNEL_ONLINE_USERS)
-      .on("presence", { event: "sync" }, () => {
-        // 현재 온라인인 모든 유저
-        // const presenceState = channelOnlineUsers.presenceState();
-      })
-      .on(
-        "presence",
-        { event: "join" },
-        ({
-          key,
-          newPresences,
-        }: {
-          key: string;
-          newPresences: OnlineUser[];
-        }) => {
-          // 새로운 유저가 참여
-        }
-      )
-      .on(
-        "presence",
-        { event: "leave" },
-        ({
-          key,
-          leftPresences,
-        }: {
-          key: string;
-          leftPresences: OnlineUser[];
-        }) => {
-          // 유저가 나감
-          const scene = getScene();
-          leftPresences.forEach(({ user_id }) => {
-            scene?.removeUser(user_id);
-          });
-        }
-      )
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          // 현재 유저의 상태를 online으로 설정
-          const data: OnlineUser = {
-            user_id: userId,
-            online_at: new Date().toISOString(),
-          };
-          await channelOnlineUsers.track(data);
-        }
-      });
-
-    // 채팅 채널 구독
-    supabase
-      .channel(CHANNEL_CHAT, {
-        config: {
-          broadcast: {
-            self: false,
-          },
-        },
-      })
-      .on(
-        "broadcast",
-        { event: "message" },
-        ({ payload }: { payload: Message }) => {
-          const { user_id, message } = payload;
-
-          // 해당 유저의 캐릭터 위에 메시지 표시
-          getScene()?.showChatMessage(user_id, message);
-        }
-      )
-      .subscribe();
-
     return () => {
-      console.log("Unsubscribing from the channel.");
-      supabase.removeAllChannels();
+      usersChannel.unsubscribe();
       gameInstance.current?.destroy(true);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 온라인 유저가 들어왔을 때
+  const handleJoinUser = useCallback((userId: string) => {
+    console.log(`User ${userId} joined.`);
+  }, []);
+
+  // 온라인 유저가 나갔을 때
+  const handleLeaveUser = useCallback(
+    (userId: string) => {
+      console.log(`User ${userId} left.`);
+      getScene()?.removeUser(userId);
+
+      // 통화 중인 유저가 나갔을 때
+      if (callPartner?.user_id === userId) {
+        setCallPartner(null);
+        setCallState(null);
+      }
+    },
+    [callPartner]
+  );
+
+  useOnlineUsers({ userId, onJoin: handleJoinUser, onLeave: handleLeaveUser });
+
+  // 메시지 핸들러
+  const handleMessage = useCallback((message: Message) => {
+    const { sender_id, body, type } = message;
+    if (type === MessageType.CHAT) {
+      getScene()?.showChatMessage(sender_id, body as string);
+    } else if (type === MessageType.REQUEST_CALL) {
+      const user = JSON.parse(body as string);
+      setCallState(CallState.RINGING);
+      setCallPartner(user);
+      setShowCallReceiveModal(true);
+    } else if (type === MessageType.ACCEPT_CALL) {
+      setCallState(CallState.INCALL);
+      setShowCallRequestModal(false);
+      setSelectedUser(null);
+    } else if (type === MessageType.CLOSE_CALL) {
+      console.log("Call closed.");
+      setCallState(null);
+      setShowCallRequestModal(false);
+      setShowCallReceiveModal(false);
+      setCallPartner(null);
+      setSelectedUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    addMessageHandler(CHANNEL_MESSAGE, handleMessage);
+    return () => {
+      removeMessageHandler(CHANNEL_MESSAGE, handleMessage);
+    };
+  }, [addMessageHandler, removeMessageHandler, handleMessage]);
+
+  const handleUserClick = useCallback((user: User) => {
+    setSelectedUser(user);
+    setShowCallRequestModal(true);
+  }, []);
 
   useEffect(() => {
     const { innerWidth: width, innerHeight: height } = window;
@@ -636,7 +645,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       width,
       height,
       parent: gameContainer.current as HTMLDivElement,
-      scene: SmallVillageScene,
+      scene: new SmallVillageScene(handleUserClick),
       pixelArt: true,
       physics: {
         default: "arcade",
@@ -657,10 +666,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     return () => {
       gameInstance.current?.destroy(true);
     };
-  }, [characterIndex, characterName, userId]);
+  }, [characterIndex, characterName, userId, handleUserClick]);
 
   const handleExit = async () => {
-    console.log("User exited the game.");
+    console.log("Exiting game");
 
     // delete user data from database
     await deleteUserDataFromDatebase();
@@ -669,19 +678,70 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     onExit();
   };
 
+  // chat handling
   const sendChatMessage = (message: string) => {
     const payload: Message = {
-      user_id: userId,
-      message: message,
+      type: MessageType.CHAT,
+      sender_id: userId,
+      receiver_id: RECEIVER_ALL,
+      body: message,
     };
 
-    // 채널을 통해 메시지 브로드캐스트
-    const channel = supabase.channel(CHANNEL_CHAT);
-    channel.send({
-      type: "broadcast",
-      event: "message",
-      payload,
-    });
+    sendMessage(CHANNEL_MESSAGE, payload);
+  };
+
+  // call handling
+  const handleCallRequest = () => {
+    setCallState(CallState.CALLING);
+    setCallPartner(selectedUser);
+    setIsInitiator(true);
+
+    const user = {
+      user_id: userId,
+      user_name: characterName,
+    };
+
+    const payload: Message = {
+      type: MessageType.REQUEST_CALL,
+      sender_id: userId,
+      receiver_id: selectedUser!.user_id,
+      body: JSON.stringify(user),
+    };
+
+    sendMessage(CHANNEL_MESSAGE, payload);
+  };
+
+  const handleCallClose = useCallback(() => {
+    setCallPartner(null);
+    setSelectedUser(null);
+    setCallState(null);
+    setShowCallRequestModal(false);
+    setShowCallReceiveModal(false);
+    setIsInitiator(false);
+
+    if (callState) {
+      const payload: Message = {
+        type: MessageType.CLOSE_CALL,
+        sender_id: userId,
+        receiver_id: callPartner!.user_id,
+        body: "",
+      };
+      sendMessage(CHANNEL_MESSAGE, payload);
+    }
+  }, [callPartner, callState, userId, sendMessage]);
+
+  const handleCallAccept = () => {
+    setCallState(CallState.INCALL);
+    setShowCallReceiveModal(false);
+    setSelectedUser(null);
+
+    const payload: Message = {
+      type: MessageType.ACCEPT_CALL,
+      sender_id: userId,
+      receiver_id: callPartner!.user_id,
+      body: "",
+    };
+    sendMessage(CHANNEL_MESSAGE, payload);
   };
 
   return (
@@ -691,6 +751,31 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         ref={gameContainer}
         style={{ width: "100%", height: "100%", overflow: "hidden" }}
       />
+
+      {showCallRequestModal && (
+        <CallRequestModal
+          userName={selectedUser!.user_name}
+          onRequestCall={handleCallRequest}
+          onClose={handleCallClose}
+        />
+      )}
+
+      {showCallReceiveModal && (
+        <CallReceiveModal
+          userName={callPartner?.user_name || ""}
+          onAccept={handleCallAccept}
+          onReject={handleCallClose}
+        />
+      )}
+
+      {callState === CallState.INCALL && (
+        <WebRTCCall
+          userId={userId}
+          partnerId={callPartner!.user_id}
+          isInitiator={isInitiator}
+          onEndCall={handleCallClose}
+        />
+      )}
 
       {/* 채팅 입력창 */}
       <ChatInput onMessage={sendChatMessage} />

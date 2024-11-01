@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import CharacterSelectModal from "./CharacterSelectModal";
 import SmallVillageScreen from "./SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
+import { MessageProvider } from "./MessageContext";
 
 const App: React.FC = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,7 +37,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div>
+    <MessageProvider userId={userId!}>
       <h1 className="text-center">Small Village</h1>
       {selectedCharacter !== null && username !== null && userId !== null ? (
         <SmallVillageScreen
@@ -48,7 +49,7 @@ const App: React.FC = () => {
       ) : (
         <CharacterSelectModal onSelect={handleCharacterSelect} />
       )}
-    </div>
+    </MessageProvider>
   );
 };
 
