@@ -14,6 +14,7 @@ import {
 import useOnlineUsers from "./hooks/useOnlineUsers";
 import CallRequestModal from "./CallRequestModal";
 import CallReceiveModal from "./CallReceiveModal";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface User {
   user_id: string;
@@ -436,8 +437,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   characterName,
   onExit,
 }) => {
-  const gameContainer = useRef<HTMLDivElement>(null);
-  const gameInstance = useRef<Phaser.Game | null>(null);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+  const gameInstanceRef = useRef<Phaser.Game | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [callPartner, setCallPartner] = useState<User | null>(null);
   const [isInitiator, setIsInitiator] = useState(false);
@@ -445,9 +446,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const { sendMessage, addMessageHandler, removeMessageHandler } = useMessage();
   const [showCallRequestModal, setShowCallRequestModal] = useState(false);
   const [showCallReceiveModal, setShowCallReceiveModal] = useState(false);
+  const [readyScene, setReadyScene] = useState(false);
 
   const getScene = (): SmallVillageScene | null => {
-    return gameInstance.current?.scene.getScene(
+    return gameInstanceRef.current?.scene.getScene(
       "SmallVillageScene"
     ) as SmallVillageScene | null;
   };
@@ -459,9 +461,9 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const handleResize = useCallback(() => {
     const { innerWidth, innerHeight } = window;
 
-    if (gameInstance.current) {
-      gameInstance.current.scale.resize(innerWidth, innerHeight);
-      const scene = gameInstance.current.scene.getScene("SmallVillageScene");
+    if (gameInstanceRef.current) {
+      gameInstanceRef.current.scale.resize(innerWidth, innerHeight);
+      const scene = gameInstanceRef.current.scene.getScene("SmallVillageScene");
       scene?.cameras.main.setBounds(0, 0, innerWidth, innerHeight);
     }
   }, []);
@@ -480,7 +482,6 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendHeartbeat = async () => {
-    console.log("Sending heartbeat");
     // update last_active
     await supabase
       .from(TABLE_USES)
@@ -579,7 +580,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
     return () => {
       usersChannel.unsubscribe();
-      gameInstance.current?.destroy(true);
+      gameInstanceRef.current?.destroy(true);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -647,7 +648,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       type: Phaser.AUTO,
       width,
       height,
-      parent: gameContainer.current as HTMLDivElement,
+      parent: gameContainerRef.current as HTMLDivElement,
       scene: new SmallVillageScene(handleUserClick),
       pixelArt: true,
       physics: {
@@ -659,15 +660,21 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       },
     };
 
-    gameInstance.current = new Phaser.Game(config);
-    gameInstance.current.scene.start("SmallVillageScene", {
+    gameInstanceRef.current = new Phaser.Game(config);
+    gameInstanceRef.current.scene.start("SmallVillageScene", {
       characterIndex,
       characterName,
       userId,
     });
 
+    gameInstanceRef.current.events.once(Phaser.Core.Events.READY, () => {
+      setTimeout(() => {
+        setReadyScene(true);
+      }, 3_000);
+    });
+
     return () => {
-      gameInstance.current?.destroy(true);
+      gameInstanceRef.current?.destroy(true);
     };
   }, [characterIndex, characterName, userId, handleUserClick]);
 
@@ -749,11 +756,18 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      {/* 게임 화면 */}
       <div
-        ref={gameContainer}
-        style={{ width: "100%", height: "100%", overflow: "hidden" }}
+        ref={gameContainerRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+          visibility: readyScene ? "visible" : "hidden",
+        }}
       />
+      {!readyScene && (
+        <LoadingSpinner message="Strolling into the Small Village..." />
+      )}
 
       {showCallRequestModal && (
         <CallRequestModal

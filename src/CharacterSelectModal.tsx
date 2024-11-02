@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { Modal, Button, Form, Container, Row, Col } from "react-bootstrap";
+import LoadingSpinner from "./LoadingSpinner";
 
 const NUM_CHARACTERS = 40;
 
@@ -63,38 +64,88 @@ class CharacterPreviewScene extends Phaser.Scene {
   }
 }
 
+interface CharacterPreviewProps {
+  previewContainerRef: React.RefObject<HTMLDivElement>;
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+const CharacterPreview: React.FC<CharacterPreviewProps> = ({
+  previewContainerRef,
+  onPrevious,
+  onNext,
+}) => (
+  <Row className="justify-content-center mb-3 align-items-center">
+    <Col xs="auto">
+      <Button variant="outline-secondary" onClick={onPrevious}>
+        ◀
+      </Button>
+    </Col>
+    <Col xs="auto">
+      <div
+        ref={previewContainerRef}
+        style={{ width: "120px", height: "100px" }}
+      />
+    </Col>
+    <Col xs="auto">
+      <Button variant="outline-secondary" onClick={onNext}>
+        ▶
+      </Button>
+    </Col>
+  </Row>
+);
+interface NameInputProps {
+  name: string;
+  onChange: (value: string) => void;
+}
+
+const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
+  <Form.Group className="mt-3">
+    <Form.Label>Enter Your Name</Form.Label>
+    <Form.Control
+      type="text"
+      placeholder="Name"
+      value={name}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </Form.Group>
+);
+
 const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
   onSelect,
 }) => {
   const [name, setName] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const previewContainer = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<CharacterPreviewScene | null>(null);
+  const [readyScene, setReadyScene] = useState(false);
 
   useEffect(() => {
-    if (!gameInstance.current) {
-      const config: Phaser.Types.Core.GameConfig = {
-        type: Phaser.AUTO,
-        width: 120,
-        height: 100,
-        parent: previewContainer.current as HTMLDivElement,
-        scene: CharacterPreviewScene,
-        pixelArt: true,
-      };
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      width: 120,
+      height: 100,
+      parent: previewContainerRef.current as HTMLDivElement,
+      scene: CharacterPreviewScene,
+      pixelArt: true,
+    };
 
-      const game = new Phaser.Game(config);
-      gameInstance.current = game;
+    const game = new Phaser.Game(config);
+    gameInstance.current = game;
 
-      game.events.once(Phaser.Scenes.Events.READY, () => {
-        const scene = game.scene.getScene(
-          "CharacterPreviewScene"
-        ) as CharacterPreviewScene;
-        if (scene) {
-          sceneRef.current = scene;
-        }
-      });
-    }
+    game.events.once(Phaser.Scenes.Events.READY, () => {
+      const scene = game.scene.getScene(
+        "CharacterPreviewScene"
+      ) as CharacterPreviewScene;
+      if (scene) {
+        sceneRef.current = scene;
+
+        setTimeout(() => {
+          setReadyScene(true);
+        }, 1_000);
+      }
+    });
 
     return () => {
       gameInstance.current?.destroy(true);
@@ -116,50 +167,22 @@ const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
     sceneRef.current.updateCharacter(prevIndex);
   };
 
-  const handleNameChange = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setName(e.target.value);
-    },
-    []
-  );
-
   return (
     <Modal show centered>
-      <Modal.Header>
+      <Modal.Header style={{ visibility: readyScene ? "visible" : "hidden" }}>
         <Modal.Title>Select Your Character</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body style={{ visibility: readyScene ? "visible" : "hidden" }}>
         <Container>
-          <Row className="justify-content-center mb-3 align-items-center">
-            <Col xs="auto">
-              <Button variant="outline-secondary" onClick={handlePrevious}>
-                ◀
-              </Button>
-            </Col>
-            <Col xs="auto">
-              <div
-                ref={previewContainer}
-                style={{ width: "120px", height: "100px" }}
-              />
-            </Col>
-            <Col xs="auto">
-              <Button variant="outline-secondary" onClick={handleNext}>
-                ▶
-              </Button>
-            </Col>
-          </Row>
-          <Form.Group className="mt-3">
-            <Form.Label>Enter Your Name</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Name"
-              value={name}
-              onChange={handleNameChange}
-            />
-          </Form.Group>
+          <CharacterPreview
+            previewContainerRef={previewContainerRef}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
+          <NameInput name={name} onChange={setName} />
         </Container>
       </Modal.Body>
-      <Modal.Footer>
+      <Modal.Footer style={{ visibility: readyScene ? "visible" : "hidden" }}>
         <Button
           variant="primary"
           onClick={() => onSelect(currentIndex, name)}
@@ -168,6 +191,7 @@ const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
           Confirm
         </Button>
       </Modal.Footer>
+      {!readyScene && <LoadingSpinner message="Loading..." />}
     </Modal>
   );
 };
