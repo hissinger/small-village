@@ -44,8 +44,8 @@ interface SmallVillageScreenProps {
   onExit: () => void;
 }
 
-const INACTIVE_TIMEOUT_MS = 10_000;
-const HEARTBEAT_INTERVAL_MS = 15_000;
+const INACTIVE_TIMEOUT_MS = 15_000;
+const HEARTBEAT_INTERVAL_MS = 10_000;
 const TABLE_USES = "users";
 const NUM_CHARACTERS = 40;
 
@@ -480,6 +480,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendHeartbeat = async () => {
+    console.log("Sending heartbeat");
     // update last_active
     await supabase
       .from(TABLE_USES)
