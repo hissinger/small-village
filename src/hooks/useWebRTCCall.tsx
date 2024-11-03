@@ -13,6 +13,28 @@ interface UseWebRTCCallProps {
   partnerId: string;
 }
 
+const getIceServers = () => {
+  // turn server configuration
+  const turnServerUrl = process.env.REACT_APP_TURN_SERVER_URL;
+  const turnServerUsername = process.env.REACT_APP_TURN_SERVER_USERNAME;
+  const turnServerCredential = process.env.REACT_APP_TURN_SERVER_CREDENTIAL;
+
+  // stun server configuration
+  const stunServer = "stun:stun.l.google.com:19302";
+
+  const iceServers: RTCIceServer[] = [];
+  iceServers.push({ urls: stunServer });
+  if (turnServerUrl && turnServerUsername && turnServerCredential) {
+    iceServers.push({
+      urls: turnServerUrl,
+      username: turnServerUsername,
+      credential: turnServerCredential,
+    });
+  }
+
+  return iceServers;
+};
+
 export default function useWebRTCCall(props: UseWebRTCCallProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -54,13 +76,13 @@ export default function useWebRTCCall(props: UseWebRTCCallProps) {
       });
       setStream(mediaStream);
 
-      const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
-
       peerRef.current = new Peer({
         initiator: props.isInitiator,
         trickle: true,
         stream: mediaStream,
-        config: { iceServers },
+        config: {
+          iceServers: getIceServers(),
+        },
       });
 
       peerRef.current.on("signal", handleSignal);
