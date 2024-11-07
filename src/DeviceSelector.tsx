@@ -83,6 +83,11 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
 }) => {
   const width = "400px";
 
+  const disabledConfirm =
+    videoInputs.length === 0 ||
+    audioInputs.length === 0 ||
+    audioOutputs.length === 0;
+
   return (
     <Form>
       <Form.Group controlId="videoInputSelect">
@@ -145,7 +150,12 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
           ))}
         </Form.Control>
       </Form.Group>
-      <Button variant="primary" onClick={onConfirm} className="mt-3">
+      <Button
+        variant="primary"
+        onClick={onConfirm}
+        className="mt-3"
+        disabled={disabledConfirm}
+      >
         Confirm
       </Button>
     </Form>
@@ -153,14 +163,12 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
 };
 
 interface DeviceSelectorProps {
-  onSelect: (selectedDevices: {
-    videoInput: string;
-    audioInput: string;
-    audioOutput: string;
-  }) => void;
+  onExit: () => void;
 }
 
-const DeviceSelector: React.FC<DeviceSelectorProps> = ({ onSelect }) => {
+const DeviceSelector: React.FC<DeviceSelectorProps> = (
+  props: DeviceSelectorProps
+) => {
   const [videoInputs, setVideoInputs] = useState<MediaDeviceInfo[]>([]);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
   const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
@@ -298,14 +306,6 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = ({ onSelect }) => {
     }
   }, [selectedAudioOutput]);
 
-  const handleSelect = () => {
-    onSelect({
-      videoInput: selectedVideoInput,
-      audioInput: selectedAudioInput,
-      audioOutput: selectedAudioOutput,
-    });
-  };
-
   return (
     <Container
       fluid
@@ -332,7 +332,7 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = ({ onSelect }) => {
             onVideoInputChange={(e) => setSelectedVideoInput(e.target.value)}
             onAudioInputChange={(e) => setSelectedAudioInput(e.target.value)}
             onAudioOutputChange={(e) => setSelectedAudioOutput(e.target.value)}
-            onConfirm={handleSelect}
+            onConfirm={props.onExit}
           />
         </Col>
       </Row>
