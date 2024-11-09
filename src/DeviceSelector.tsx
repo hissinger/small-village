@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   Container,
   Row,
@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-bootstrap";
 import AudioVisualizer from "./AudioVisualizer";
+import { useDevice } from "./DeviceContext";
 
 interface VideoDisplayProps {
   stream: MediaStream | null;
@@ -169,12 +170,23 @@ interface DeviceSelectorProps {
 const DeviceSelector: React.FC<DeviceSelectorProps> = (
   props: DeviceSelectorProps
 ) => {
+  const {
+    cameraId,
+    microphoneId,
+    speakerId,
+    setCameraId,
+    setMicrophoneId,
+    setSpeakerId,
+  } = useDevice();
   const [videoInputs, setVideoInputs] = useState<MediaDeviceInfo[]>([]);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
   const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
-  const [selectedVideoInput, setSelectedVideoInput] = useState<string>("");
-  const [selectedAudioInput, setSelectedAudioInput] = useState<string>("");
-  const [selectedAudioOutput, setSelectedAudioOutput] = useState<string>("");
+  const [selectedVideoInput, setSelectedVideoInput] =
+    useState<string>(cameraId);
+  const [selectedAudioInput, setSelectedAudioInput] =
+    useState<string>(microphoneId);
+  const [selectedAudioOutput, setSelectedAudioOutput] =
+    useState<string>(speakerId);
   const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
     null
   );
@@ -202,13 +214,13 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
       setAudioInputs(audioDevices);
       setAudioOutputs(outputDevices);
 
-      if (videoDevices.length > 0) {
+      if (!selectedVideoInput && videoDevices.length > 0) {
         setSelectedVideoInput(videoDevices[0].deviceId);
       }
-      if (audioDevices.length > 0) {
+      if (!selectedAudioInput && audioDevices.length > 0) {
         setSelectedAudioInput(audioDevices[0].deviceId);
       }
-      if (outputDevices.length > 0) {
+      if (!selectedAudioOutput && outputDevices.length > 0) {
         setSelectedAudioOutput(outputDevices[0].deviceId);
       }
     } catch (error) {
@@ -262,6 +274,9 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
 
     getLocalVideoStream();
 
+    // update selected camera id in DeviceContext
+    setCameraId(selectedVideoInput);
+
     return () => {
       if (localVideoStream) {
         localVideoStream.getTracks().forEach((track) => track.stop());
@@ -284,6 +299,9 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
 
     getLocalAudioStream();
 
+    // update selected microphone id in DeviceContext
+    setMicrophoneId(selectedAudioInput);
+
     return () => {
       if (localAudioStream) {
         localAudioStream.getTracks().forEach((track) => track.stop());
@@ -304,6 +322,9 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
         console.warn("setSinkId is not supported in this browser.");
       }
     }
+
+    // update selected speaker id in DeviceContext
+    setSpeakerId(selectedAudioOutput);
   }, [selectedAudioOutput]);
 
   return (
