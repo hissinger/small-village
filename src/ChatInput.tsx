@@ -1,20 +1,49 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  CHANNEL_MESSAGE,
+  Message,
+  MessageType,
+  RECEIVER_ALL,
+  useMessage,
+} from "./MessageContext";
 
 interface ChatInputProps {
-  onMessage: (message: string) => void;
+  userId: string;
+  onMessage: (senderId: string, message: string) => void;
 }
 
 export default function ChatInput(props: ChatInputProps) {
   const [message, setMessage] = useState<string>("");
+  const { sendMessage, addMessageHandler, removeMessageHandler } = useMessage();
 
-  const sendMessage = () => {
+  const handleSendMessage = () => {
     if (message.trim() === "") {
       return;
     }
 
-    props.onMessage(message);
-    setMessage("");
+    const payload: Message = {
+      type: MessageType.CHAT,
+      sender_id: props.userId,
+      receiver_id: RECEIVER_ALL,
+      body: message,
+    };
+
+    sendMessage(CHANNEL_MESSAGE, payload);
   };
+
+  const handleMessage = useCallback((message: Message) => {
+    const { sender_id, body, type } = message;
+    if (type === MessageType.CHAT) {
+      props.onMessage(sender_id, body as string);
+    }
+  }, []);
+
+  useEffect(() => {
+    addMessageHandler(CHANNEL_MESSAGE, handleMessage);
+    return () => {
+      removeMessageHandler(CHANNEL_MESSAGE, handleMessage);
+    };
+  }, [addMessageHandler, removeMessageHandler, handleMessage]);
 
   return (
     <div
@@ -42,7 +71,7 @@ export default function ChatInput(props: ChatInputProps) {
         }}
       />
       <button
-        onClick={sendMessage}
+        onClick={handleSendMessage}
         style={{
           padding: "10px 20px",
           fontSize: "16px",
