@@ -9,7 +9,6 @@ import {
   Message,
   useMessage,
   MessageType,
-  RECEIVER_ALL,
 } from "./MessageContext";
 import useOnlineUsers from "./hooks/useOnlineUsers";
 import CallRequestModal from "./CallRequestModal";
@@ -608,10 +607,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   // 메시지 핸들러
   const handleMessage = useCallback((message: Message) => {
-    const { sender_id, body, type } = message;
-    if (type === MessageType.CHAT) {
-      getScene()?.showChatMessage(sender_id, body as string);
-    } else if (type === MessageType.REQUEST_CALL) {
+    const { body, type } = message;
+    if (type === MessageType.REQUEST_CALL) {
       const user = JSON.parse(body as string);
       setCallState(CallState.RINGING);
       setCallPartner(user);
@@ -689,15 +686,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   };
 
   // chat handling
-  const sendChatMessage = (message: string) => {
-    const payload: Message = {
-      type: MessageType.CHAT,
-      sender_id: userId,
-      receiver_id: RECEIVER_ALL,
-      body: message,
-    };
-
-    sendMessage(CHANNEL_MESSAGE, payload);
+  const sendChatMessage = (senderId: string, message: string) => {
+    getScene()?.showChatMessage(senderId, message);
   };
 
   // call handling
@@ -758,16 +748,14 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     const baseUrl = "https://rtc.live.cloudflare.com/v1/apps";
     const appId = process.env.REACT_APP_CLOUDFLARE_APP_ID;
     const appSecret = process.env.REACT_APP_CLOUDFLARE_APP_SECRET;
-    const supabaseProjectId = process.env.REACT_APP_SUPABASE_PROJECT_ID;
-    const supabaseKey = process.env.REACT_APP_SUPABASE_KEY as string;
 
     const createSession = async () => {
-      const url = `https://${supabaseProjectId}.supabase.co/functions/v1/get-session`;
+      const url = `${baseUrl}/${appId}/sessions/new`;
       try {
         const response = await fetch(url, {
-          method: "GET",
+          method: "POST",
           headers: {
-            Authorization: `Bearer ${supabaseKey}`,
+            Authorization: `Bearer ${appSecret}`,
             "Content-Type": "application/json",
           },
         });
@@ -920,7 +908,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       )}
 
       {/* 채팅 입력창 */}
-      <ChatInput onMessage={sendChatMessage} />
+      <ChatInput userId={userId} onMessage={sendChatMessage} />
 
       {/* 나가기 버튼 */}
       <ExitButton onClick={handleExit} />
