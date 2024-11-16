@@ -2,13 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import CharacterSelectModal from "./CharacterSelectModal";
 import SmallVillageScreen from "./SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
-import { MessageProvider } from "./MessageContext";
-import DeviceSelector from "./DeviceSelector";
-import { DeviceProvider } from "./DeviceContext";
+import { MessageProvider } from "./context/MessageContext";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
-  SELECT_DEVICE = "SELECT_DEVICE",
   SMALL_VILLAGE = "SMALL_VILLAGE",
 }
 
@@ -25,9 +22,6 @@ const App: React.FC = () => {
   const goToNextStep = useCallback(() => {
     switch (currentStep) {
       case Steps.CHARACTER_SELECT:
-        setCurrentStep(Steps.SELECT_DEVICE);
-        break;
-      case Steps.SELECT_DEVICE:
         setCurrentStep(Steps.SMALL_VILLAGE);
         break;
       default:
@@ -56,10 +50,6 @@ const App: React.FC = () => {
     [goToNextStep]
   );
 
-  const handleDeviceSelectDone = useCallback(() => {
-    goToNextStep();
-  }, [goToNextStep]);
-
   const onExit = useCallback(() => {
     setSelectedCharacter(null);
     setUsername(null);
@@ -67,25 +57,20 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <DeviceProvider>
-      <MessageProvider userId={userId!}>
-        <h1 className="text-center">Small Village</h1>
-        {currentStep === Steps.CHARACTER_SELECT && (
-          <CharacterSelectModal onSelect={handleCharacterSelect} />
-        )}
-        {currentStep === Steps.SELECT_DEVICE && (
-          <DeviceSelector onExit={handleDeviceSelectDone} />
-        )}
-        {currentStep === Steps.SMALL_VILLAGE && (
-          <SmallVillageScreen
-            userId={userId!}
-            characterIndex={selectedCharacter!}
-            characterName={username!}
-            onExit={onExit}
-          />
-        )}
-      </MessageProvider>
-    </DeviceProvider>
+    <MessageProvider userId={userId!}>
+      <h1 className="text-center">Small Village</h1>
+      {currentStep === Steps.CHARACTER_SELECT && (
+        <CharacterSelectModal onSelect={handleCharacterSelect} />
+      )}
+      {currentStep === Steps.SMALL_VILLAGE && (
+        <SmallVillageScreen
+          userId={userId!}
+          characterIndex={selectedCharacter!}
+          characterName={username!}
+          onExit={onExit}
+        />
+      )}
+    </MessageProvider>
   );
 };
 

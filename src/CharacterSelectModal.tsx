@@ -129,6 +129,9 @@ const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
       parent: previewContainerRef.current as HTMLDivElement,
       scene: CharacterPreviewScene,
       pixelArt: true,
+      audio: {
+        noAudio: true,
+      },
     };
 
     const game = new Phaser.Game(config);

@@ -5,7 +5,7 @@ import {
   MessageType,
   RECEIVER_ALL,
   useMessage,
-} from "./MessageContext";
+} from "./context/MessageContext";
 
 interface ChatInputProps {
   userId: string;
@@ -31,12 +31,15 @@ export default function ChatInput(props: ChatInputProps) {
     sendMessage(CHANNEL_MESSAGE, payload);
   };
 
-  const handleMessage = useCallback((message: Message) => {
-    const { sender_id, body, type } = message;
-    if (type === MessageType.CHAT) {
-      props.onMessage(sender_id, body as string);
-    }
-  }, []);
+  const handleMessage = useCallback(
+    (message: Message) => {
+      const { sender_id, body, type } = message;
+      if (type === MessageType.CHAT) {
+        props.onMessage(sender_id, body as string);
+      }
+    },
+    [props]
+  );
 
   useEffect(() => {
     addMessageHandler(CHANNEL_MESSAGE, handleMessage);
@@ -49,7 +52,7 @@ export default function ChatInput(props: ChatInputProps) {
     <div
       style={{
         position: "absolute",
-        bottom: 80, // 하단과의 간격 조정
+        bottom: 80,
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
