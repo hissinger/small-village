@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Row,
@@ -9,7 +9,8 @@ import {
   Alert,
 } from "react-bootstrap";
 import AudioVisualizer from "./AudioVisualizer";
-import { useDevice } from "./DeviceContext";
+import { useDevice } from "./context/DeviceContext";
+import { useLocalStream } from "./context/LocalStreamContext";
 
 interface VideoDisplayProps {
   stream: MediaStream | null;
@@ -60,7 +61,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({ stream, videoRef }) => {
 interface DeviceFormProps {
   videoInputs: MediaDeviceInfo[];
   audioInputs: MediaDeviceInfo[];
-  audioOutputs: MediaDeviceInfo[];
+  audioOutputs: MediaDeviceInfo[] | null;
   selectedVideoInput: string;
   selectedAudioInput: string;
   selectedAudioOutput: string;
@@ -87,7 +88,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
   const disabledConfirm =
     videoInputs.length === 0 ||
     audioInputs.length === 0 ||
-    audioOutputs.length === 0;
+    audioOutputs?.length === 0;
 
   return (
     <Form>
@@ -131,26 +132,28 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
           ))}
         </Form.Control>
       </Form.Group>
-      <Form.Group controlId="audioOutputSelect" className="mt-3">
-        <Form.Label>Speaker</Form.Label>
-        <Form.Control
-          as="select"
-          value={selectedAudioOutput}
-          onChange={(e) =>
-            onAudioOutputChange(
-              e as unknown as React.ChangeEvent<HTMLSelectElement>
-            )
-          }
-          style={{ width: width }}
-        >
-          {audioOutputs.length === 0 && <option>Loading...</option>}
-          {audioOutputs.map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Speaker ${device.deviceId}`}
-            </option>
-          ))}
-        </Form.Control>
-      </Form.Group>
+      {audioOutputs && (
+        <Form.Group controlId="audioOutputSelect" className="mt-3">
+          <Form.Label>Speaker</Form.Label>
+          <Form.Control
+            as="select"
+            value={selectedAudioOutput}
+            onChange={(e) =>
+              onAudioOutputChange(
+                e as unknown as React.ChangeEvent<HTMLSelectElement>
+              )
+            }
+            style={{ width: width }}
+          >
+            {audioOutputs.length === 0 && <option>Loading...</option>}
+            {audioOutputs.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label || `Speaker ${device.deviceId}`}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+      )}
       <Button
         variant="primary"
         onClick={onConfirm}
@@ -180,19 +183,16 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
   } = useDevice();
   const [videoInputs, setVideoInputs] = useState<MediaDeviceInfo[]>([]);
   const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
-  const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
+  const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[] | null>(
+    []
+  );
   const [selectedVideoInput, setSelectedVideoInput] =
     useState<string>(cameraId);
   const [selectedAudioInput, setSelectedAudioInput] =
     useState<string>(microphoneId);
   const [selectedAudioOutput, setSelectedAudioOutput] =
     useState<string>(speakerId);
-  const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
-    null
-  );
-  const [localAudioStream, setLocalAudioStream] = useState<MediaStream | null>(
-    null
-  );
+  const { localVideoStream, localAudioStream } = useLocalStream();
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -200,15 +200,20 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
   const getDevices = async () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
+
+      const audioOutputSupported = devices.some(
+        (device) => device.kind === "audiooutput"
+      );
+
       const videoDevices = devices.filter(
         (device) => device.kind === "videoinput"
       );
       const audioDevices = devices.filter(
         (device) => device.kind === "audioinput"
       );
-      const outputDevices = devices.filter(
-        (device) => device.kind === "audiooutput"
-      );
+      const outputDevices = audioOutputSupported
+        ? devices.filter((device) => device.kind === "audiooutput")
+        : null;
 
       setVideoInputs(videoDevices);
       setAudioInputs(audioDevices);
@@ -220,10 +225,11 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
       if (!selectedAudioInput && audioDevices.length > 0) {
         setSelectedAudioInput(audioDevices[0].deviceId);
       }
-      if (!selectedAudioOutput && outputDevices.length > 0) {
+      if (outputDevices && !selectedAudioOutput && outputDevices.length > 0) {
         setSelectedAudioOutput(outputDevices[0].deviceId);
       }
     } catch (error) {
+      console.error(error);
       setPermissionError(
         "Failed to enumerate devices. Please check your permissions."
       );
@@ -231,9 +237,13 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
   };
 
   useEffect(() => {
+    let currentStream: MediaStream | null = null;
     const requestPermissions = async () => {
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
         getDevices();
       } catch (error) {
         setPermissionError("Camera and microphone permissions are required.");
@@ -249,65 +259,25 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
 
     return () => {
+      currentStream?.getTracks().forEach((track) => {
+        track.stop();
+      });
       navigator.mediaDevices.removeEventListener(
         "devicechange",
         handleDeviceChange
       );
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const getLocalVideoStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: selectedVideoInput },
-          audio: false,
-        });
-        setLocalVideoStream(stream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        setPermissionError("Failed to access the selected camera.");
-      }
-    };
-
-    getLocalVideoStream();
-
     // update selected camera id in DeviceContext
     setCameraId(selectedVideoInput);
-
-    return () => {
-      if (localVideoStream) {
-        localVideoStream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [selectedVideoInput]);
+  }, [selectedVideoInput, setCameraId]);
 
   useEffect(() => {
-    const getLocalAudioStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: { deviceId: selectedAudioInput },
-        });
-        setLocalAudioStream(stream);
-      } catch (error) {
-        setPermissionError("Failed to access the selected microphone.");
-      }
-    };
-
-    getLocalAudioStream();
-
     // update selected microphone id in DeviceContext
     setMicrophoneId(selectedAudioInput);
-
-    return () => {
-      if (localAudioStream) {
-        localAudioStream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [selectedAudioInput]);
+  }, [selectedAudioInput, setMicrophoneId]);
 
   useEffect(() => {
     if (selectedAudioOutput && audioRef.current) {
@@ -325,7 +295,24 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
 
     // update selected speaker id in DeviceContext
     setSpeakerId(selectedAudioOutput);
-  }, [selectedAudioOutput]);
+  }, [selectedAudioOutput, setSpeakerId]);
+
+  useEffect(() => {
+    if (localVideoStream && videoRef.current) {
+      videoRef.current.srcObject = localVideoStream;
+    }
+  }, [localVideoStream]);
+
+  useEffect(() => {
+    if (localAudioStream && audioRef.current) {
+      audioRef.current.srcObject = localAudioStream;
+    }
+  }, [localAudioStream]);
+
+  const handleConfirm = () => {
+    // initializeAudioContext();
+    props.onExit();
+  };
 
   return (
     <Container
@@ -353,7 +340,7 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
             onVideoInputChange={(e) => setSelectedVideoInput(e.target.value)}
             onAudioInputChange={(e) => setSelectedAudioInput(e.target.value)}
             onAudioOutputChange={(e) => setSelectedAudioOutput(e.target.value)}
-            onConfirm={props.onExit}
+            onConfirm={handleConfirm}
           />
         </Col>
       </Row>

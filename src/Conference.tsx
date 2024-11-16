@@ -1,136 +1,232 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocalStream } from "./context/LocalStreamContext";
+import { supabase } from "./supabaseClient";
+import { DATABASE_TABLES } from "./constants";
+import Peer, { PeerStream, PeerTrack } from "./services/Peer";
+
+interface Session {
+  id: string;
+  tracks: PeerTrack[];
+  user_id: string;
+}
+
+interface Track {
+  userId: string;
+  sessionId: string;
+  audioStream: MediaStream;
+}
 
 interface ConferenceProps {
   userId: string;
 }
 
-export default function Conference(props: ConferenceProps) {
-  const baseUrl = "https://rtc.live.cloudflare.com/v1/apps";
-  const appId = process.env.REACT_APP_CLOUDFLARE_APP_ID;
-  const appSecret = process.env.REACT_APP_CLOUDFLARE_APP_SECRET;
+interface AudioPlayerProps {
+  audioStream: MediaStream;
+  sessionId: string;
+}
 
-  const createSession = async () => {
-    const url = `${baseUrl}/${appId}/sessions/new`;
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${appSecret}`,
-          "Content-Type": "application/json",
-        },
+const AudioPlayer: React.FC<AudioPlayerProps> = ({
+  audioStream,
+  sessionId,
+}) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.srcObject = audioStream;
+    }
+  }, [audioStream]);
+
+  return <audio ref={audioRef} autoPlay playsInline key={sessionId} />;
+};
+
+export default function Conference({ userId }: ConferenceProps) {
+  const peerRef = useRef<Peer>(new Peer());
+  const { localAudioStream, localVideoStream } = useLocalStream();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [tracks, setTracks] = useState<Track[]>([]);
+
+  const handleTrack = (stream: PeerStream) => {
+    if (stream.kind === "audio") {
+      setTracks((prev) => {
+        return [
+          ...prev,
+          {
+            userId: stream.userId,
+            sessionId: stream.sessionId || "",
+            audioStream: stream.stream,
+          },
+        ];
       });
+    } else if (stream.kind === "video") {
+      // not implemented
+    }
+  };
 
-      const data = await response.json();
-      return data.data.sessionId;
-    } catch (error) {
-      console.error(error);
+  const handleRemoveTrack = (stream: PeerStream) => {
+    if (stream.kind === "audio") {
+      setTracks((prev) => {
+        return prev.filter(
+          (track) =>
+            track.userId !== stream.userId &&
+            track.sessionId !== stream.sessionId
+        );
+      });
+    }
+  };
+
+  const fetchSessions = async (userId: string): Promise<Session[]> => {
+    const sessions: Session[] = [];
+
+    // get remote tracks except for the current user
+    const { data, error } = await supabase
+      .from(DATABASE_TABLES.SESSIONS)
+      .select("*")
+      .neq("user_id", userId);
+
+    if (error) {
+      console.error("Error fetching sessions:", error);
+      return sessions;
+    }
+
+    sessions.push(...(data as Session[]));
+    return sessions;
+  };
+
+  const insertSession = async (userId: string, tracks: PeerTrack[]) => {
+    const { error } = await supabase.from(DATABASE_TABLES.SESSIONS).insert({
+      user_id: userId,
+      tracks: tracks,
+      id: peerRef.current.sessionId,
+    });
+
+    if (error) {
+      console.error("Insert Session Error:", error);
       throw error;
     }
   };
 
+  // listen to changes in sessions table
   useEffect(() => {
-    const createPeerConnection = async () => {
-      const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          {
-            urls: "stun:stun.l.google.com:19302",
-          },
-        ],
-        bundlePolicy: "max-bundle",
-      });
+    const usersChannelName = `realtime:public:${DATABASE_TABLES.SESSIONS}`;
+    const usersChannel = supabase
+      .channel(usersChannelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: DATABASE_TABLES.SESSIONS },
+        (payload) => {
+          if (payload.new.user_id === userId) return;
 
-      peerConnection.ontrack = (event) => {
-        console.log("ontrack", event);
-      };
+          const tracks = payload.new.tracks as PeerTrack[];
+          peerRef.current.pullRemoteTracks(payload.new.user_id, tracks);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: DATABASE_TABLES.SESSIONS },
+        (payload) => {
+          if (payload.old.user_id === userId) return;
 
-      peerConnection.onsignalingstatechange = (event) => {
-        console.log("onsignalingstatechange", peerConnection.signalingState);
-      };
+          peerRef.current.closeTracks(payload.old.user_id);
+        }
+      )
+      .subscribe();
 
-      peerConnection.oniceconnectionstatechange = (event) => {
-        console.log(
-          "oniceconnectionstatechange",
-          peerConnection.iceConnectionState
-        );
-      };
+    return () => {
+      usersChannel?.unsubscribe();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-      peerConnection.onicecandidate = (event) => {
-        console.log("onicecandidate", event);
-      };
+  useEffect(() => {
+    const init = async () => {
+      await peerRef.current.createSession();
+      await peerRef.current.createPeerConnection();
 
-      return peerConnection;
+      peerRef.current.on("track", handleTrack);
+      peerRef.current.on("removeTrack", handleRemoveTrack);
+
+      setIsInitialized(true);
     };
 
-    const pushTracks = async (
-      sessionId: string,
-      offer: RTCSessionDescriptionInit,
-      transievers: RTCRtpTransceiver[]
-    ) => {
-      const url = `${baseUrl}/${appId}/sessions/${sessionId}/tracks/new`;
+    const peer = peerRef.current;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${appSecret}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionDescription: {
-            sdp: offer.sdp,
-            type: offer.type,
-          },
-          tracks: transievers.map(({ mid, sender }) => {
-            return {
-              location: "local",
-              mid,
-              trackName: sender?.track?.id,
-            };
-          }),
-        }),
-      });
+    init();
 
-      const data = await response.json();
-      console.log("Push Tracks Response:", data);
-      return data;
+    return () => {
+      peer.close();
     };
+  }, []);
 
+  useEffect(() => {
     const run = async () => {
-      const sessionId = await createSession();
-      const pc = await createPeerConnection();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      if (!isInitialized) {
+        return;
+      }
 
-      const transievers = stream.getTracks().map((track) => {
-        return pc.addTransceiver(track, {
-          direction: "sendrecv",
-        });
-      });
+      if (localAudioStream && localVideoStream) {
+        try {
+          // add local tracks
+          peerRef.current.addLocalTracks(localAudioStream, localVideoStream);
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+          // push local tracks and insert session to db
+          const localTracks = await peerRef.current.pushLocalTracks();
+          await insertSession(userId, localTracks);
 
-      const res = await pushTracks(sessionId, offer, transievers);
+          // fetch remote tracks from db and pull remote tracks
+          const sessions = await fetchSessions(userId);
+          for (const session of sessions) {
+            if (session.user_id === userId) {
+              continue;
+            }
 
-      const answer = new RTCSessionDescription({
-        sdp: res.sessionDescription.sdp,
-        type: res.sessionDescription.type,
-      });
-
-      await pc.setRemoteDescription(answer);
+            await peerRef.current.pullRemoteTracks(
+              session.user_id,
+              session.tracks
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching remote tracks:", error);
+        }
+      }
     };
 
     run();
 
-    return () => {
-      console.log("Cleanup");
-    };
-  }, []);
+    return () => {};
+  }, [localAudioStream, localVideoStream, isInitialized, userId]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = localVideoStream;
+    }
+  }, [localVideoStream]);
 
   return (
-    <div>
-      <h1>Conference</h1>
-    </div>
+    <>
+      {tracks.map((track) => (
+        <AudioPlayer
+          key={track.sessionId}
+          audioStream={track.audioStream}
+          sessionId={track.sessionId}
+        />
+      ))}
+
+      {/* <video
+        autoPlay
+        playsInline
+        muted
+        ref={videoRef}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "20px",
+          width: "200px",
+          borderRadius: "8px",
+          border: "2px solid #ccc",
+          zIndex: 1000,
+        }}
+      /> */}
+    </>
   );
 }
