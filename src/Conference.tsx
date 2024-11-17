@@ -42,8 +42,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
 export default function Conference({ userId }: ConferenceProps) {
   const peerRef = useRef<Peer>(new Peer());
-  const { localAudioStream, localVideoStream } = useLocalStream();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { localAudioStream } = useLocalStream();
   const [isInitialized, setIsInitialized] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
 
@@ -164,10 +163,10 @@ export default function Conference({ userId }: ConferenceProps) {
         return;
       }
 
-      if (localAudioStream && localVideoStream) {
+      if (localAudioStream) {
         try {
           // add local tracks
-          peerRef.current.addLocalTracks(localAudioStream, localVideoStream);
+          peerRef.current.addLocalTracks(localAudioStream);
 
           // push local tracks and insert session to db
           const localTracks = await peerRef.current.pushLocalTracks();
@@ -194,13 +193,13 @@ export default function Conference({ userId }: ConferenceProps) {
     run();
 
     return () => {};
-  }, [localAudioStream, localVideoStream, isInitialized, userId]);
+  }, [localAudioStream, isInitialized, userId]);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = localVideoStream;
-    }
-  }, [localVideoStream]);
+  // useEffect(() => {
+  //   if (videoRef.current) {
+  //     videoRef.current.srcObject = localVideoStream;
+  //   }
+  // }, [localVideoStream]);
 
   return (
     <>

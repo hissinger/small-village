@@ -88,10 +88,7 @@ export default class Peer extends EventListener {
     }
   };
 
-  addLocalTracks = async (
-    audioStream: MediaStream,
-    videoStream: MediaStream
-  ) => {
+  addLocalTracks = async (audioStream: MediaStream) => {
     if (!this._peerConnection) {
       throw new Error("Peer Connection not found");
     }
@@ -107,14 +104,14 @@ export default class Peer extends EventListener {
       });
     });
 
-    videoStream?.getTracks().forEach((track) => {
-      if (pc.signalingState === "closed") {
-        return;
-      }
-      pc?.addTransceiver(track, {
-        direction: "sendonly",
-      });
-    });
+    // videoStream?.getTracks().forEach((track) => {
+    //   if (pc.signalingState === "closed") {
+    //     return;
+    //   }
+    //   pc?.addTransceiver(track, {
+    //     direction: "sendonly",
+    //   });
+    // });
   };
 
   private _pushLocalTracks = async (): Promise<PeerTrack[]> => {

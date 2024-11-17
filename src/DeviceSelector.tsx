@@ -1,62 +1,54 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Container,
-  Row,
-  Col,
-  Form,
-  Button,
-  Spinner,
-  Alert,
-} from "react-bootstrap";
-import AudioVisualizer from "./AudioVisualizer";
+import { Container, Row, Col, Form, Button, Alert } from "react-bootstrap";
+// import AudioVisualizer from "./AudioVisualizer";
 import { useDevice } from "./context/DeviceContext";
 import { useLocalStream } from "./context/LocalStreamContext";
 
-interface VideoDisplayProps {
-  stream: MediaStream | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
-}
+// interface VideoDisplayProps {
+//   stream: MediaStream | null;
+//   videoRef: React.RefObject<HTMLVideoElement>;
+// }
 
-const VideoDisplay: React.FC<VideoDisplayProps> = ({ stream, videoRef }) => {
-  return (
-    <div className="d-flex flex-column align-items-center">
-      {stream ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          style={{
-            objectFit: "cover",
-            height: "200px",
-            width: "300px",
-            border: "2px solid #ccc",
-            borderRadius: "8px",
-            marginBottom: "10px",
-            backgroundColor: "#555",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            height: "200px",
-            width: "300px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "2px solid #ccc",
-            borderRadius: "8px",
-            marginBottom: "10px",
-            backgroundColor: "#555",
-          }}
-        >
-          <Spinner animation="border" role="status" style={{ color: "#fff" }}>
-            <span className="sr-only"></span>
-          </Spinner>
-        </div>
-      )}
-    </div>
-  );
-};
+// const VideoDisplay: React.FC<VideoDisplayProps> = ({ stream, videoRef }) => {
+//   return (
+//     <div className="d-flex flex-column align-items-center">
+//       {stream ? (
+//         <video
+//           ref={videoRef}
+//           autoPlay
+//           muted
+//           style={{
+//             objectFit: "cover",
+//             height: "200px",
+//             width: "300px",
+//             border: "2px solid #ccc",
+//             borderRadius: "8px",
+//             marginBottom: "10px",
+//             backgroundColor: "#555",
+//           }}
+//         />
+//       ) : (
+//         <div
+//           style={{
+//             height: "200px",
+//             width: "300px",
+//             display: "flex",
+//             alignItems: "center",
+//             justifyContent: "center",
+//             border: "2px solid #ccc",
+//             borderRadius: "8px",
+//             marginBottom: "10px",
+//             backgroundColor: "#555",
+//           }}
+//         >
+//           <Spinner animation="border" role="status" style={{ color: "#fff" }}>
+//             <span className="sr-only"></span>
+//           </Spinner>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
 
 interface DeviceFormProps {
   videoInputs: MediaDeviceInfo[];
@@ -92,7 +84,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
 
   return (
     <Form>
-      <Form.Group controlId="videoInputSelect">
+      {/* <Form.Group controlId="videoInputSelect">
         <Form.Label>Camera</Form.Label>
         <Form.Control
           as="select"
@@ -111,7 +103,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({
             </option>
           ))}
         </Form.Control>
-      </Form.Group>
+      </Form.Group> */}
       <Form.Group controlId="audioInputSelect" className="mt-3">
         <Form.Label>Microphone</Form.Label>
         <Form.Control
@@ -192,9 +184,8 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
     useState<string>(microphoneId);
   const [selectedAudioOutput, setSelectedAudioOutput] =
     useState<string>(speakerId);
-  const { localVideoStream, localAudioStream } = useLocalStream();
+  const { localAudioStream } = useLocalStream();
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const getDevices = async () => {
@@ -241,7 +232,7 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
     const requestPermissions = async () => {
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: false,
           audio: true,
         });
         getDevices();
@@ -297,11 +288,11 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
     setSpeakerId(selectedAudioOutput);
   }, [selectedAudioOutput, setSpeakerId]);
 
-  useEffect(() => {
-    if (localVideoStream && videoRef.current) {
-      videoRef.current.srcObject = localVideoStream;
-    }
-  }, [localVideoStream]);
+  // useEffect(() => {
+  //   if (localVideoStream && videoRef.current) {
+  //     videoRef.current.srcObject = localVideoStream;
+  //   }
+  // }, [localVideoStream]);
 
   useEffect(() => {
     if (localAudioStream && audioRef.current) {
@@ -310,7 +301,6 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
   }, [localAudioStream]);
 
   const handleConfirm = () => {
-    // initializeAudioContext();
     props.onExit();
   };
 
@@ -320,13 +310,13 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = (
       className="d-flex align-items-center justify-content-center vh-100"
     >
       <Row className="w-100 justify-content-center">
-        <Col md="auto" className="d-flex align-items-center">
+        {/* <Col md="auto" className="d-flex align-items-center">
           <div className="d-flex flex-column align-items-center">
             <VideoDisplay stream={localVideoStream} videoRef={videoRef} />
             <AudioVisualizer stream={localAudioStream} width="300px" />
           </div>
           <audio ref={audioRef} />
-        </Col>
+        </Col> */}
 
         <Col md="auto">
           {permissionError && <Alert variant="danger">{permissionError}</Alert>}

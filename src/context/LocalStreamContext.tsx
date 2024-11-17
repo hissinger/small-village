@@ -3,7 +3,6 @@ import { useDevice } from "./DeviceContext";
 
 interface LocalStreamContextType {
   localAudioStream: MediaStream | null;
-  localVideoStream: MediaStream | null;
 }
 
 const LocalStreamContext = createContext<LocalStreamContextType | null>(null);
@@ -15,43 +14,40 @@ interface LocalStreamProviderProps {
 export const LocalStreamProvider: React.FC<LocalStreamProviderProps> = ({
   children,
 }) => {
-  const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
-    null
-  );
   const [localAudioStream, setLocalAudioStream] = useState<MediaStream | null>(
     null
   );
   const { cameraId, microphoneId } = useDevice();
 
-  useEffect(() => {
-    let currentStream: MediaStream | null = null;
+  // useEffect(() => {
+  //   let currentStream: MediaStream | null = null;
 
-    if (!cameraId) {
-      return;
-    }
+  //   if (!cameraId) {
+  //     return;
+  //   }
 
-    const getUserMedia = async () => {
-      try {
-        const constraints: MediaStreamConstraints = {
-          video: { deviceId: cameraId },
-          audio: false,
-        };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        currentStream = stream;
-        setLocalVideoStream(stream);
-      } catch (error) {
-        console.error(error);
-      }
-    };
+  //   const getUserMedia = async () => {
+  //     try {
+  //       const constraints: MediaStreamConstraints = {
+  //         video: { deviceId: cameraId },
+  //         audio: false,
+  //       };
+  //       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  //       currentStream = stream;
+  //       setLocalVideoStream(stream);
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-    getUserMedia();
+  //   getUserMedia();
 
-    return () => {
-      currentStream?.getTracks().forEach((track) => {
-        track.stop();
-      });
-    };
-  }, [cameraId]);
+  //   return () => {
+  //     currentStream?.getTracks().forEach((track) => {
+  //       track.stop();
+  //     });
+  //   };
+  // }, [cameraId]);
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
@@ -84,7 +80,7 @@ export const LocalStreamProvider: React.FC<LocalStreamProviderProps> = ({
   }, [microphoneId]);
 
   return (
-    <LocalStreamContext.Provider value={{ localAudioStream, localVideoStream }}>
+    <LocalStreamContext.Provider value={{ localAudioStream }}>
       {children}
     </LocalStreamContext.Provider>
   );
