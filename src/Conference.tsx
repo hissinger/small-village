@@ -11,7 +11,6 @@ interface Session {
 }
 
 interface Track {
-  userId: string;
   sessionId: string;
   audioStream: MediaStream;
 }
@@ -52,7 +51,6 @@ export default function Conference({ userId }: ConferenceProps) {
         return [
           ...prev,
           {
-            userId: stream.userId,
             sessionId: stream.sessionId || "",
             audioStream: stream.stream,
           },
@@ -66,11 +64,7 @@ export default function Conference({ userId }: ConferenceProps) {
   const handleRemoveTrack = (stream: PeerStream) => {
     if (stream.kind === "audio") {
       setTracks((prev) => {
-        return prev.filter(
-          (track) =>
-            track.userId !== stream.userId &&
-            track.sessionId !== stream.sessionId
-        );
+        return prev.filter((track) => track.sessionId !== stream.sessionId);
       });
     }
   };
@@ -113,21 +107,31 @@ export default function Conference({ userId }: ConferenceProps) {
       .channel(usersChannelName)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: DATABASE_TABLES.SESSIONS },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: DATABASE_TABLES.SESSIONS,
+          filter: `user_id=neq.${userId}`,
+        },
         (payload) => {
-          if (payload.new.user_id === userId) return;
-
-          const tracks = payload.new.tracks as PeerTrack[];
-          peerRef.current.pullRemoteTracks(payload.new.user_id, tracks);
+          try {
+            const session: Session = payload.new as Session;
+            peerRef.current.pullRemoteTracks(session.id, session.tracks);
+          } catch (error) {
+            console.error("Error pulling remote tracks:", error);
+          }
         }
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: DATABASE_TABLES.SESSIONS },
         (payload) => {
-          if (payload.old.user_id === userId) return;
-
-          peerRef.current.closeTracks(payload.old.user_id);
+          try {
+            console.log("Removing tracks for user:", payload.old);
+            peerRef.current.closeTracks(payload.old.id);
+          } catch (error) {
+            console.error("Error removing remote tracks:", error);
+          }
         }
       )
       .subscribe();

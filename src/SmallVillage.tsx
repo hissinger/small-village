@@ -8,9 +8,9 @@ import { DATABASE_TABLES } from "./constants";
 import Controller from "./Controller";
 
 interface User {
-  user_id: string;
+  id: string;
   character_index: number;
-  user_name: string;
+  name: string;
   x: number;
   y: number;
   last_active: string;
@@ -143,10 +143,10 @@ class SmallVillageScene extends Phaser.Scene {
       await supabase
         .from(DATABASE_TABLES.USERS)
         .delete()
-        .match({ user_id: this.userId });
+        .match({ id: this.userId });
       await supabase.from(DATABASE_TABLES.USERS).insert({
-        user_id: this.userId,
-        user_name: this.characterName,
+        id: this.userId,
+        name: this.characterName,
         character_index: this.characterIndex,
         x: Math.floor(this.sprite.x),
         y: Math.floor(this.sprite.y),
@@ -203,7 +203,7 @@ class SmallVillageScene extends Phaser.Scene {
     });
 
     const nameText = this.add
-      .text(user.x, user.y + GAME_CONFIG.NAME.OFFSET_Y, user.user_name, {
+      .text(user.x, user.y + GAME_CONFIG.NAME.OFFSET_Y, user.name, {
         fontSize: GAME_CONFIG.NAME.FONT_SIZE,
         color: GAME_CONFIG.NAME.COLOR,
         align: GAME_CONFIG.NAME.ALIGN,
@@ -219,7 +219,7 @@ class SmallVillageScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setAlpha(0); // 처음엔 투명하게 설정
 
-    this.userSprites[user.user_id] = {
+    this.userSprites[user.id] = {
       sprite: userSprite,
       nameText,
       messageText,
@@ -296,7 +296,7 @@ class SmallVillageScene extends Phaser.Scene {
 
     Object.entries(this.userSprites).forEach(([userId, userSprite]) => {
       let isMoving = false;
-      const userData = this.users.find((u) => u.user_id === userId);
+      const userData = this.users.find((u) => u.id === userId);
       if (userData) {
         const sprite = userSprite.sprite;
         const distanceX = Math.abs(userData.x - sprite.x);
@@ -379,8 +379,8 @@ class SmallVillageScene extends Phaser.Scene {
     try {
       if (isMoving) {
         await supabase.from(DATABASE_TABLES.USERS).upsert({
-          user_id: this.userId,
-          user_name: this.characterName,
+          id: this.userId,
+          name: this.characterName,
           character_index: this.characterIndex,
           x: Math.floor(this.sprite.x),
           y: Math.floor(this.sprite.y),
@@ -396,10 +396,10 @@ class SmallVillageScene extends Phaser.Scene {
   updateUsers(users: User[]) {
     this.users = users;
     users.forEach((user) => {
-      if (user.user_id === this.userId) {
+      if (user.id === this.userId) {
         return;
       }
-      if (!this.userSprites[user.user_id]) {
+      if (!this.userSprites[user.id]) {
         this.addUserSprite(user);
       }
     });
@@ -436,10 +436,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   };
 
   const deleteUserDataFromDatebase = useCallback(async () => {
-    await supabase
-      .from(DATABASE_TABLES.USERS)
-      .delete()
-      .match({ user_id: userId });
+    await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
   }, [userId]);
 
   const handleResize = useCallback(() => {
@@ -470,7 +467,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     await supabase
       .from(DATABASE_TABLES.USERS)
       .update({ last_active: new Date().toISOString() })
-      .match({ user_id: userId });
+      .match({ id: userId });
   };
 
   useEffect(() => {
@@ -503,7 +500,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           await supabase
             .from(DATABASE_TABLES.USERS)
             .delete()
-            .match({ user_id: user.user_id });
+            .match({ id: user.id });
         });
 
         // 10초 이내 활동한 유저들만 추출
@@ -523,7 +520,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
-          if (payload.new.user_id === userId) return;
+          if (payload.new.id === userId) return;
           const scene = getScene();
           if (scene) {
             scene.updateUsers([...(scene.users || []), payload.new as User]);
@@ -534,14 +531,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
-          if (payload.new.user_id === userId) return;
+          if (payload.new.id === userId) return;
           const scene = getScene();
           if (scene) {
             const prevUsers = scene.users;
             const updatedUsers = prevUsers.map((user) =>
-              user.user_id === payload.new.user_id
-                ? (payload.new as User)
-                : user
+              user.id === payload.new.id ? (payload.new as User) : user
             );
             scene.updateUsers(updatedUsers);
           }
@@ -551,13 +546,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "DELETE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
-          if (userId === payload.old.user_id) {
+          if (userId === payload.old.id) {
             // exit the game
             handleExit();
             return;
           }
 
-          getScene()?.removeUser((payload.old as User).user_id);
+          getScene()?.removeUser((payload.old as User).id);
         }
       )
       .subscribe();
@@ -580,7 +575,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       getScene()?.removeUser(userId);
 
       // 통화 중인 유저가 나갔을 때
-      if (callPartner?.user_id === userId) {
+      if (callPartner?.id === userId) {
         setCallPartner(null);
       }
     },

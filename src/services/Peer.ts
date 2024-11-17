@@ -21,7 +21,6 @@ export interface PeerTrack {
 }
 
 export interface PeerStream {
-  userId: string;
   sessionId?: string;
   kind: string;
   stream: MediaStream;
@@ -181,7 +180,7 @@ export default class Peer extends EventListener {
   };
 
   private _pullRemoteTracks = async (
-    userId: string,
+    sessionId: string,
     remoteTracks: PeerTrack[]
   ): Promise<TracksResponse> => {
     const url = `${baseUrl}/${appId}/sessions/${this._sessionId}/tracks/new`;
@@ -216,7 +215,6 @@ export default class Peer extends EventListener {
           }
 
           const peerStream: PeerStream = {
-            userId,
             sessionId,
             stream: event.streams[0],
             kind: event.track.kind,
@@ -232,7 +230,7 @@ export default class Peer extends EventListener {
     );
 
     if (data.tracks) {
-      this._remoteTracks.set(userId, data.tracks);
+      this._remoteTracks.set(sessionId, data.tracks);
     }
 
     return data;
@@ -272,22 +270,24 @@ export default class Peer extends EventListener {
     return data;
   };
 
-  private _closeTracks = async (userId: string): Promise<void> => {
-    const tracks: TrackObject[] = this._remoteTracks.get(userId) || [];
+  private _closeTracks = async (sessionId: string): Promise<void> => {
+    const tracks: TrackObject[] = this._remoteTracks.get(sessionId) || [];
     if (tracks.length === 0) {
-      console.log("No tracks found", userId);
+      console.log("No tracks found", sessionId);
       return;
     }
-    this._remoteTracks.delete(userId);
+    this._remoteTracks.delete(sessionId);
 
     this._streams
-      .filter((stream) => stream.userId === userId)
+      .filter((stream) => stream.sessionId === sessionId)
       .forEach((stream) => {
         this.fireEvent("removeTrack", stream);
       });
 
     // remove stream in streams
-    this._streams = this._streams.filter((stream) => stream.userId !== userId);
+    this._streams = this._streams.filter(
+      (stream) => stream.sessionId !== sessionId
+    );
 
     // remote track from peer connection
     const pc = this._peerConnection;
@@ -341,20 +341,18 @@ export default class Peer extends EventListener {
   };
 
   pullRemoteTracks = async (
-    userId: string,
+    sessionId: string,
     remoteTracks: PeerTrack[]
   ): Promise<void> => {
     return this._jobQueue.addJob(async () => {
       // find if the remote tracks are already added
-      const tracks = this._remoteTracks.get(userId);
-      const sessionId = remoteTracks[0].sessionId;
-      if (sessionId === tracks?.[0].sessionId) {
-        console.log("Remote Tracks already added", { userId, sessionId });
+      if (this._remoteTracks.has(sessionId)) {
+        console.log("Remote Tracks already added", sessionId);
         return;
       }
 
       const response: TracksResponse = await this._pullRemoteTracks(
-        userId,
+        sessionId,
         remoteTracks
       );
 
@@ -368,8 +366,10 @@ export default class Peer extends EventListener {
     });
   };
 
-  closeTracks = async (userId: string): Promise<void> => {
-    return this._jobQueue.addJob(async () => await this._closeTracks(userId));
+  closeTracks = async (sessionId: string): Promise<void> => {
+    return this._jobQueue.addJob(
+      async () => await this._closeTracks(sessionId)
+    );
   };
 
   close = async () => {

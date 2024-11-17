@@ -23,14 +23,17 @@ export default function ChatInput(props: ChatInputProps) {
       return;
     }
 
+    // send message to all users
     const payload: Message = {
       type: MessageType.CHAT,
       sender_id: props.userId,
       receiver_id: RECEIVER_ALL,
       body: message,
     };
-
     sendMessage(CHANNEL_MESSAGE, payload);
+
+    // clear message input
+    setMessage("");
   };
 
   const handleMessage = useCallback(
