@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
+
 interface ExitButtonProps {
   onClick: () => void;
 }
@@ -7,19 +10,19 @@ export default function ExitButton(props: ExitButtonProps) {
     <button
       onClick={props.onClick}
       style={{
-        position: "absolute",
-        bottom: 80, // 하단과의 간격 조정
-        right: 20, // 오른쪽과의 간격 조정
-        padding: "10px 20px",
+        bottom: 80,
+        right: 20,
+        padding: "0px 20px",
         fontSize: "16px",
         borderRadius: "5px",
         border: "none",
-        backgroundColor: "#f44336",
+        backgroundColor: "#6c757d",
         color: "white",
         cursor: "pointer",
+        height: "100%",
       }}
     >
-      Exit
+      <FontAwesomeIcon icon={faSignOutAlt} />
     </button>
   );
 }

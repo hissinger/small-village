@@ -6,6 +6,8 @@ import {
   RECEIVER_ALL,
   useMessage,
 } from "./context/MessageContext";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 
 interface ChatInputProps {
   userId: string;
@@ -51,13 +53,11 @@ export default function ChatInput(props: ChatInputProps) {
   return (
     <div
       style={{
-        position: "absolute",
-        bottom: 80,
         left: "50%",
-        transform: "translateX(-50%)",
         display: "flex",
         width: "80%",
         maxWidth: 600,
+        height: "100%",
       }}
     >
       <input
@@ -76,7 +76,7 @@ export default function ChatInput(props: ChatInputProps) {
       <button
         onClick={handleSendMessage}
         style={{
-          padding: "10px 20px",
+          padding: "0px 20px",
           fontSize: "16px",
           borderRadius: "0 5px 5px 0",
           border: "none",
@@ -85,7 +85,7 @@ export default function ChatInput(props: ChatInputProps) {
           cursor: "pointer",
         }}
       >
-        Send
+        <FontAwesomeIcon icon={faPaperPlane} />
       </button>
     </div>
   );
