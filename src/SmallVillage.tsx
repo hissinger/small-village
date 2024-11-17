@@ -1,12 +1,11 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { supabase } from "./supabaseClient";
-import ExitButton from "./ExitButton";
-import ChatInput from "./ChatInput";
 import useOnlineUsers from "./hooks/useOnlineUsers";
 import LoadingSpinner from "./LoadingSpinner";
 import Conference from "./Conference";
 import { DATABASE_TABLES } from "./constants";
+import Controller from "./Controller";
 
 interface User {
   user_id: string;
@@ -656,13 +655,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         <LoadingSpinner message="Strolling into the Small Village..." />
       ) : (
         <div>
+          <Controller
+            onExit={handleExit}
+            userId={userId}
+            onMessage={sendChatMessage}
+          />
           <Conference userId={userId} />
-
-          {/* 채팅 입력창 */}
-          <ChatInput userId={userId} onMessage={sendChatMessage} />
-
-          {/* 나가기 버튼 */}
-          <ExitButton onClick={handleExit} />
         </div>
       )}
     </div>
