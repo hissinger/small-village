@@ -17,7 +17,7 @@ export const LocalStreamProvider: React.FC<LocalStreamProviderProps> = ({
   const [localAudioStream, setLocalAudioStream] = useState<MediaStream | null>(
     null
   );
-  const { cameraId, microphoneId } = useDevice();
+  const { microphoneId } = useDevice();
 
   // useEffect(() => {
   //   let currentStream: MediaStream | null = null;
