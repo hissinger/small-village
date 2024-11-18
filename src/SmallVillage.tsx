@@ -41,7 +41,7 @@ const GAME_CONFIG = {
     FRAME_HEIGHT: 32,
   },
   MOVEMENT: {
-    SPEED: 2,
+    SPEED: 160,
   },
   NAME: {
     OFFSET_Y: -50,
@@ -62,7 +62,7 @@ const GAME_CONFIG = {
 
 class SmallVillageScene extends Phaser.Scene {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
-  private sprite: Phaser.GameObjects.Sprite | null = null;
+  private sprite: Phaser.Physics.Arcade.Sprite | null = null;
   private nameText: Phaser.GameObjects.Text | null = null;
   private messageText: Phaser.GameObjects.Text | null = null;
   private userSprites: Record<
@@ -101,10 +101,33 @@ class SmallVillageScene extends Phaser.Scene {
         frameHeight: GAME_CONFIG.SPRITE.FRAME_HEIGHT,
       });
     }
+
+    // map
+    this.load.image("map", "/assets/map/Serene_Village_32x32.png");
+    this.load.tilemapTiledJSON("map", "/assets/map/default.json");
   }
 
   async create() {
     this.cursors = this.input.keyboard?.createCursorKeys() || null;
+
+    // map
+    const map = this.make.tilemap({
+      key: "map",
+      tileWidth: 32,
+      tileHeight: 32,
+    });
+    const tileset = map.addTilesetImage("Serene_Village_32x32", "map");
+    if (!tileset) {
+      console.error("Tileset is null");
+      return;
+    }
+
+    map.createLayer("ground", tileset, 0, 0);
+    const decorationLayer = map.createLayer("decoration", tileset, 0, 0);
+    if (!decorationLayer) {
+      console.error("Decoration layer is null");
+      return;
+    }
 
     const { innerWidth: width, innerHeight: height } = window;
     this.cameras.main.setBounds(0, 0, width, height);
@@ -137,6 +160,16 @@ class SmallVillageScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0.5)
       .setAlpha(0);
+
+    decorationLayer.setCollisionByProperty({ collides: true });
+    this.physics.add.collider(this.sprite, decorationLayer);
+
+    // const debugGraphics = this.add.graphics().setAlpha(0.75);
+    // decorationLayer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
 
     try {
       // 강제로 사용자 데이터를 업데이트
@@ -268,22 +301,24 @@ class SmallVillageScene extends Phaser.Scene {
 
     let isMoving = false;
 
+    this.sprite.setVelocity(0);
+
     if (this.cursors.left?.isDown) {
       isMoving = true;
       this.sprite.play(`walk_left_${this.characterIndex}`, true);
-      this.sprite.x -= GAME_CONFIG.MOVEMENT.SPEED;
+      this.sprite.setVelocityX(-GAME_CONFIG.MOVEMENT.SPEED);
     } else if (this.cursors.right?.isDown) {
       isMoving = true;
       this.sprite.play(`walk_right_${this.characterIndex}`, true);
-      this.sprite.x += GAME_CONFIG.MOVEMENT.SPEED;
+      this.sprite.setVelocityX(GAME_CONFIG.MOVEMENT.SPEED);
     } else if (this.cursors.up?.isDown) {
       isMoving = true;
       this.sprite.play(`walk_up_${this.characterIndex}`, true);
-      this.sprite.y -= GAME_CONFIG.MOVEMENT.SPEED;
+      this.sprite.setVelocityY(-GAME_CONFIG.MOVEMENT.SPEED);
     } else if (this.cursors.down?.isDown) {
       isMoving = true;
       this.sprite.play(`walk_down_${this.characterIndex}`, true);
-      this.sprite.y += GAME_CONFIG.MOVEMENT.SPEED;
+      this.sprite.setVelocityY(GAME_CONFIG.MOVEMENT.SPEED);
     } else {
       this.sprite.anims.stop();
     }
