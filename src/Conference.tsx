@@ -127,7 +127,6 @@ export default function Conference({ userId }: ConferenceProps) {
         { event: "DELETE", schema: "public", table: DATABASE_TABLES.SESSIONS },
         (payload) => {
           try {
-            console.log("Removing tracks for user:", payload.old);
             peerRef.current.closeTracks(payload.old.id);
           } catch (error) {
             console.error("Error removing remote tracks:", error);
