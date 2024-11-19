@@ -103,8 +103,8 @@ class SmallVillageScene extends Phaser.Scene {
     }
 
     // map
-    this.load.image("map", "/assets/map/Serene_Village_32x32.png");
-    this.load.tilemapTiledJSON("map", "/assets/map/default.json");
+    this.load.image("map", "/assets/tilesets/Serene_Village_32x32.png");
+    this.load.tilemapTiledJSON("map", "/assets/tilemaps/default.json");
   }
 
   async create() {
@@ -122,12 +122,30 @@ class SmallVillageScene extends Phaser.Scene {
       return;
     }
 
-    map.createLayer("ground", tileset, 0, 0);
-    const decorationLayer = map.createLayer("decoration", tileset, 0, 0);
-    if (!decorationLayer) {
+    const groundLayer = map.createLayer("ground", tileset, 0, 0);
+    if (!groundLayer) {
+      console.error("Ground layer is null");
+      return;
+    }
+    groundLayer.setScale(2, 2);
+    const decoration0Layer = map.createLayer("decoration_0", tileset, 0, 0);
+    if (!decoration0Layer) {
       console.error("Decoration layer is null");
       return;
     }
+    decoration0Layer.setScale(2, 2);
+    const decoration1Layer = map.createLayer("decoration_1", tileset, 0, 0);
+    if (!decoration1Layer) {
+      console.error("Decoration layer is null");
+      return;
+    }
+    decoration1Layer.setScale(2, 2);
+    const decoration2Layer = map.createLayer("decoration_2", tileset, 0, 0);
+    if (!decoration2Layer) {
+      console.error("Decoration layer is null");
+      return;
+    }
+    decoration2Layer.setScale(2, 2);
 
     const { innerWidth: width, innerHeight: height } = window;
     this.cameras.main.setBounds(0, 0, width, height);
@@ -161,11 +179,26 @@ class SmallVillageScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setAlpha(0);
 
-    decorationLayer.setCollisionByProperty({ collides: true });
-    this.physics.add.collider(this.sprite, decorationLayer);
+    decoration0Layer.setCollisionByProperty({ collides: true });
+    decoration1Layer.setCollisionByProperty({ collides: true });
+    decoration2Layer.setCollisionByProperty({ collides: true });
+
+    this.physics.add.collider(this.sprite, decoration0Layer);
+    this.physics.add.collider(this.sprite, decoration1Layer);
+    this.physics.add.collider(this.sprite, decoration2Layer);
 
     // const debugGraphics = this.add.graphics().setAlpha(0.75);
-    // decorationLayer.renderDebug(debugGraphics, {
+    // decoration0Layer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
+    // decoration1Layer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
+    // decoration2Layer.renderDebug(debugGraphics, {
     //   tileColor: null,
     //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
     //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
