@@ -2,28 +2,31 @@
 
 Small Village is a project that will be developed similarly to Gather Town. It will be a serverless service built using Supabase, ReactJS, WebRTC, Phaser, and Netlify.
 
-Demo: https://smallvillage.netlify.app
+Join the village and start chatting with other villagers. https://smallvillage.netlify.app
 
 
 ## Installation
 
 ### Supabase Schema
+first, you have to create a table in the Supabase database. `schema.sql` file contains the schema for the Supabase database. You can run this file in the SQL editor of the Supabase dashboard.
 
-Users Table
-```sql
 
-```
 
-Rooms Table
-```sql
-```
+### Environment Variables
+Create a `.env` file in the root directory of the project and add the following environment variables.
 
-### Deploy Edge Functions
+1. supabase environment variables
+- `REACT_APP_SUPABASE_URL`: Supabase URL
+- `REACT_APP_SUPABASE_KEY`: Supabase Key
 
-```bash
-supabase init
-supabase functions deploy get-session --project-ref <project-ref>
-```
+2. turn server environment variables
+- `REACT_APP_TURN_SERVER_URL`: Turn server URL
+- `REACT_APP_TURN_SERVER_USERNAME`: Turn server username
+- `REACT_APP_TURN_SERVER_CREDENTIAL`: Turn server credential
+
+3. cloudflare environment variables
+- `REACT_APP_CLOUDFLARE_APP_ID`: Cloudflare app id
+- `REACT_APP_CLOUDFLARE_APP_SECRET`: Cloudflare app secret
 
 ### npm install
 
@@ -31,9 +34,19 @@ supabase functions deploy get-session --project-ref <project-ref>
 npm install
 ```
 
-
-## running the project
+## Runing
 
 ```bash
 npm start
 ```
+
+
+## References
+- [Modular Game Worlds in Phaser 3 (Tilemaps #1) — Static Maps](https://medium.com/@michaelwesthadley/modular-game-worlds-in-phaser-3-tilemaps-1-958fc7e6bbd6)
+- [Cloudflare Calls documents](https://developers.cloudflare.com/calls/)
+- [Using WebRTC + React + WebAudio to create spatial audio](https://blog.livekit.io/tutorial-using-webrtc-react-webaudio-to-create-spatial-audio/)
+
+## Assets
+- https://itch.io/
+- https://limezu.itch.io/serenevillagerevamped
+- https://gamebetweenthelines.itch.io/top-down-pixel-art-characters
