@@ -12,7 +12,7 @@ Join the village and start chatting with other villagers. https://smallvillage.n
 
 ## Installation
 
-This project is serverless, so you don’t need to prepare a server. All you need to do is sign up for Supabase and Cloudflare.
+This project is developed based on a serverless architecture, so you don’t need to prepare a server. All you need to do is sign up for Supabase and Cloudflare.
 
 ### Supabase Schema
 first, you have to create a table in the Supabase database. `schema.sql` file contains the schema for the Supabase database. You can run this file in the SQL editor of the Supabase dashboard.
@@ -39,7 +39,7 @@ Create a `.env` file in the root directory of the project and add the following 
 npm install
 ```
 
-## Runing
+## Running
 
 ```bash
 npm start
