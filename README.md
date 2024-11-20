@@ -5,12 +5,17 @@ Small Village is a project that will be developed similarly to Gather Town. It w
 Join the village and start chatting with other villagers. https://smallvillage.netlify.app
 
 
+## Architecture
+- **Supabase**: Supabase is used as a database to store user information and chat messages.
+- **Cloudflare Calls**: Cloudflare Calls is SFU media server that is used to create voice calls between users.
+
+
 ## Installation
+
+This project is serverless, so you don’t need to prepare a server. All you need to do is sign up for Supabase and Cloudflare.
 
 ### Supabase Schema
 first, you have to create a table in the Supabase database. `schema.sql` file contains the schema for the Supabase database. You can run this file in the SQL editor of the Supabase dashboard.
-
-
 
 ### Environment Variables
 Create a `.env` file in the root directory of the project and add the following environment variables.
