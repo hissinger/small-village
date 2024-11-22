@@ -1,14 +1,15 @@
 import ChatInput from "./ChatInput";
 import ExitButton from "./ExitButton";
 import AudioMuteButton from "./AudioMuteButton";
+import AudioInputSelect from "./AudioInputSelect";
 
-interface ControllerProps {
+interface BottomBarProps {
   userId: string;
   onMessage: (senderId: string, message: string) => void;
   onExit: () => void;
 }
 
-export default function Controller(props: ControllerProps) {
+export default function BottomBar(props: BottomBarProps) {
   return (
     <div
       style={{
@@ -23,6 +24,7 @@ export default function Controller(props: ControllerProps) {
         padding: "10px",
       }}
     >
+      <AudioInputSelect />
       <ChatInput userId={props.userId} onMessage={props.onMessage} />
       <AudioMuteButton />
       <ExitButton onClick={props.onExit} />

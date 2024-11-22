@@ -5,7 +5,7 @@ import useOnlineUsers from "./hooks/useOnlineUsers";
 import LoadingSpinner from "./LoadingSpinner";
 import Conference from "./Conference";
 import { DATABASE_TABLES } from "./constants";
-import Controller from "./Controller";
+import BottomBar from "./BottomBar";
 
 interface User {
   id: string;
@@ -718,7 +718,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         <LoadingSpinner message="Strolling into the Small Village..." />
       ) : (
         <div>
-          <Controller
+          <BottomBar
             onExit={handleExit}
             userId={userId}
             onMessage={sendChatMessage}

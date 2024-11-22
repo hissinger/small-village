@@ -4,27 +4,27 @@ import {
   faMicrophone,
   faMicrophoneSlash,
 } from "@fortawesome/free-solid-svg-icons";
-import { useLocalStream } from "./context/LocalStreamContext";
+import { useRoomContext } from "./context/RoomContext";
 
 export default function AudioMuteButton() {
   const [isMuted, setIsMuted] = useState(false);
-  const { localAudioStream } = useLocalStream();
+  const { localAudioTrack } = useRoomContext();
 
   useEffect(() => {
-    if (!localAudioStream) {
+    if (!localAudioTrack) {
       return;
     }
 
-    const audioTrack = localAudioStream.getAudioTracks()[0];
-    setIsMuted(!audioTrack.enabled);
-  }, [localAudioStream]);
+    setIsMuted(!localAudioTrack.enabled);
+  }, [localAudioTrack]);
 
   const handleMuteClick = useCallback(() => {
-    localAudioStream?.getAudioTracks().forEach((track) => {
-      setIsMuted(track.enabled);
-      track.enabled = !track.enabled;
-    });
-  }, [localAudioStream]);
+    if (!localAudioTrack) {
+      return;
+    }
+    setIsMuted(localAudioTrack.enabled);
+    localAudioTrack.enabled = !localAudioTrack.enabled;
+  }, [localAudioTrack]);
 
   return (
     <button

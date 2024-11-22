@@ -87,30 +87,38 @@ export default class Peer extends EventListener {
     }
   };
 
-  addLocalTracks = async (audioStream: MediaStream) => {
+  addLocalTracks = async (audioTrack: MediaStreamTrack) => {
     if (!this._peerConnection) {
       throw new Error("Peer Connection not found");
     }
 
     const pc = this._peerConnection;
-    audioStream?.getTracks().forEach((track) => {
-      if (pc.signalingState === "closed") {
-        return;
-      }
 
-      pc?.addTransceiver(track, {
-        direction: "sendonly",
-      });
+    if (pc.signalingState === "closed") {
+      return;
+    }
+
+    pc?.addTransceiver(audioTrack, {
+      direction: "sendonly",
     });
+  };
 
-    // videoStream?.getTracks().forEach((track) => {
-    //   if (pc.signalingState === "closed") {
-    //     return;
-    //   }
-    //   pc?.addTransceiver(track, {
-    //     direction: "sendonly",
-    //   });
-    // });
+  replaceTrack = async (track: MediaStreamTrack) => {
+    if (!this._peerConnection) {
+      throw new Error("Peer Connection not found");
+    }
+
+    const pc = this._peerConnection;
+    if (pc.signalingState === "closed") {
+      return;
+    }
+
+    const sender = pc.getSenders().find((s) => s.track?.kind === track.kind);
+    if (!sender) {
+      throw new Error("Sender not found");
+    }
+
+    sender.replaceTrack(track);
   };
 
   private _pushLocalTracks = async (): Promise<PeerTrack[]> => {
@@ -130,13 +138,24 @@ export default class Peer extends EventListener {
 
     await pc.setLocalDescription(offer);
 
-    const pushTracks = pc.getTransceivers().map(({ mid, sender }) => {
-      return {
-        location: "local",
-        mid,
-        trackName: sender?.track?.id,
-      };
-    });
+    const pushTracks = pc
+      .getTransceivers()
+      .map(({ mid, sender }) => {
+        if (sender && sender.track?.kind === "audio") {
+          // set network priority
+          const params: RTCRtpSendParameters = sender.getParameters();
+          params.encodings[0].networkPriority = "high";
+          sender.setParameters(params);
+
+          return {
+            location: "local",
+            mid,
+            trackName: sender?.track?.id,
+          };
+        }
+        return null;
+      })
+      .filter((track) => track !== null);
 
     const url = `${baseUrl}/${appId}/sessions/${this._sessionId}/tracks/new`;
     const response = await fetch(url, {

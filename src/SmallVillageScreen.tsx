@@ -1,8 +1,7 @@
-import React, { memo, useState } from "react";
-import DeviceSelector from "./DeviceSelector";
+import React, { memo } from "react";
 import SmallVillage from "./SmallVillage";
-import { DeviceProvider } from "./context/DeviceContext";
-import { LocalStreamProvider } from "./context/LocalStreamContext";
+import { RoomProvider } from "./context/RoomContext";
+
 interface SmallVillageScreenProps {
   userId: string;
   characterIndex: number;
@@ -16,23 +15,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   characterName,
   onExit,
 }: SmallVillageScreenProps) => {
-  const [deviceSelected, setDeviceSelected] = useState(false);
-
   return (
-    <DeviceProvider>
-      <LocalStreamProvider>
-        {!deviceSelected ? (
-          <DeviceSelector onExit={() => setDeviceSelected(true)} />
-        ) : (
-          <SmallVillage
-            userId={userId!}
-            characterIndex={characterIndex}
-            characterName={characterName}
-            onExit={onExit}
-          />
-        )}
-      </LocalStreamProvider>
-    </DeviceProvider>
+    <RoomProvider>
+      <SmallVillage
+        userId={userId!}
+        characterIndex={characterIndex}
+        characterName={characterName}
+        onExit={onExit}
+      />
+    </RoomProvider>
   );
 };
 

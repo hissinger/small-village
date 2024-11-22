@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface AudioVisualizerProps {
-  stream: MediaStream | null;
+  track: MediaStreamTrack | null;
   width: string;
 }
 
@@ -10,15 +10,17 @@ const AudioVisualizer = (props: AudioVisualizerProps) => {
   const pidsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    if (!props.stream) {
+    if (!props.track) {
       return;
     }
 
-    const handleAudioStream = async (stream: MediaStream) => {
+    const handleAudioStream = async (track: MediaStreamTrack) => {
       try {
         const audioContext = new AudioContext();
         await audioContext.audioWorklet.addModule("volumeProcessor.js");
-        const microphone = audioContext.createMediaStreamSource(stream);
+        const microphone = audioContext.createMediaStreamSource(
+          new MediaStream([track])
+        );
         const volumeNode = new AudioWorkletNode(
           audioContext,
           "volume-processor"
@@ -35,8 +37,8 @@ const AudioVisualizer = (props: AudioVisualizerProps) => {
       }
     };
 
-    handleAudioStream(props.stream);
-  }, [props.stream]);
+    handleAudioStream(props.track);
+  }, [props.track]);
 
   const colorPids = () => {
     const numberOfPidsToColor = Math.round(volume / 10);
@@ -53,7 +55,7 @@ const AudioVisualizer = (props: AudioVisualizerProps) => {
         justifyContent: "space-between",
         gap: "5px",
         border: "1px solid #bbb",
-        borderRadius: "8px",
+        borderRadius: "5px",
         padding: "5px",
       }}
     >
