@@ -48,12 +48,16 @@ const GAME_CONFIG = {
     FONT_SIZE: "16px",
     COLOR: "#fff",
     ALIGN: "center",
+    STROKE: "#000000",
+    STROKE_THICKNESS: 3,
   },
   MESSAGE: {
     OFFSET_Y: -70,
     FONT_SIZE: "14px",
     COLOR: "#fff",
     ALIGN: "center",
+    STROKE: "#000000",
+    STROKE_THICKNESS: 3,
   },
   ANIMATION: {
     FRAME_RATE: 3,
@@ -185,6 +189,8 @@ class SmallVillageScene extends Phaser.Scene {
           fontSize: GAME_CONFIG.NAME.FONT_SIZE,
           color: GAME_CONFIG.NAME.COLOR,
           align: GAME_CONFIG.NAME.ALIGN,
+          stroke: GAME_CONFIG.NAME.STROKE,
+          strokeThickness: GAME_CONFIG.NAME.STROKE_THICKNESS,
         }
       )
       .setOrigin(0.5, 0.5);
@@ -194,6 +200,8 @@ class SmallVillageScene extends Phaser.Scene {
         fontSize: GAME_CONFIG.MESSAGE.FONT_SIZE,
         color: GAME_CONFIG.MESSAGE.COLOR,
         align: GAME_CONFIG.MESSAGE.ALIGN,
+        stroke: GAME_CONFIG.MESSAGE.STROKE,
+        strokeThickness: GAME_CONFIG.MESSAGE.STROKE_THICKNESS,
       })
       .setOrigin(0.5, 0.5)
       .setAlpha(0);
