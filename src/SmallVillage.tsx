@@ -57,7 +57,7 @@ const GAME_CONFIG = {
     STROKE_THICKNESS: 3,
   },
   MESSAGE: {
-    OFFSET_Y: -70,
+    OFFSET_Y: -50,
     FONT_SIZE: "14px",
     COLOR: "#fff",
     ALIGN: "center",
@@ -69,17 +69,199 @@ const GAME_CONFIG = {
   },
 } as const;
 
+class SpeechBubble extends Phaser.GameObjects.Container {
+  private textObject: Phaser.GameObjects.Text;
+  private borders: (Phaser.GameObjects.TileSprite | Phaser.GameObjects.Image)[];
+  private tail: Phaser.GameObjects.Image;
+  private originalWidth: number;
+  private offsetY: number;
+  private margin: number;
+
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    width: number,
+    offsetY: number,
+    text: string,
+    textStyle: Phaser.Types.GameObjects.Text.TextStyle = {}
+  ) {
+    super(scene, x, y);
+
+    this.originalWidth = width;
+    this.offsetY = offsetY;
+    this.margin = 18;
+
+    // Add this container to the scene
+    scene.add.existing(this);
+
+    // Default text style
+    const defaultTextStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: "16px",
+      color: "#111111",
+      wordWrap: { width: width - this.margin },
+      align: "left",
+    };
+
+    // Merge user-defined style with default style
+    const finalTextStyle = { ...defaultTextStyle, ...textStyle };
+
+    // Create plain text
+    this.textObject = scene.add.text(12, 4, text, finalTextStyle);
+
+    // Initialize borders and tail
+    this.borders = [];
+    this.tail = scene.add
+      .image(this.margin, 14 + this.offsetY, "bubble-tail")
+      .setOrigin(0.5, 1);
+
+    // Calculate and update the layout
+    this.updateLayout();
+
+    // Add text and tail to the container
+    this.add(this.tail);
+    this.add(this.textObject);
+
+    this.setInteractive();
+  }
+
+  /**
+   * Updates the text of the speech bubble.
+   * @param newText The new text to display.
+   */
+  setText(newText: string): SpeechBubble {
+    // Update the text
+    this.textObject.setText(newText);
+
+    // Recalculate layout and reposition the speech bubble
+    this.updateLayout();
+
+    this.add(this.tail);
+    this.add(this.textObject);
+
+    return this;
+  }
+
+  /**
+   * Updates the layout, recalculates bounds, and adjusts borders and size.
+   */
+  private updateLayout(): void {
+    // Remove previous tail
+    this.remove(this.tail);
+
+    // Remove previous text object
+    this.remove(this.textObject);
+
+    // Remove previous borders
+    this.borders.forEach((border) => border.destroy());
+    this.borders = [];
+
+    // Calculate bounds
+    const bounds = this.textObject.getBounds();
+    let width = this.originalWidth;
+    let height = this.margin;
+
+    if (bounds.width + this.margin > width) {
+      width = bounds.width + this.margin;
+    }
+
+    if (bounds.width + this.margin < width) {
+      width = bounds.width + this.margin;
+    }
+
+    if (bounds.height + 14 > height) {
+      height = bounds.height + 14;
+    }
+
+    const adjustedY = this.offsetY - height;
+
+    // Adjust the container's y position to expand upwards
+    this.textObject.setY(adjustedY + 4);
+
+    // Create new borders
+    this.borders = [
+      // Center tile
+      this.scene.add.tileSprite(
+        width / 2,
+        adjustedY + height / 2,
+        width - this.margin,
+        height - this.margin,
+        "bubble-border",
+        4
+      ),
+
+      // Top-left corner
+      this.scene.add.image(0, adjustedY, "bubble-border", 0).setOrigin(0, 0),
+      // Top-right corner
+      this.scene.add
+        .image(width, adjustedY, "bubble-border", 2)
+        .setOrigin(1, 0),
+      // Bottom-right corner
+      this.scene.add
+        .image(width, adjustedY + height, "bubble-border", 8)
+        .setOrigin(1, 1),
+      // Bottom-left corner
+      this.scene.add
+        .image(0, adjustedY + height, "bubble-border", 6)
+        .setOrigin(0, 1),
+      // Top edge
+      this.scene.add
+        .tileSprite(9, adjustedY, width - this.margin, 9, "bubble-border", 1)
+        .setOrigin(0, 0),
+      // Bottom edge
+      this.scene.add
+        .tileSprite(
+          9,
+          adjustedY + height,
+          width - this.margin,
+          9,
+          "bubble-border",
+          7
+        )
+        .setOrigin(0, 1),
+      // Left edge
+      this.scene.add
+        .tileSprite(
+          0,
+          adjustedY + 9,
+          9,
+          height - this.margin,
+          "bubble-border",
+          3
+        )
+        .setOrigin(0, 0),
+      // Right edge
+      this.scene.add
+        .tileSprite(
+          width,
+          adjustedY + 9,
+          9,
+          height - this.margin,
+          "bubble-border",
+          5
+        )
+        .setOrigin(1, 0),
+    ];
+
+    // Add new borders to the container
+    this.borders.forEach((border) => this.add(border));
+
+    // Update container size
+    this.setSize(width, height);
+  }
+}
+
 class SmallVillageScene extends Phaser.Scene {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private sprite: Phaser.Physics.Arcade.Sprite | null = null;
   private nameText: Phaser.GameObjects.Text | null = null;
-  private messageText: Phaser.GameObjects.Text | null = null;
+  private speechBubble: SpeechBubble | null = null;
   private userSprites: Record<
     string,
     {
       sprite: Phaser.GameObjects.Sprite;
       nameText: Phaser.GameObjects.Text;
-      messageText: Phaser.GameObjects.Text;
+      speechBubble: SpeechBubble;
     }
   > = {};
 
@@ -103,13 +285,25 @@ class SmallVillageScene extends Phaser.Scene {
   }
 
   preload() {
+    // character sprites
     for (let i = 0; i < NUM_CHARACTERS; i++) {
       const index = i.toString().padStart(3, "0");
-      this.load.spritesheet(`character_${i}`, `/assets/${index}.png`, {
-        frameWidth: GAME_CONFIG.SPRITE.FRAME_WIDTH,
-        frameHeight: GAME_CONFIG.SPRITE.FRAME_HEIGHT,
-      });
+      this.load.spritesheet(
+        `character_${i}`,
+        `/assets/characters/${index}.png`,
+        {
+          frameWidth: GAME_CONFIG.SPRITE.FRAME_WIDTH,
+          frameHeight: GAME_CONFIG.SPRITE.FRAME_HEIGHT,
+        }
+      );
     }
+
+    // speech bubble
+    this.load.spritesheet("bubble-border", "/assets/bubble/bubble-border.png", {
+      frameWidth: 9,
+      frameHeight: 9,
+    });
+    this.load.image("bubble-tail", "/assets/bubble/bubble-tail.png");
 
     // map
     this.load.image("map", "/assets/tilesets/Serene_Village_32x32.png");
@@ -200,17 +394,6 @@ class SmallVillageScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    this.messageText = this.add
-      .text(this.sprite.x, this.sprite.y + GAME_CONFIG.MESSAGE.OFFSET_Y, "", {
-        fontSize: GAME_CONFIG.MESSAGE.FONT_SIZE,
-        color: GAME_CONFIG.MESSAGE.COLOR,
-        align: GAME_CONFIG.MESSAGE.ALIGN,
-        stroke: GAME_CONFIG.MESSAGE.STROKE,
-        strokeThickness: GAME_CONFIG.MESSAGE.STROKE_THICKNESS,
-      })
-      .setOrigin(0.5, 0.5)
-      .setAlpha(0);
-
     decoration0Layer.setCollisionByProperty({ collides: true });
     decoration1Layer.setCollisionByProperty({ collides: true });
     decoration2Layer.setCollisionByProperty({ collides: true });
@@ -219,22 +402,16 @@ class SmallVillageScene extends Phaser.Scene {
     this.physics.add.collider(this.sprite, decoration1Layer);
     this.physics.add.collider(this.sprite, decoration2Layer);
 
-    // const debugGraphics = this.add.graphics().setAlpha(0.75);
-    // decoration0Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
-    // decoration1Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
-    // decoration2Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
+    this.speechBubble = new SpeechBubble(
+      this,
+      this.sprite.x,
+      this.sprite.y,
+      200,
+      GAME_CONFIG.MESSAGE.OFFSET_Y,
+      ""
+    )
+      .setAlpha(0)
+      .setDepth(12);
 
     try {
       // 강제로 사용자 데이터를 업데이트
@@ -256,32 +433,30 @@ class SmallVillageScene extends Phaser.Scene {
     this.createAnimations();
   }
 
-  // 채팅 메시지를 캐릭터 위에 표시
   showChatMessage(userId: string, message: string) {
     if (userId === this.userId) {
-      if (this.sprite && this.messageText) {
-        this.setMessage(this.sprite, this.messageText, message);
+      if (this.sprite && this.speechBubble) {
+        this.setMessage(this.sprite, this.speechBubble, message);
       }
     } else {
       const userSprite = this.userSprites[userId];
       if (userSprite) {
-        const { messageText, sprite } = userSprite;
-        this.setMessage(sprite, messageText, message);
+        const { sprite, speechBubble } = userSprite;
+        this.setMessage(sprite, speechBubble, message);
       }
     }
   }
 
   setMessage(
     sprite: Phaser.GameObjects.Sprite,
-    messageText: Phaser.GameObjects.Text,
+    speechBubble: SpeechBubble,
     message: string
   ) {
-    messageText.setText(message).setAlpha(1); // 메시지 설정 및 표시
-    messageText.setPosition(sprite.x, sprite.y + GAME_CONFIG.MESSAGE.OFFSET_Y); // 캐릭터 위에 위치 설정
+    speechBubble.setText(message).setAlpha(1);
+    speechBubble.setPosition(sprite.x, sprite.y);
 
-    // 10초 후 메시지 숨기기
     this.time.delayedCall(10000, () => {
-      messageText.setAlpha(0); // 메시지 숨기기
+      speechBubble.setAlpha(0);
     });
   }
 
@@ -308,19 +483,19 @@ class SmallVillageScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0.5);
 
-    const messageText = this.add
-      .text(user.x, user.y + GAME_CONFIG.MESSAGE.OFFSET_Y, "", {
-        fontSize: GAME_CONFIG.MESSAGE.FONT_SIZE,
-        color: GAME_CONFIG.MESSAGE.COLOR,
-        align: GAME_CONFIG.MESSAGE.ALIGN,
-      })
-      .setOrigin(0.5, 0.5)
-      .setAlpha(0); // 처음엔 투명하게 설정
-
     this.userSprites[user.id] = {
       sprite: userSprite,
       nameText,
-      messageText,
+      speechBubble: new SpeechBubble(
+        this,
+        user.x,
+        user.y,
+        200,
+        GAME_CONFIG.MESSAGE.OFFSET_Y,
+        ""
+      )
+        .setAlpha(0)
+        .setDepth(12),
     };
   }
 
@@ -329,7 +504,7 @@ class SmallVillageScene extends Phaser.Scene {
     if (userSprite) {
       userSprite.nameText.destroy();
       userSprite.sprite.destroy();
-      userSprite.messageText?.destroy();
+      userSprite.speechBubble.destroy();
 
       delete this.userSprites[userId];
     }
@@ -444,12 +619,10 @@ class SmallVillageScene extends Phaser.Scene {
                 sprite.y + GAME_CONFIG.NAME.OFFSET_Y
               );
             }
-            const messageText = userSprite.messageText;
-            if (messageText) {
-              messageText.setPosition(
-                sprite.x,
-                sprite.y + GAME_CONFIG.MESSAGE.OFFSET_Y
-              );
+
+            const speechBubble = userSprite.speechBubble;
+            if (speechBubble) {
+              speechBubble.setPosition(sprite.x, sprite.y);
             }
           },
         });
@@ -469,11 +642,8 @@ class SmallVillageScene extends Phaser.Scene {
       );
     }
 
-    if (this.messageText) {
-      this.messageText.setPosition(
-        this.sprite.x,
-        this.sprite.y + GAME_CONFIG.MESSAGE.OFFSET_Y
-      );
+    if (this.speechBubble) {
+      this.speechBubble.setPosition(this.sprite.x, this.sprite.y);
     }
 
     try {

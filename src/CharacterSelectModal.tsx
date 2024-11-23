@@ -20,10 +20,14 @@ class CharacterPreviewScene extends Phaser.Scene {
   preload() {
     for (let i = 0; i < NUM_CHARACTERS; i++) {
       const index = i.toString().padStart(3, "0");
-      this.load.spritesheet(`character_${i}`, `/assets/${index}.png`, {
-        frameWidth: 20,
-        frameHeight: 32,
-      });
+      this.load.spritesheet(
+        `character_${i}`,
+        `/assets/characters/${index}.png`,
+        {
+          frameWidth: 20,
+          frameHeight: 32,
+        }
+      );
     }
   }
 
