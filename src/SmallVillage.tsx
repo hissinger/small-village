@@ -36,7 +36,7 @@ const NUM_CHARACTERS = 40;
 
 const GAME_CONFIG = {
   SPRITE: {
-    SCALE: 2,
+    SCALE: 2.5,
     FRAME_WIDTH: 20,
     FRAME_HEIGHT: 32,
   },
