@@ -40,6 +40,11 @@ const GAME_CONFIG = {
     FRAME_WIDTH: 20,
     FRAME_HEIGHT: 32,
   },
+  LAYER: {
+    TILE_WIDTH: 32,
+    TILE_HEIGHT: 32,
+    SCALE: 2,
+  },
   MOVEMENT: {
     SPEED: 160,
   },
@@ -117,8 +122,8 @@ class SmallVillageScene extends Phaser.Scene {
     // map
     const map = this.make.tilemap({
       key: "map",
-      tileWidth: 32,
-      tileHeight: 32,
+      tileWidth: GAME_CONFIG.LAYER.TILE_WIDTH,
+      tileHeight: GAME_CONFIG.LAYER.TILE_HEIGHT,
     });
     const tileset = map.addTilesetImage("Serene_Village_32x32", "map");
     if (!tileset) {
@@ -131,35 +136,35 @@ class SmallVillageScene extends Phaser.Scene {
       console.error("Ground layer is null");
       return;
     }
-    groundLayer.setScale(2, 2);
+    groundLayer.setScale(GAME_CONFIG.LAYER.SCALE);
 
     const decoration0Layer = map.createLayer("decoration_0", tileset, 0, 0);
     if (!decoration0Layer) {
       console.error("Decoration layer is null");
       return;
     }
-    decoration0Layer.setScale(2, 2);
+    decoration0Layer.setScale(GAME_CONFIG.LAYER.SCALE);
 
     const decoration1Layer = map.createLayer("decoration_1", tileset, 0, 0);
     if (!decoration1Layer) {
       console.error("Decoration layer is null");
       return;
     }
-    decoration1Layer.setScale(2, 2);
+    decoration1Layer.setScale(GAME_CONFIG.LAYER.SCALE);
 
     const decoration2Layer = map.createLayer("decoration_2", tileset, 0, 0);
     if (!decoration2Layer) {
       console.error("Decoration layer is null");
       return;
     }
-    decoration2Layer.setScale(2, 2);
+    decoration2Layer.setScale(GAME_CONFIG.LAYER.SCALE);
 
     const above0Layer = map.createLayer("above_0", tileset, 0, 0);
     if (!above0Layer) {
       console.error("Above layer is null");
       return;
     }
-    above0Layer.setScale(2, 2);
+    above0Layer.setScale(GAME_CONFIG.LAYER.SCALE);
     above0Layer.setDepth(10);
 
     const above1Layer = map.createLayer("above_1", tileset, 0, 0);
@@ -167,7 +172,7 @@ class SmallVillageScene extends Phaser.Scene {
       console.error("Above layer is null");
       return;
     }
-    above1Layer.setScale(2, 2);
+    above1Layer.setScale(GAME_CONFIG.LAYER.SCALE);
     above1Layer.setDepth(11);
 
     const { innerWidth: width, innerHeight: height } = window;
