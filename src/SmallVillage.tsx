@@ -269,6 +269,7 @@ class SmallVillageScene extends Phaser.Scene {
   private characterIndex: number = 0;
   private characterName: string = "";
   private onUserClick: (user: User) => void;
+  private speechBubbleHideTimer: Phaser.Time.TimerEvent | null = null;
 
   users: User[] = [];
 
@@ -452,10 +453,14 @@ class SmallVillageScene extends Phaser.Scene {
     speechBubble: SpeechBubble,
     message: string
   ) {
+    if (this.speechBubbleHideTimer) {
+      this.speechBubbleHideTimer.remove();
+    }
+
     speechBubble.setText(message).setAlpha(1);
     speechBubble.setPosition(sprite.x, sprite.y);
 
-    this.time.delayedCall(10000, () => {
+    this.speechBubbleHideTimer = this.time.delayedCall(10000, () => {
       speechBubble.setAlpha(0);
     });
   }
