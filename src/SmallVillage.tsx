@@ -198,6 +198,31 @@ class SmallVillageScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setAlpha(0);
 
+    decoration0Layer.setCollisionByProperty({ collides: true });
+    decoration1Layer.setCollisionByProperty({ collides: true });
+    decoration2Layer.setCollisionByProperty({ collides: true });
+
+    this.physics.add.collider(this.sprite, decoration0Layer);
+    this.physics.add.collider(this.sprite, decoration1Layer);
+    this.physics.add.collider(this.sprite, decoration2Layer);
+
+    // const debugGraphics = this.add.graphics().setAlpha(0.75);
+    // decoration0Layer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
+    // decoration1Layer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
+    // decoration2Layer.renderDebug(debugGraphics, {
+    //   tileColor: null,
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
+    // });
+
     try {
       // 강제로 사용자 데이터를 업데이트
       await supabase
