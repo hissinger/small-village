@@ -128,24 +128,43 @@ class SmallVillageScene extends Phaser.Scene {
       return;
     }
     groundLayer.setScale(2, 2);
+
     const decoration0Layer = map.createLayer("decoration_0", tileset, 0, 0);
     if (!decoration0Layer) {
       console.error("Decoration layer is null");
       return;
     }
     decoration0Layer.setScale(2, 2);
+
     const decoration1Layer = map.createLayer("decoration_1", tileset, 0, 0);
     if (!decoration1Layer) {
       console.error("Decoration layer is null");
       return;
     }
     decoration1Layer.setScale(2, 2);
+
     const decoration2Layer = map.createLayer("decoration_2", tileset, 0, 0);
     if (!decoration2Layer) {
       console.error("Decoration layer is null");
       return;
     }
     decoration2Layer.setScale(2, 2);
+
+    const above0Layer = map.createLayer("above_0", tileset, 0, 0);
+    if (!above0Layer) {
+      console.error("Above layer is null");
+      return;
+    }
+    above0Layer.setScale(2, 2);
+    above0Layer.setDepth(10);
+
+    const above1Layer = map.createLayer("above_1", tileset, 0, 0);
+    if (!above1Layer) {
+      console.error("Above layer is null");
+      return;
+    }
+    above1Layer.setScale(2, 2);
+    above1Layer.setDepth(11);
 
     const { innerWidth: width, innerHeight: height } = window;
     this.cameras.main.setBounds(0, 0, width, height);
@@ -178,31 +197,6 @@ class SmallVillageScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0.5)
       .setAlpha(0);
-
-    decoration0Layer.setCollisionByProperty({ collides: true });
-    decoration1Layer.setCollisionByProperty({ collides: true });
-    decoration2Layer.setCollisionByProperty({ collides: true });
-
-    this.physics.add.collider(this.sprite, decoration0Layer);
-    this.physics.add.collider(this.sprite, decoration1Layer);
-    this.physics.add.collider(this.sprite, decoration2Layer);
-
-    // const debugGraphics = this.add.graphics().setAlpha(0.75);
-    // decoration0Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
-    // decoration1Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
-    // decoration2Layer.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
-    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255),
-    // });
 
     try {
       // 강제로 사용자 데이터를 업데이트
