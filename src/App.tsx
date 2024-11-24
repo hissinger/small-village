@@ -4,6 +4,7 @@ import SmallVillageScreen from "./SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
+import ReactGA from "react-ga";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
@@ -24,6 +25,8 @@ const App: React.FC = () => {
     TagManager.initialize({
       gtmId: `${process.env.REACT_APP_GTM_ID}`,
     });
+
+    ReactGA.initialize(`${process.env.REACT_APP_GA_ID}`);
   }, []);
 
   const goToNextStep = useCallback(() => {
