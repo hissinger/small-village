@@ -3,6 +3,7 @@ import CharacterSelectModal from "./CharacterSelectModal";
 import SmallVillageScreen from "./SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
+import TagManager from "react-gtm-module";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
@@ -18,6 +19,12 @@ const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<string>(
     Steps.CHARACTER_SELECT
   );
+
+  useEffect(() => {
+    TagManager.initialize({
+      gtmId: `${process.env.REACT_APP_GTM_ID}`,
+    });
+  }, []);
 
   const goToNextStep = useCallback(() => {
     switch (currentStep) {
