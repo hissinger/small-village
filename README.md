@@ -1,3 +1,5 @@
+![](https://velog.velcdn.com/images/woody_ahn/post/5e3c1f0d-a06b-4df2-87ab-a168c2d5a854/image.png)
+
 # Small Village
 
 Small Village is a project that will be developed similarly to Gather Town. It will be a serverless service built using Supabase, ReactJS, WebRTC, Phaser, and Netlify.
