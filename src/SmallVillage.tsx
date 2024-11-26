@@ -501,6 +501,8 @@ class SmallVillageScene extends Phaser.Scene {
         fontSize: GAME_CONFIG.NAME.FONT_SIZE,
         color: GAME_CONFIG.NAME.COLOR,
         align: GAME_CONFIG.NAME.ALIGN,
+        stroke: GAME_CONFIG.NAME.STROKE,
+        strokeThickness: GAME_CONFIG.NAME.STROKE_THICKNESS,
       })
       .setOrigin(0.5, 0.5);
 
