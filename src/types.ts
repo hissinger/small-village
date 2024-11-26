@@ -14,5 +14,11 @@
  * limitations under the License.
  */
 
-export * from "./database";
-export * from "./scene";
+export interface User {
+  id: string;
+  character_index: number;
+  name: string;
+  x: number;
+  y: number;
+  last_active: string;
+}

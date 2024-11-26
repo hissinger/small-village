@@ -14,5 +14,4 @@
  * limitations under the License.
  */
 
-export * from "./database";
-export * from "./scene";
+export const NUM_CHARACTERS = 40;
