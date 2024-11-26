@@ -717,7 +717,6 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 }) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const gameInstanceRef = useRef<Phaser.Game | null>(null);
-  const [callPartner, setCallPartner] = useState<User | null>(null);
   const [readyScene, setReadyScene] = useState(false);
 
   const getScene = (): SmallVillageScene | null => {
@@ -778,7 +777,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           return;
         }
 
-        // 10초 이상 활동하지 않은 유저 삭제
+        // gabage collection
+        // remove users who are inactive
         const users = data || [];
         const now = new Date();
         const usersToDelete = users.filter(
@@ -786,21 +786,24 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             new Date(user.last_active) <
             new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
         );
-        // db에서 삭제
-        usersToDelete.forEach(async (user: User) => {
-          await supabase
+        usersToDelete.forEach((user) => {
+          supabase
             .from(DATABASE_TABLES.USERS)
             .delete()
-            .match({ id: user.id });
+            .match({ id: user.id })
+            .then(({ error }) => {
+              if (error) {
+                console.error(`Failed to delete user ${user.id}:`, error);
+              }
+            });
         });
 
-        // 10초 이내 활동한 유저들만 추출
+        // get online users and add them to the scene
         const onlineUsers = users.filter(
           (user: User) =>
             new Date(user.last_active) >
             new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
         );
-        // scene에 유저 추가
         getScene()?.updateUsers(onlineUsers);
       });
 
@@ -860,18 +863,23 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, []);
 
   // 온라인 유저가 나갔을 때
-  const handleLeaveUser = useCallback(
-    (userId: string) => {
-      console.log(`User ${userId} left.`);
-      getScene()?.removeUser(userId);
+  const handleLeaveUser = useCallback((userId: string) => {
+    console.log(`User ${userId} left.`);
 
-      // 통화 중인 유저가 나갔을 때
-      if (callPartner?.id === userId) {
-        setCallPartner(null);
-      }
-    },
-    [callPartner]
-  );
+    // remove user sprite from scene
+    getScene()?.removeUser(userId);
+
+    // gabage collection
+    supabase
+      .from(DATABASE_TABLES.USERS)
+      .delete()
+      .match({ id: userId })
+      .then(({ error }) => {
+        if (error) {
+          console.error(`Failed to delete user ${userId}:`, error);
+        }
+      });
+  }, []);
 
   useOnlineUsers({ userId, onJoin: handleJoinUser, onLeave: handleLeaveUser });
 
