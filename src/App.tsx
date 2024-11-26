@@ -38,11 +38,21 @@ const App: React.FC = () => {
   );
 
   useEffect(() => {
-    TagManager.initialize({
-      gtmId: `${process.env.REACT_APP_GTM_ID}`,
-    });
+    // Initialize Google Tag Manager
+    const gtmId = process.env.REACT_APP_GTM_ID;
+    if (gtmId) {
+      console.log("gtmId:", gtmId);
+      TagManager.initialize({
+        gtmId,
+      });
+    }
 
-    ReactGA.initialize(`${process.env.REACT_APP_GA_ID}`);
+    // Initialize Google Analytics
+    const gaId = process.env.REACT_APP;
+    if (gaId) {
+      console.log("gaId:", gaId);
+      ReactGA.initialize(gaId);
+    }
   }, []);
 
   const goToNextStep = useCallback(() => {
