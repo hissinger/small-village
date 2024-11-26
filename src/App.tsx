@@ -20,7 +20,7 @@ import SmallVillageScreen from "./SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
-import ReactGA from "react-ga";
+import ReactGA from "react-ga4";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
