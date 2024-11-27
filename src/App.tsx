@@ -42,7 +42,6 @@ const App: React.FC = () => {
     // Initialize Google Tag Manager
     const gtmId = process.env.REACT_APP_GTM_ID;
     if (gtmId) {
-      console.log("gtmId:", gtmId);
       TagManager.initialize({
         gtmId,
       });
@@ -51,7 +50,6 @@ const App: React.FC = () => {
     // Initialize Google Analytics
     const gaId = process.env.REACT_APP_GA_ID;
     if (gaId) {
-      console.log("gaId:", gaId);
       ReactGA.initialize(gaId);
     }
   }, []);
