@@ -90,7 +90,10 @@ class SpeechBubble extends Phaser.GameObjects.Container {
     const defaultTextStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: "16px",
       color: "#111111",
-      wordWrap: { width: width - this.margin },
+      wordWrap: {
+        width: width - this.margin,
+        useAdvancedWrap: true,
+      },
       align: "left",
     };
 
