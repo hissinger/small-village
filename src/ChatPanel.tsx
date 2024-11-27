@@ -27,6 +27,18 @@ import {
 import { useChatMessage } from "./hooks/useChatMessage";
 import { useRoomContext } from "./context/RoomContext";
 
+const CHAT_CONSTANTS = {
+  INPUT: {
+    MIN_HEIGHT: 40,
+    MAX_HEIGHT: 120,
+    LINE_HEIGHT: 20,
+  },
+  LAYOUT: {
+    PANEL_WIDTH: 300,
+    PADDING: 16,
+  },
+} as const;
+
 interface ChatMessage {
   senderId: string;
   senderName: string;
@@ -45,6 +57,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const { sendMessage } = useMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const { currentUserId: userId, currentUserName: userName } = useRoomContext();
 
   const formatTime = (date: string) => {
@@ -56,13 +69,35 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     });
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const adjustTextAreaHeight = () => {
+    const textArea = textAreaRef.current;
+    if (textArea) {
+      textArea.style.height = `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`;
+      const scrollHeight = textArea.scrollHeight;
+      textArea.style.height = `${Math.min(
+        scrollHeight,
+        CHAT_CONSTANTS.INPUT.MAX_HEIGHT
+      )}px`;
+    }
+  };
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (isOpen && textAreaRef.current) {
+      textAreaRef.current.style.height = `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`;
+    }
+
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -94,6 +129,10 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     };
     sendMessage(CHANNEL_MESSAGE, payload);
     setInputMessage("");
+
+    if (textAreaRef.current) {
+      textAreaRef.current.style.height = `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`;
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -103,12 +142,16 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value);
+    adjustTextAreaHeight();
+  };
+
   const chatMessage = useChatMessage();
   useEffect(() => {
     if (!chatMessage) return;
 
     setMessages((prev) => {
-      // Prevent duplicate messages
       if (
         prev.some(
           (msg) =>
@@ -138,21 +181,22 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         right: 0,
         top: 0,
         height: "100%",
-        width: "300px",
+        width: `${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px`,
         backgroundColor: "white",
         boxShadow: "0 0 10px rgba(0,0,0,0.1)",
         transform: isOpen ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.3s ease-in-out",
         zIndex: 100,
+        display: isOpen ? "flex" : "none",
+        flexDirection: "column",
       }}
     >
-      {/* Header */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "12px 16px",
+          padding: `12px ${CHAT_CONSTANTS.LAYOUT.PADDING}px`,
           backgroundColor: "#f8f9fa",
           borderBottom: "1px solid #dee2e6",
         }}
@@ -171,13 +215,11 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         </button>
       </div>
 
-      {/* Messages */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "16px",
-          height: "calc(100% - 130px)",
+          padding: CHAT_CONSTANTS.LAYOUT.PADDING,
         }}
       >
         {messages.map((msg, index) => {
@@ -190,6 +232,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: isMine ? "flex-end" : "flex-start",
+                maxWidth: "100%",
               }}
             >
               {!isMine && (
@@ -211,6 +254,9 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
                   borderRadius: "8px",
                   backgroundColor: isMine ? "#0d6efd" : "#e9ecef",
                   color: isMine ? "white" : "black",
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "break-word",
                 }}
               >
                 <p style={{ margin: 0, fontSize: "14px" }}>{msg.message}</p>
@@ -230,10 +276,9 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div
         style={{
-          padding: "16px",
+          padding: CHAT_CONSTANTS.LAYOUT.PADDING,
           borderTop: "1px solid #dee2e6",
           backgroundColor: "white",
         }}
@@ -242,12 +287,13 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
           style={{
             display: "flex",
             gap: "8px",
+            alignItems: "flex-end",
           }}
         >
-          <input
-            type="text"
+          <textarea
+            ref={textAreaRef}
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             style={{
@@ -256,6 +302,11 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
               border: "1px solid #dee2e6",
               borderRadius: "8px",
               outline: "none",
+              resize: "none",
+              minHeight: `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`,
+              maxHeight: `${CHAT_CONSTANTS.INPUT.MAX_HEIGHT}px`,
+              lineHeight: `${CHAT_CONSTANTS.INPUT.LINE_HEIGHT}px`,
+              transition: "height 0.1s ease-in-out",
             }}
           />
           <button
@@ -267,6 +318,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
+              height: `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`,
+              flexShrink: 0,
             }}
           >
             <FontAwesomeIcon icon={faPaperPlane} />
