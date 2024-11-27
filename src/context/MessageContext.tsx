@@ -39,9 +39,11 @@ export enum MessageType {
 
 export interface Message {
   sender_id: string;
+  sender_name?: string;
   receiver_id: string;
   type: MessageType;
   body?: string;
+  timestamp: string;
 }
 
 interface MessageHandler {

@@ -14,36 +14,62 @@
  * limitations under the License.
  */
 
-import ChatInput from "./ChatInput";
 import ExitButton from "./ExitButton";
 import AudioMuteButton from "./AudioMuteButton";
 import AudioInputSelect from "./AudioInputSelect";
+import { useState } from "react";
+import ChatPanel from "./ChatPanel";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faComment } from "@fortawesome/free-solid-svg-icons";
 
 interface BottomBarProps {
   userId: string;
-  onMessage: (senderId: string, message: string) => void;
   onExit: () => void;
 }
 
 export default function BottomBar(props: BottomBarProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "0",
-        left: "0",
-        width: "100%",
-        height: "50px",
-        display: "flex",
-        justifyContent: "right",
-        backgroundColor: "white",
-        padding: "10px",
-      }}
-    >
-      <AudioInputSelect />
-      <ChatInput userId={props.userId} onMessage={props.onMessage} />
-      <AudioMuteButton />
-      <ExitButton onClick={props.onExit} />
+    <div>
+      <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "0",
+          left: "0",
+          width: "100%",
+          height: "50px",
+          display: "flex",
+          justifyContent: "right",
+          backgroundColor: "white",
+          padding: "10px",
+        }}
+      >
+        <AudioInputSelect />
+
+        <button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          style={{
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            margin: "0px 10px",
+            padding: "0px 20px",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <FontAwesomeIcon icon={faComment} />
+        </button>
+
+        <AudioMuteButton />
+        <ExitButton onClick={props.onExit} />
+      </div>
     </div>
   );
 }

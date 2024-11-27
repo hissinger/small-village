@@ -24,6 +24,7 @@ import { DATABASE_TABLES } from "./constants";
 import BottomBar from "./BottomBar";
 import SmallVillageScene from "./scenes/SmallVillageScene";
 import { User } from "./types";
+import { useChatMessage } from "./hooks/useChatMessage";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -256,9 +257,17 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   };
 
   // chat handling
-  const sendChatMessage = (senderId: string, message: string) => {
+  const sendChatMessage = useCallback((senderId: string, message: string) => {
     getScene()?.showChatMessage(senderId, message);
-  };
+  }, []);
+
+  const chatMessage = useChatMessage();
+  useEffect(() => {
+    if (chatMessage) {
+      const { sender_id: senderId, body: message } = chatMessage;
+      sendChatMessage(senderId, message as string);
+    }
+  }, [chatMessage, sendChatMessage]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -275,11 +284,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         <LoadingSpinner message="Strolling into the Small Village..." />
       ) : (
         <div>
-          <BottomBar
-            onExit={handleExit}
-            userId={userId}
-            onMessage={sendChatMessage}
-          />
+          <BottomBar onExit={handleExit} userId={userId} />
           <Conference userId={userId} />
         </div>
       )}

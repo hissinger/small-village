@@ -18,6 +18,8 @@ import Peer from "../services/Peer";
 import React, { createContext, useCallback, useEffect, useState } from "react";
 
 interface RoomContextType {
+  currentUserId: string;
+  currentUserName: string;
   microphoneId: string;
   setMicrophoneId: (microphoneId: string) => void;
   speakerId: string;
@@ -31,10 +33,18 @@ interface RoomContextType {
 const RoomContext = createContext<RoomContextType | null>(null);
 
 interface RoomProviderProps {
+  userId: string;
+  userName: string;
   children: React.ReactNode;
 }
 
-export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
+export const RoomProvider: React.FC<RoomProviderProps> = ({
+  userId,
+  userName,
+  children,
+}) => {
+  const [currentUserId] = useState<string>(userId);
+  const [currentUserName] = useState<string>(userName);
   const [microphoneId, setMicrophoneId] = useState<string>("");
   const [speakerId, setSpeakerId] = useState<string>("");
   const [localAudioTrack, setLocalAudioTrack] =
@@ -159,6 +169,8 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   return (
     <RoomContext.Provider
       value={{
+        currentUserId,
+        currentUserName,
         microphoneId,
         setMicrophoneId,
         speakerId,

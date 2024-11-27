@@ -45,6 +45,7 @@ export default function ChatInput(props: ChatInputProps) {
       sender_id: props.userId,
       receiver_id: RECEIVER_ALL,
       body: message,
+      timestamp: new Date().toISOString(),
     };
     sendMessage(CHANNEL_MESSAGE, payload);
 

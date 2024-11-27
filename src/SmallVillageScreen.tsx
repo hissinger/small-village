@@ -32,7 +32,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   onExit,
 }: SmallVillageScreenProps) => {
   return (
-    <RoomProvider>
+    <RoomProvider userId={userId} userName={characterName}>
       <SmallVillage
         userId={userId!}
         characterIndex={characterIndex}
