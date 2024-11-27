@@ -313,7 +313,6 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             onClick={handleSendMessage}
             style={{
               padding: "8px 12px",
-              backgroundColor: "#0d6efd",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -322,7 +321,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
               flexShrink: 0,
             }}
           >
-            <Send size={20} />
+            <Send size={25} strokeWidth={2} color={"#0d6efd"} />
           </button>
         </div>
       </div>

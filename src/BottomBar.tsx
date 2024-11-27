@@ -50,20 +50,16 @@ export default function BottomBar(props: BottomBarProps) {
         <button
           onClick={() => setIsChatOpen(!isChatOpen)}
           style={{
-            backgroundColor: "#4CAF50",
-            color: "white",
             border: "none",
-            borderRadius: "5px",
+            borderRadius: "8px",
             cursor: "pointer",
-            margin: "0px 10px",
-            padding: "0px 20px",
-            height: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            width: "50px",
           }}
         >
-          <MessageCircle color="white" size={20} />
+          <MessageCircle color="#4CAF50" size={25} strokeWidth={2} />
         </button>
 
         <AudioMuteButton />

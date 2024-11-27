@@ -41,22 +41,22 @@ export default function AudioMuteButton() {
   return (
     <button
       style={{
-        backgroundColor: isMuted ? "#dc3545" : "#007bff",
-        color: "white",
         border: "none",
-        borderRadius: "5px",
+        borderRadius: "8px",
         cursor: "pointer",
-        margin: "0px 10px 0px 10px",
-        padding: "0px 20px",
-        height: "100%",
-        width: "60px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        width: "50px",
+        marginLeft: "10px",
       }}
       onClick={handleMuteClick}
     >
-      {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+      {isMuted ? (
+        <MicOff size={25} strokeWidth={2} color={"#dc3545"} />
+      ) : (
+        <Mic size={25} strokeWidth={2} color={"#007bff"} />
+      )}
     </button>
   );
 }

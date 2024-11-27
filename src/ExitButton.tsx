@@ -25,22 +25,17 @@ export default function ExitButton(props: ExitButtonProps) {
     <button
       onClick={props.onClick}
       style={{
-        bottom: 80,
-        right: 20,
-        padding: "0px 20px",
-        fontSize: "16px",
-        borderRadius: "5px",
         border: "none",
-        backgroundColor: "#6c757d",
-        color: "white",
+        borderRadius: "8px",
         cursor: "pointer",
-        height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        width: "50px",
+        marginLeft: "10px",
       }}
     >
-      <LogOut size={20} />
+      <LogOut size={23} strokeWidth={2} color={"#888888"} />
     </button>
   );
 }
