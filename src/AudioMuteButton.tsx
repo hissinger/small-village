@@ -15,11 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faMicrophone,
-  faMicrophoneSlash,
-} from "@fortawesome/free-solid-svg-icons";
+import { Mic, MicOff } from "lucide-react";
 import { useRoomContext } from "./context/RoomContext";
 
 export default function AudioMuteButton() {
@@ -54,10 +50,13 @@ export default function AudioMuteButton() {
         padding: "0px 20px",
         height: "100%",
         width: "60px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
       onClick={handleMuteClick}
     >
-      <FontAwesomeIcon icon={isMuted ? faMicrophoneSlash : faMicrophone} />
+      {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
     </button>
   );
 }

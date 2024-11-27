@@ -15,8 +15,8 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { Send, X } from "lucide-react";
+
 import {
   CHANNEL_MESSAGE,
   Message,
@@ -211,7 +211,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             padding: "4px",
           }}
         >
-          <FontAwesomeIcon icon={faTimes} />
+          <X size={20} />
         </button>
       </div>
 
@@ -322,7 +322,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
               flexShrink: 0,
             }}
           >
-            <FontAwesomeIcon icon={faPaperPlane} />
+            <Send size={20} />
           </button>
         </div>
       </div>

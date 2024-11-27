@@ -4,11 +4,11 @@
   "private": true,
   "dependencies": {
     "@fortawesome/free-brands-svg-icons": "^6.7.1",
-    "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@supabase/supabase-js": "^2.45.6",
     "bootstrap": "^5.3.3",
     "lodash": "^4.17.21",
+    "lucide-react": "^0.462.0",
     "phaser": "^3.86.0",
     "process": "^0.11.10",
     "react": "^18.3.1",

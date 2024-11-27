@@ -19,8 +19,7 @@ import AudioMuteButton from "./AudioMuteButton";
 import AudioInputSelect from "./AudioInputSelect";
 import { useState } from "react";
 import ChatPanel from "./ChatPanel";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComment } from "@fortawesome/free-solid-svg-icons";
+import { MessageCircle } from "lucide-react";
 
 interface BottomBarProps {
   userId: string;
@@ -64,7 +63,7 @@ export default function BottomBar(props: BottomBarProps) {
             justifyContent: "center",
           }}
         >
-          <FontAwesomeIcon icon={faComment} />
+          <MessageCircle color="white" size={20} />
         </button>
 
         <AudioMuteButton />

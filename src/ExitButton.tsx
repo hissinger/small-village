@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
+import { LogOut } from "lucide-react";
 
 interface ExitButtonProps {
   onClick: () => void;
@@ -36,9 +35,12 @@ export default function ExitButton(props: ExitButtonProps) {
         color: "white",
         cursor: "pointer",
         height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <FontAwesomeIcon icon={faSignOutAlt} />
+      <LogOut size={20} />
     </button>
   );
 }
