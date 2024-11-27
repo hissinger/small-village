@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
+import GithubIcon from "./GithubIcon";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
@@ -94,7 +95,28 @@ const App: React.FC = () => {
 
   return (
     <MessageProvider userId={userId!}>
-      <h1 className="text-center">Small Village</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "0 20px",
+          position: "relative",
+        }}
+      >
+        <h1 className="text-center">Small Village</h1>
+        <div
+          style={{
+            position: "absolute",
+            right: "20px",
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
+        </div>
+      </div>
+
       {currentStep === Steps.CHARACTER_SELECT && (
         <CharacterSelectModal onSelect={handleCharacterSelect} />
       )}
