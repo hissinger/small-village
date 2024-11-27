@@ -48,7 +48,7 @@ const App: React.FC = () => {
     }
 
     // Initialize Google Analytics
-    const gaId = process.env.REACT_APP;
+    const gaId = process.env.REACT_APP_GA_ID;
     if (gaId) {
       console.log("gaId:", gaId);
       ReactGA.initialize(gaId);
