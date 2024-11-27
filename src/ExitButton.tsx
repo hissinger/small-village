@@ -15,6 +15,7 @@
  */
 
 import { LogOut } from "lucide-react";
+import IconButton from "./IconButton";
 
 interface ExitButtonProps {
   onClick: () => void;
@@ -22,20 +23,13 @@ interface ExitButtonProps {
 
 export default function ExitButton(props: ExitButtonProps) {
   return (
-    <button
+    <IconButton
       onClick={props.onClick}
-      style={{
-        border: "none",
-        borderRadius: "8px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "50px",
-        marginLeft: "10px",
-      }}
-    >
-      <LogOut size={23} strokeWidth={2} color={"#888888"} />
-    </button>
+      ActiveIcon={LogOut}
+      activeColor="#888888"
+      size={23}
+      strokeWidth={2}
+      style={{ marginLeft: "10px" }} // Additional styles
+    />
   );
 }

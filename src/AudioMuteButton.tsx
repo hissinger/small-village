@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useRoomContext } from "./context/RoomContext";
+import IconButton from "./IconButton";
 
 export default function AudioMuteButton() {
   const [isMuted, setIsMuted] = useState(false);
@@ -39,24 +40,16 @@ export default function AudioMuteButton() {
   }, [localAudioTrack]);
 
   return (
-    <button
-      style={{
-        border: "none",
-        borderRadius: "8px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "50px",
-        marginLeft: "10px",
-      }}
+    <IconButton
       onClick={handleMuteClick}
-    >
-      {isMuted ? (
-        <MicOff size={25} strokeWidth={2} color={"#dc3545"} />
-      ) : (
-        <Mic size={25} strokeWidth={2} color={"#007bff"} />
-      )}
-    </button>
+      isActive={isMuted}
+      ActiveIcon={MicOff}
+      InactiveIcon={Mic}
+      activeColor="#dc3545"
+      inactiveColor="#007bff"
+      size={25}
+      strokeWidth={2}
+      style={{ marginLeft: "10px" }}
+    />
   );
 }

@@ -20,6 +20,7 @@ import AudioInputSelect from "./AudioInputSelect";
 import { useState } from "react";
 import ChatPanel from "./ChatPanel";
 import { MessageCircle } from "lucide-react";
+import IconButton from "./IconButton";
 
 interface BottomBarProps {
   userId: string;
@@ -47,20 +48,13 @@ export default function BottomBar(props: BottomBarProps) {
       >
         <AudioInputSelect />
 
-        <button
+        <IconButton
           onClick={() => setIsChatOpen(!isChatOpen)}
-          style={{
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "50px",
-          }}
-        >
-          <MessageCircle color="#4CAF50" size={25} strokeWidth={2} />
-        </button>
+          ActiveIcon={MessageCircle}
+          activeColor="#4CAF50"
+          size={25}
+          strokeWidth={2}
+        />
 
         <AudioMuteButton />
         <ExitButton onClick={props.onExit} />
