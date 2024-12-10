@@ -386,17 +386,21 @@ export default class Peer extends EventListener {
         return;
       }
 
-      const response: TracksResponse = await this._pullRemoteTracks(
-        sessionId,
-        remoteTracks
-      );
+      try {
+        const response: TracksResponse = await this._pullRemoteTracks(
+          sessionId,
+          remoteTracks
+        );
 
-      if (response.requiresImmediateRenegotiation) {
-        const desc: RTCSessionDescriptionInit = {
-          sdp: response.sessionDescription.sdp,
-          type: response.sessionDescription.type,
-        };
-        await this._renegotiation(desc);
+        if (response.requiresImmediateRenegotiation) {
+          const desc: RTCSessionDescriptionInit = {
+            sdp: response.sessionDescription.sdp,
+            type: response.sessionDescription.type,
+          };
+          await this._renegotiation(desc);
+        }
+      } catch (error) {
+        console.error(error);
       }
     });
   };

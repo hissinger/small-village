@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import React, { memo } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import SmallVillage from "./SmallVillage";
 import { RoomProvider } from "./context/RoomContext";
+import SmallVillageScene from "./scenes/SmallVillageScene";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -31,14 +33,96 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   characterName,
   onExit,
 }: SmallVillageScreenProps) => {
+  const [readyScene, setReadyScene] = useState(false);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+  const [gameInstance, setGameInstance] = useState<Phaser.Game>();
+  const [scene, setScene] = useState<SmallVillageScene>();
+
+  const handleResize = useCallback(() => {
+    if (!gameInstance) {
+      return;
+    }
+
+    const { innerWidth, innerHeight } = window;
+
+    gameInstance.scale.resize(innerWidth, innerHeight);
+    const scene = gameInstance.scene.getScene("SmallVillageScene");
+    scene?.cameras.main.setBounds(0, 0, innerWidth, innerHeight);
+  }, [gameInstance]);
+
+  useEffect(() => {
+    const { innerWidth: width, innerHeight: height } = window;
+
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      width,
+      height,
+      parent: gameContainerRef.current as HTMLDivElement,
+      scene: SmallVillageScene,
+      pixelArt: true,
+      physics: {
+        default: "arcade",
+        arcade: {
+          gravity: { x: 0, y: 0 },
+          debug: false,
+        },
+      },
+    };
+
+    const game = new Phaser.Game(config);
+    game.scene.start("SmallVillageScene", {
+      characterIndex,
+      characterName,
+      userId,
+    });
+
+    game.events.once(Phaser.Core.Events.READY, () => {
+      setTimeout(() => {
+        setReadyScene(true);
+        setScene(game.scene.getScene("SmallVillageScene") as SmallVillageScene);
+      }, 3_000);
+    });
+
+    setGameInstance(game);
+
+    return () => {
+      game.destroy(true);
+    };
+  }, [characterIndex, characterName, userId]);
+
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isReady = readyScene && scene;
+
   return (
     <RoomProvider userId={userId} userName={characterName}>
-      <SmallVillage
-        userId={userId!}
-        characterIndex={characterIndex}
-        characterName={characterName}
-        onExit={onExit}
-      />
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+        <div
+          ref={gameContainerRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            overflow: "hidden",
+          }}
+        />
+
+        {!isReady ? (
+          <LoadingSpinner message="Strolling into the Small Village..." />
+        ) : (
+          <SmallVillage
+            userId={userId!}
+            characterIndex={characterIndex}
+            characterName={characterName}
+            scene={scene}
+            onExit={onExit}
+          />
+        )}
+      </div>
     </RoomProvider>
   );
 };

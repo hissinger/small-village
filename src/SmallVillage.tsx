@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
-import Phaser from "phaser";
+import React, { memo, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import useOnlineUsers from "./hooks/useOnlineUsers";
-import LoadingSpinner from "./LoadingSpinner";
 import Conference from "./Conference";
 import { DATABASE_TABLES } from "./constants";
 import BottomBar from "./BottomBar";
@@ -30,6 +28,7 @@ interface SmallVillageScreenProps {
   userId: string;
   characterIndex: number;
   characterName: string;
+  scene: SmallVillageScene;
   onExit: () => void;
 }
 
@@ -38,33 +37,12 @@ const HEARTBEAT_INTERVAL_MS = 10_000;
 
 const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   userId,
-  characterIndex,
-  characterName,
+  scene,
   onExit,
 }) => {
-  const gameContainerRef = useRef<HTMLDivElement>(null);
-  const gameInstanceRef = useRef<Phaser.Game | null>(null);
-  const [readyScene, setReadyScene] = useState(false);
-
-  const getScene = (): SmallVillageScene | null => {
-    return gameInstanceRef.current?.scene.getScene(
-      "SmallVillageScene"
-    ) as SmallVillageScene | null;
-  };
-
   const deleteUserDataFromDatebase = useCallback(async () => {
     await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
   }, [userId]);
-
-  const handleResize = useCallback(() => {
-    const { innerWidth, innerHeight } = window;
-
-    if (gameInstanceRef.current) {
-      gameInstanceRef.current.scale.resize(innerWidth, innerHeight);
-      const scene = gameInstanceRef.current.scene.getScene("SmallVillageScene");
-      scene?.cameras.main.setBounds(0, 0, innerWidth, innerHeight);
-    }
-  }, []);
 
   const handleBeforeUnload = useCallback(async () => {
     await deleteUserDataFromDatebase();
@@ -72,10 +50,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   useEffect(() => {
     window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("resize", handleResize);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -131,7 +107,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             new Date(user.last_active) >
             new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
         );
-        getScene()?.updateUsers(onlineUsers);
+        scene.updateUsers(onlineUsers);
       });
 
     const usersChannelName = `realtime:public:${DATABASE_TABLES.USERS}`;
@@ -142,9 +118,19 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
           if (payload.new.id === userId) return;
-          const scene = getScene();
-          if (scene) {
-            scene.updateUsers([...(scene.users || []), payload.new as User]);
+          const newUser = payload.new as User;
+          // if exists, update user data, otherwise add new user
+          const existingUser = scene.users?.find(
+            (user) => user.id === newUser.id
+          );
+          if (existingUser) {
+            scene.updateUsers(
+              scene.users?.map((user) =>
+                user.id === newUser.id ? newUser : user
+              )
+            );
+          } else {
+            scene.updateUsers([...(scene.users || []), newUser]);
           }
         }
       )
@@ -153,14 +139,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
           if (payload.new.id === userId) return;
-          const scene = getScene();
-          if (scene) {
-            const prevUsers = scene.users;
-            const updatedUsers = prevUsers.map((user) =>
-              user.id === payload.new.id ? (payload.new as User) : user
-            );
-            scene.updateUsers(updatedUsers);
-          }
+
+          const prevUsers = scene.users;
+          const updatedUsers = prevUsers.map((user) =>
+            user.id === payload.new.id ? (payload.new as User) : user
+          );
+          scene.updateUsers(updatedUsers);
         }
       )
       .on(
@@ -173,14 +157,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             return;
           }
 
-          getScene()?.removeUser((payload.old as User).id);
+          scene.removeUser((payload.old as User).id);
         }
       )
       .subscribe();
 
     return () => {
       usersChannel.unsubscribe();
-      gameInstanceRef.current?.destroy(true);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -190,61 +173,32 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, []);
 
   // 온라인 유저가 나갔을 때
-  const handleLeaveUser = useCallback((userId: string) => {
-    console.log(`User ${userId} left.`);
+  const handleLeaveUser = useCallback(
+    (userId: string) => {
+      console.log(`User ${userId} left.`);
 
-    // remove user sprite from scene
-    getScene()?.removeUser(userId);
+      // remove user sprite from scene
+      scene.removeUser(userId);
 
-    // gabage collection
-    supabase
-      .from(DATABASE_TABLES.USERS)
-      .delete()
-      .match({ id: userId })
-      .then(({ error }) => {
-        if (error) {
-          console.error(`Failed to delete user ${userId}:`, error);
-        }
-      });
-  }, []);
+      // gabage collection
+      supabase
+        .from(DATABASE_TABLES.USERS)
+        .delete()
+        .match({ id: userId })
+        .then(({ error }) => {
+          if (error) {
+            console.error(`Failed to delete user ${userId}:`, error);
+          }
+        });
+    },
+    [scene]
+  );
 
-  useOnlineUsers({ userId, onJoin: handleJoinUser, onLeave: handleLeaveUser });
-
-  useEffect(() => {
-    const { innerWidth: width, innerHeight: height } = window;
-    const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.AUTO,
-      width,
-      height,
-      parent: gameContainerRef.current as HTMLDivElement,
-      scene: SmallVillageScene,
-      pixelArt: true,
-      physics: {
-        default: "arcade",
-        arcade: {
-          gravity: { x: 0, y: 0 },
-          debug: false,
-        },
-      },
-    };
-
-    gameInstanceRef.current = new Phaser.Game(config);
-    gameInstanceRef.current.scene.start("SmallVillageScene", {
-      characterIndex,
-      characterName,
-      userId,
-    });
-
-    gameInstanceRef.current.events.once(Phaser.Core.Events.READY, () => {
-      setTimeout(() => {
-        setReadyScene(true);
-      }, 3_000);
-    });
-
-    return () => {
-      gameInstanceRef.current?.destroy(true);
-    };
-  }, [characterIndex, characterName, userId]);
+  useOnlineUsers({
+    userId,
+    onJoin: handleJoinUser,
+    onLeave: handleLeaveUser,
+  });
 
   const handleExit = async () => {
     console.log("Exiting game");
@@ -257,9 +211,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   };
 
   // chat handling
-  const sendChatMessage = useCallback((senderId: string, message: string) => {
-    getScene()?.showChatMessage(senderId, message);
-  }, []);
+  const sendChatMessage = useCallback(
+    (senderId: string, message: string) => {
+      scene.showChatMessage(senderId, message);
+    },
+    [scene]
+  );
 
   const chatMessage = useChatMessage();
   useEffect(() => {
@@ -271,23 +228,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      <div
-        ref={gameContainerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          overflow: "hidden",
-          visibility: readyScene ? "visible" : "hidden",
-        }}
-      />
-      {!readyScene ? (
-        <LoadingSpinner message="Strolling into the Small Village..." />
-      ) : (
-        <div>
-          <BottomBar onExit={handleExit} userId={userId} />
-          <Conference userId={userId} />
-        </div>
-      )}
+      <div>
+        <BottomBar onExit={handleExit} userId={userId} />
+        <Conference userId={userId} />
+      </div>
     </div>
   );
 };
