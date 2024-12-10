@@ -23,6 +23,7 @@ import BottomBar from "./BottomBar";
 import SmallVillageScene from "./scenes/SmallVillageScene";
 import { User } from "./types";
 import { useChatMessage } from "./hooks/useChatMessage";
+import { useToast } from "./hooks/useToast";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -40,6 +41,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   scene,
   onExit,
 }) => {
+  const toast = useToast();
+
   const deleteUserDataFromDatebase = useCallback(async () => {
     await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
   }, [userId]);
@@ -131,6 +134,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             );
           } else {
             scene.updateUsers([...(scene.users || []), newUser]);
+          }
+
+          if (newUser) {
+            toast.show(`${newUser.name} has joined`);
           }
         }
       )

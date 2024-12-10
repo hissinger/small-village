@@ -22,6 +22,8 @@ import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
 import GithubIcon from "./GithubIcon";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
@@ -92,41 +94,44 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <MessageProvider userId={userId!}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "0 20px",
-          position: "relative",
-        }}
-      >
-        <h1 className="text-center">Small Village</h1>
+    <>
+      <MessageProvider userId={userId!}>
         <div
           style={{
-            position: "absolute",
-            right: "20px",
             display: "flex",
-            alignItems: "center",
-            height: "100%",
+            justifyContent: "center",
+            padding: "0 20px",
+            position: "relative",
           }}
         >
-          <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
+          <h1 className="text-center">Small Village</h1>
+          <div
+            style={{
+              position: "absolute",
+              right: "20px",
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
+          </div>
         </div>
-      </div>
 
-      {currentStep === Steps.CHARACTER_SELECT && (
-        <CharacterSelectModal onSelect={handleCharacterSelect} />
-      )}
-      {currentStep === Steps.SMALL_VILLAGE && (
-        <SmallVillageScreen
-          userId={userId!}
-          characterIndex={selectedCharacter!}
-          characterName={username!}
-          onExit={onExit}
-        />
-      )}
-    </MessageProvider>
+        {currentStep === Steps.CHARACTER_SELECT && (
+          <CharacterSelectModal onSelect={handleCharacterSelect} />
+        )}
+        {currentStep === Steps.SMALL_VILLAGE && (
+          <SmallVillageScreen
+            userId={userId!}
+            characterIndex={selectedCharacter!}
+            characterName={username!}
+            onExit={onExit}
+          />
+        )}
+      </MessageProvider>
+      <ToastContainer />
+    </>
   );
 };
 
