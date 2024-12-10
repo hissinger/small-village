@@ -75,12 +75,12 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({
     []
   );
 
-  const getLocalAudioTrack = (): MediaStreamTrack => {
+  const getLocalAudioTrack = useCallback((): MediaStreamTrack => {
     if (!localAudioTrackRef.current) {
       throw new Error("Local audio track not available");
     }
     return localAudioTrackRef.current;
-  };
+  }, []);
 
   useEffect(() => {
     const initPeer = async () => {
