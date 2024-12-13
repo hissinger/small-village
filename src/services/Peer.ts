@@ -199,8 +199,14 @@ export default class Peer extends EventListener {
       throw new Error(error[0].errorDescription);
     }
 
-    if (data.sessionDescription) {
-      this._peerConnection?.setRemoteDescription(data.sessionDescription);
+    try {
+      if (data.sessionDescription) {
+        await this._peerConnection?.setRemoteDescription(
+          data.sessionDescription
+        );
+      }
+    } catch (error) {
+      throw new Error("Setting remote description");
     }
 
     const peerTracks: PeerTrack[] = data.tracks.map((track) => {

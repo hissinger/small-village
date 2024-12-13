@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { DATABASE_TABLES } from "./constants";
 import { PeerStream, PeerTrack } from "./services/Peer";
 import { useRoomContext } from "./context/RoomContext";
-
-interface Session {
-  id: string;
-  tracks: PeerTrack[];
-  user_id: string;
-}
+import { useSessions } from "./hooks/useSessions";
+import { Session } from "./types";
 
 interface Track {
   sessionId: string;
@@ -115,48 +111,25 @@ export default function Conference({ userId }: ConferenceProps) {
   };
 
   // listen to changes in sessions table
-  useEffect(() => {
-    if (!peer || !userId) {
-      return;
-    }
+  const handleJoinUser = useCallback(
+    (session: Session) => {
+      peer?.pullRemoteTracks(session.id, session.tracks);
+    },
+    [peer]
+  );
 
-    const usersChannelName = `realtime:public:${DATABASE_TABLES.SESSIONS}`;
-    const usersChannel = supabase
-      .channel(usersChannelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: DATABASE_TABLES.SESSIONS,
-          filter: `user_id=neq.${userId}`,
-        },
-        (payload) => {
-          try {
-            const session: Session = payload.new as Session;
-            peer?.pullRemoteTracks(session.id, session.tracks);
-          } catch (error) {
-            console.error("Error pulling remote tracks:", error);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: DATABASE_TABLES.SESSIONS },
-        (payload) => {
-          try {
-            peer?.closeTracks(payload.old.id);
-          } catch (error) {
-            console.error("Error removing remote tracks:", error);
-          }
-        }
-      )
-      .subscribe();
+  const handleLeaveUser = useCallback(
+    (session: Session) => {
+      peer?.closeTracks(session.id);
+    },
+    [peer]
+  );
 
-    return () => {
-      usersChannel?.unsubscribe();
-    };
-  }, [peer, userId]);
+  useSessions({
+    userId,
+    onJoin: handleJoinUser,
+    onLeave: handleLeaveUser,
+  });
 
   useEffect(() => {
     if (!isReady) {
@@ -174,18 +147,18 @@ export default function Conference({ userId }: ConferenceProps) {
 
         // push local tracks and insert session to db
         const localTracks = await peer!.pushLocalTracks();
+        if (!localTracks || localTracks.length === 0) {
+          return;
+        }
+
         await insertSession(userId, localTracks);
       } catch (error) {
-        console.error("Error fetching remote tracks:", error);
+        console.error("Error adding local tracks:", error);
       }
 
       // fetch remote tracks from db and pull remote tracks
       const sessions = await fetchSessions(userId);
       for (const session of sessions) {
-        if (session.user_id === userId) {
-          continue;
-        }
-
         await peer?.pullRemoteTracks(session.id, session.tracks);
       }
     };
