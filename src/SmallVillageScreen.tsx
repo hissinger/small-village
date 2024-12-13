@@ -100,20 +100,20 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const isReady = readyScene && scene;
 
   return (
-    <RoomProvider userId={userId} userName={characterName}>
-      <div style={{ position: "relative", width: "100%", height: "100%" }}>
-        <div
-          ref={gameContainerRef}
-          style={{
-            width: "100%",
-            height: "100%",
-            overflow: "hidden",
-          }}
-        />
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <div
+        ref={gameContainerRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      />
 
-        {!isReady ? (
-          <LoadingSpinner message="Strolling into the Small Village..." />
-        ) : (
+      {!isReady ? (
+        <LoadingSpinner message="Strolling into the Small Village..." />
+      ) : (
+        <RoomProvider userId={userId} userName={characterName}>
           <SmallVillage
             userId={userId!}
             characterIndex={characterIndex}
@@ -121,9 +121,9 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
             scene={scene}
             onExit={onExit}
           />
-        )}
-      </div>
-    </RoomProvider>
+        </RoomProvider>
+      )}
+    </div>
   );
 };
 

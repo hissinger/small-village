@@ -116,6 +116,10 @@ export default function Conference({ userId }: ConferenceProps) {
 
   // listen to changes in sessions table
   useEffect(() => {
+    if (!peer || !userId) {
+      return;
+    }
+
     const usersChannelName = `realtime:public:${DATABASE_TABLES.SESSIONS}`;
     const usersChannel = supabase
       .channel(usersChannelName)
@@ -152,7 +156,7 @@ export default function Conference({ userId }: ConferenceProps) {
     return () => {
       usersChannel?.unsubscribe();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [peer, userId]);
 
   useEffect(() => {
     if (!isReady) {
@@ -182,7 +186,7 @@ export default function Conference({ userId }: ConferenceProps) {
           continue;
         }
 
-        await peer?.pullRemoteTracks(session.user_id, session.tracks);
+        await peer?.pullRemoteTracks(session.id, session.tracks);
       }
     };
 
