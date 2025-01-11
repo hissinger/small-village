@@ -59,6 +59,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const { currentUserId: userId, currentUserName: userName } = useRoomContext();
+  const [isComposing, setIsComposing] = useState<boolean>(false);
 
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString(undefined, {
@@ -135,10 +136,33 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isComposing) {
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    } else if (e.key === " ") {
+      // get the current text content
+      const textContent = textAreaRef.current?.value;
+
+      if (!textContent) {
+        // add a space character
+        setInputMessage(" ");
+        return;
+      }
+      // get current cursor position
+      const cursorPosition = textAreaRef.current?.selectionStart;
+
+      // insert a space character at the cursor position
+      const newTextContent =
+        textContent.slice(0, cursorPosition) +
+        " " +
+        textContent.slice(cursorPosition);
+
+      setInputMessage(newTextContent);
     }
   };
 
@@ -294,7 +318,9 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             ref={textAreaRef}
             value={inputMessage}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
             placeholder="Type a message..."
             style={{
               flex: 1,
