@@ -19,6 +19,11 @@ import SmallVillage from "./SmallVillage";
 import { RoomProvider } from "./context/RoomContext";
 import SmallVillageScene from "./scenes/SmallVillageScene";
 import LoadingSpinner from "./LoadingSpinner";
+import {
+  RealtimeKitProvider,
+  useRealtimeKitClient,
+} from "@cloudflare/realtimekit-react";
+import { createMeeting, createRTKToken } from "./supabaseFunctions";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -37,6 +42,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [gameInstance, setGameInstance] = useState<Phaser.Game>();
   const [scene, setScene] = useState<SmallVillageScene>();
+  const [isJoined, setIsJoined] = useState(false);
+  const [meeting, initMeeting] = useRealtimeKitClient();
 
   const handleResize = useCallback(() => {
     if (!gameInstance) {
@@ -97,7 +104,33 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isReady = readyScene && scene;
+  useEffect(() => {
+    const joinRoom = async () => {
+      try {
+        const meetingId = await createMeeting("Small Village");
+        const token = await createRTKToken(meetingId, userId, characterName);
+
+        await initMeeting({
+          authToken: token,
+          defaults: {
+            video: false,
+            audio: true,
+          },
+        });
+
+        console.log("Meeting initialized:", meetingId);
+        setIsJoined(true);
+
+        // await meeting?.joinRoom();
+      } catch (error) {
+        console.error("Error joining room:", error);
+      }
+    };
+
+    joinRoom();
+  }, [initMeeting, userId, characterName]);
+
+  const isReady = readyScene && scene && isJoined;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -113,15 +146,17 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       {!isReady ? (
         <LoadingSpinner message="Strolling into the Small Village..." />
       ) : (
-        <RoomProvider userId={userId} userName={characterName}>
-          <SmallVillage
-            userId={userId!}
-            characterIndex={characterIndex}
-            characterName={characterName}
-            scene={scene}
-            onExit={onExit}
-          />
-        </RoomProvider>
+        <RealtimeKitProvider value={meeting}>
+          <RoomProvider userId={userId} userName={characterName}>
+            <SmallVillage
+              userId={userId!}
+              characterIndex={characterIndex}
+              characterName={characterName}
+              scene={scene}
+              onExit={onExit}
+            />
+          </RoomProvider>
+        </RealtimeKitProvider>
       )}
     </div>
   );

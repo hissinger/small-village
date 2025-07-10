@@ -15,22 +15,21 @@
  */
 
 import React from "react";
-import { useDeviceSelect } from "./hooks/useDeviceSelect";
-import { useRoomContext } from "./context/RoomContext";
+import { useDevices } from "./hooks/useDevices";
 
 const AudioInputSelect: React.FC = () => {
-  const { localAudioTrack } = useRoomContext();
-  const { audioInputs, setMicrophoneId } = useDeviceSelect();
+  const { audioInputs, setMicrophoneId, microphoneId } = useDevices();
 
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setMicrophoneId(event.target.value);
+  const handleChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    console.log("Selected microphone ID:", event.target.value);
+    await setMicrophoneId(event.target.value);
   };
 
   return (
     <div>
       <select
         id="audio-input-select"
-        value={localAudioTrack?.getSettings().deviceId || ""}
+        value={microphoneId || ""}
         onChange={handleChange}
         style={{
           width: "250px",

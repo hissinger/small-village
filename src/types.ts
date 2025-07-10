@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import { PeerTrack } from "./services/Peer";
-
 export interface User {
   id: string;
   character_index: number;
@@ -25,8 +23,3 @@ export interface User {
   last_active: string;
 }
 
-export interface Session {
-  id: string;
-  tracks: PeerTrack[];
-  user_id: string;
-}

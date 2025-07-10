@@ -8,19 +8,32 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 const REALTIME_API_KEY  = Deno.env.get('RTC_API_KEY')
 const REALTIME_API_URL  = Deno.env.get('RTC_API_URL')
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: CORS_HEADERS,
+    })
+  }
+
   const { meeting_id, user_id, user_name } = await req.json().catch(() => ({}))
 
   if (!meeting_id) {
-    return new Response('`meeting_id` is required', { status: 400 })
+    return new Response('`meeting_id` is required', { status: 400, headers: CORS_HEADERS })
   }
 
   if (!user_id) {
-    return new Response('`user_id` is required', { status: 400 })
+    return new Response('`user_id` is required', { status: 400, headers: CORS_HEADERS })
   }
 
   if (!user_name) {
-    return new Response('`user_name` is required', { status: 400 })
+    return new Response('`user_name` is required', { status: 400, headers: CORS_HEADERS })
   }
 
   // Cloudflare Realtime – Add Participant
@@ -43,12 +56,12 @@ Deno.serve(async (req) => {
   if (!rtcRes.ok) {
     const msg = await rtcRes.text()
     console.error('RTC error:', msg)
-    return new Response(`Cloudflare error: ${msg}`, { status: 502 })
+    return new Response(`Cloudflare error: ${msg}`, { status: 502, headers: CORS_HEADERS })
   }
 
   const { data } = await rtcRes.json()
   return new Response(JSON.stringify({ authToken: data.token }), {
-    headers: { 'content-type': 'application/json' }
+    headers: { 'content-type': 'application/json', ...CORS_HEADERS },
   })
 })
 

@@ -14,35 +14,30 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Mic, MicOff } from "lucide-react";
-import { useRoomContext } from "./context/RoomContext";
 import IconButton from "./IconButton";
+import {
+  useRealtimeKitMeeting,
+  useRealtimeKitSelector,
+} from "@cloudflare/realtimekit-react";
 
 export default function AudioMuteButton() {
-  const [isMuted, setIsMuted] = useState(false);
-  const { localAudioTrack } = useRoomContext();
+  const audioEnabled = useRealtimeKitSelector((m) => m.self.audioEnabled);
+  const { meeting } = useRealtimeKitMeeting();
 
-  useEffect(() => {
-    if (!localAudioTrack) {
-      return;
+  const handleMuteClick = useCallback(async () => {
+    if (meeting.self.audioEnabled) {
+      await meeting.self.disableAudio();
+    } else {
+      await meeting.self.enableAudio();
     }
-
-    setIsMuted(!localAudioTrack.enabled);
-  }, [localAudioTrack]);
-
-  const handleMuteClick = useCallback(() => {
-    if (!localAudioTrack) {
-      return;
-    }
-    setIsMuted(localAudioTrack.enabled);
-    localAudioTrack.enabled = !localAudioTrack.enabled;
-  }, [localAudioTrack]);
+  }, [meeting]);
 
   return (
     <IconButton
       onClick={handleMuteClick}
-      isActive={isMuted}
+      isActive={!audioEnabled}
       ActiveIcon={MicOff}
       InactiveIcon={Mic}
       activeColor="#dc3545"

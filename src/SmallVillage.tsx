@@ -24,6 +24,7 @@ import SmallVillageScene from "./scenes/SmallVillageScene";
 import { User } from "./types";
 import { useChatMessage } from "./hooks/useChatMessage";
 import { useToast } from "./hooks/useToast";
+import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -42,6 +43,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   onExit,
 }) => {
   const toast = useToast();
+  const { meeting } = useRealtimeKitMeeting();
 
   const deleteUserDataFromDatebase = useCallback(async () => {
     await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
@@ -212,6 +214,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
     // delete user data from database
     await deleteUserDataFromDatebase();
+
+    meeting.leave();
 
     // call onExit function
     onExit();
