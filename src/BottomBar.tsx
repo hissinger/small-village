@@ -21,6 +21,7 @@ import { useState } from "react";
 import ChatPanel from "./ChatPanel";
 import { MessageCircle } from "lucide-react";
 import IconButton from "./IconButton";
+import NoiseSuppressionButton from "./NoiseSuppressionButton";
 
 interface BottomBarProps {
   userId: string;
@@ -57,6 +58,8 @@ export default function BottomBar(props: BottomBarProps) {
         />
 
         <AudioMuteButton />
+
+        <NoiseSuppressionButton />
         <ExitButton onClick={props.onExit} />
       </div>
     </div>

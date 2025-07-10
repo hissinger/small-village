@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
+import { NoiseSuppressionEffect } from "../services/noise-suppression/NoiseSuppressionEffect";
 import Peer from "../services/Peer";
-import React, { createContext, useCallback, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 interface RoomContextType {
   currentUserId: string;
@@ -55,6 +62,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isEndedTrack, setIsEndedTrack] = useState<boolean>(false);
 
+  const noiseSuppressionEffectRef = useRef<NoiseSuppressionEffect>(
+    new NoiseSuppressionEffect()
+  );
+
   // Get the local audio track
   const getUserMedia = useCallback(
     async (id: string): Promise<MediaStreamTrack> => {
@@ -66,7 +77,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({
           constraints.audio = { deviceId: { exact: id } };
         }
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        const track = stream.getAudioTracks()[0];
+
+        const outStream = noiseSuppressionEffectRef.current.startEffect(stream);
+
+        const track = outStream.getAudioTracks()[0];
         return track;
       } catch (error) {
         throw error;
