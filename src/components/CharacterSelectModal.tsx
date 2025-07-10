@@ -18,8 +18,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { Modal, Button, Form, Container, Row, Col } from "react-bootstrap";
 import LoadingSpinner from "./LoadingSpinner";
-import CharacterPreviewScene from "./scenes/CharacterPreviewScene";
-import { NUM_CHARACTERS } from "./constants";
+import CharacterPreviewScene from "../scenes/CharacterPreviewScene";
+import { NUM_CHARACTERS } from "../constants";
 
 interface CharacterSelectModalProps {
   onSelect: (characterIndex: number, name: string) => void;

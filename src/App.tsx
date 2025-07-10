@@ -15,13 +15,13 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import CharacterSelectModal from "./CharacterSelectModal";
-import SmallVillageScreen from "./SmallVillageScreen";
+import CharacterSelectModal from "./components/CharacterSelectModal";
+import SmallVillageScreen from "./components/SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
-import GithubIcon from "./GithubIcon";
+import GithubIcon from "./components/GithubIcon";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 

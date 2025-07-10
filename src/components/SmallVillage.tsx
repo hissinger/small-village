@@ -15,15 +15,15 @@
  */
 
 import React, { memo, useCallback, useEffect } from "react";
-import { supabase } from "./supabaseClient";
-import useOnlineUsers from "./hooks/useOnlineUsers";
+import { supabase } from "../supabaseClient";
+import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
-import { DATABASE_TABLES } from "./constants";
+import { DATABASE_TABLES } from "../constants";
 import BottomBar from "./BottomBar";
-import SmallVillageScene from "./scenes/SmallVillageScene";
-import { User } from "./types";
-import { useChatMessage } from "./hooks/useChatMessage";
-import { useToast } from "./hooks/useToast";
+import SmallVillageScene from "../scenes/SmallVillageScene";
+import { User } from "../types";
+import { useChatMessage } from "../hooks/useChatMessage";
+import { useToast } from "../hooks/useToast";
 import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
 interface SmallVillageScreenProps {

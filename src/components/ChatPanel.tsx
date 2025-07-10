@@ -22,9 +22,9 @@ import {
   MessageType,
   RECEIVER_ALL,
   useMessage,
-} from "./context/MessageContext";
-import { useChatMessage } from "./hooks/useChatMessage";
-import { useRoomContext } from "./context/RoomContext";
+} from "../context/MessageContext";
+import { useChatMessage } from "../hooks/useChatMessage";
+import { useRoomContext } from "../context/RoomContext";
 
 const CHAT_CONSTANTS = {
   INPUT: {

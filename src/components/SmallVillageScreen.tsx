@@ -16,14 +16,14 @@
 
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import SmallVillage from "./SmallVillage";
-import { RoomProvider } from "./context/RoomContext";
-import SmallVillageScene from "./scenes/SmallVillageScene";
+import { RoomProvider } from "../context/RoomContext";
+import SmallVillageScene from "../scenes/SmallVillageScene";
 import LoadingSpinner from "./LoadingSpinner";
 import {
   RealtimeKitProvider,
   useRealtimeKitClient,
 } from "@cloudflare/realtimekit-react";
-import { createMeeting, createRTKToken } from "./supabaseFunctions";
+import { createMeeting, createRTKToken } from "../supabaseFunctions";
 
 interface SmallVillageScreenProps {
   userId: string;

@@ -15,7 +15,7 @@
  */
 
 import React from "react";
-import { useDevices } from "./hooks/useDevices";
+import { useDevices } from "../hooks/useDevices";
 
 const AudioInputSelect: React.FC = () => {
   const { audioInputs, setMicrophoneId, microphoneId } = useDevices();
