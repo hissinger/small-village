@@ -18,16 +18,12 @@ interface LoadingSpinnerProps {
   message?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  message = "Loading...",
-}) => {
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message }) => {
   return (
-    <div
-      className="absolute inset-0 flex items-center justify-center bg-white z-50"
-    >
+    <div className="absolute inset-0 flex items-center justify-center bg-white z-50">
       <div className="text-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-        <p className="mt-2">{message}</p>
+        {message && <p className="mt-2">{message}</p>}
       </div>
     </div>
   );
