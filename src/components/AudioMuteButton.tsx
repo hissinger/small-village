@@ -44,7 +44,7 @@ export default function AudioMuteButton() {
       inactiveColor="#007bff"
       size={25}
       strokeWidth={2}
-      style={{ marginLeft: "10px" }}
+      className="ml-2.5"
     />
   );
 }

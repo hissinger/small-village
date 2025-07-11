@@ -133,14 +133,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const isReady = readyScene && scene && isJoined;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="relative w-full h-full">
       <div
         ref={gameContainerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          overflow: "hidden",
-        }}
+        className="w-full h-full overflow-hidden"
       />
 
       {!isReady ? (

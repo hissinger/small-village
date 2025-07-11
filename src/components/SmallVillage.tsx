@@ -243,7 +243,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
   }, [chatMessage, sendChatMessage]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="relative w-full h-full">
       <div>
         <BottomBar onExit={handleExit} userId={userId} />
         <Conference userId={userId} />

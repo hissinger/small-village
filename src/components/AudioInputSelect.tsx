@@ -31,15 +31,7 @@ const AudioInputSelect: React.FC = () => {
         id="audio-input-select"
         value={microphoneId || ""}
         onChange={handleChange}
-        style={{
-          width: "250px",
-          height: "100%",
-          borderRadius: "6px",
-          fontSize: "14px",
-          border: "1px solid #ccc",
-          margin: "0px 10px 0px 10px",
-          padding: "4px 10px",
-        }}
+        className="w-[250px] h-full rounded-md text-sm border border-gray-300 mx-2.5 py-1 px-2.5"
       >
         {audioInputs.map((device) => (
           <option key={device.deviceId} value={device.deviceId}>

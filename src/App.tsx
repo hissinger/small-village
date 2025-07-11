@@ -15,7 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import CharacterSelectModal from "./pages/CharacterSelectModal";
+import CharacterSelectScreen from "./pages/CharacterSelectScreen";
 import SmallVillageScreen from "./pages/SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
@@ -100,30 +100,15 @@ const App: React.FC = () => {
   return (
     <>
       <MessageProvider userId={userId!}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "0 20px",
-            position: "relative",
-          }}
-        >
-          <h1 className="text-center">Small Village</h1>
-          <div
-            style={{
-              position: "absolute",
-              right: "20px",
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
+        <div className="flex justify-center px-5 relative">
+          <h1 className="text-center text-4xl font-bold py-2">Small Village</h1>
+          <div className="absolute right-5 flex items-center h-full">
             <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
           </div>
         </div>
 
         {currentStep === Steps.CHARACTER_SELECT && (
-          <CharacterSelectModal onEnterRoom={handleEnterRoom} />
+          <CharacterSelectScreen onEnterRoom={handleEnterRoom} />
         )}
         {currentStep === Steps.SMALL_VILLAGE && (
           <SmallVillageScreen
