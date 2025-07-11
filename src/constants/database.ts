@@ -15,6 +15,6 @@
  */
 
 export const DATABASE_TABLES = {
+  ROOMS: "rooms",
   USERS: "users",
-  SESSIONS: "sessions",
 } as const;

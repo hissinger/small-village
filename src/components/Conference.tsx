@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-export interface User {
-  id: string;
-  character_index: number;
-  name: string;
-  room_id: string;
-  x: number;
-  y: number;
-  last_active: string;
+import { useEffect } from "react";
+import { RtkParticipantsAudio } from "@cloudflare/realtimekit-react-ui";
+import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
+
+interface ConferenceProps {
+  userId: string;
 }
 
-export interface Room {
-  id: string;
-  title: string;
-  created_at: string;
+export default function Conference({ userId }: ConferenceProps) {
+  const { meeting } = useRealtimeKitMeeting();
+
+  useEffect(() => {
+    try {
+      meeting?.join();
+      console.log("Joined room successfully");
+    } catch (error) {
+      console.error("Error joining room:", error);
+    }
+  }, [meeting]);
+
+  return <RtkParticipantsAudio meeting={meeting} />;
 }

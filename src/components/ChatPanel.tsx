@@ -22,9 +22,9 @@ import {
   MessageType,
   RECEIVER_ALL,
   useMessage,
-} from "./context/MessageContext";
-import { useChatMessage } from "./hooks/useChatMessage";
-import { useRoomContext } from "./context/RoomContext";
+} from "../context/MessageContext";
+import { useChatMessage } from "../hooks/useChatMessage";
+import { useRoomContext } from "../context/RoomContext";
 
 const CHAT_CONSTANTS = {
   INPUT: {
@@ -179,97 +179,44 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   return (
     <div
       ref={chatPanelRef}
-      style={{
-        position: "fixed",
-        right: 0,
-        top: 0,
-        height: "100%",
-        width: `${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px`,
-        backgroundColor: "white",
-        boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-        transform: isOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.3s ease-in-out",
-        zIndex: 100,
-        display: isOpen ? "flex" : "none",
-        flexDirection: "column",
-      }}
+      className={`fixed right-0 top-0 h-full w-[${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
     >
       <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: `12px ${CHAT_CONSTANTS.LAYOUT.PADDING}px`,
-          backgroundColor: "#f8f9fa",
-          borderBottom: "1px solid #dee2e6",
-        }}
+        className="flex justify-between items-center py-3 px-4 bg-gray-100 border-b border-gray-200"
       >
-        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>Chat</h3>
+        <h3 className="m-0 text-lg font-semibold">Chat</h3>
         <button
           onClick={onClose}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px",
-          }}
+          className="bg-none border-none cursor-pointer p-1"
         >
           <X size={20} />
         </button>
       </div>
 
       <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: CHAT_CONSTANTS.LAYOUT.PADDING,
-        }}
+        className="flex-1 overflow-y-auto p-4"
       >
         {messages.map((msg, index) => {
           const isMine = msg.senderId === userId;
           return (
             <div
               key={index}
-              style={{
-                marginBottom: "16px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: isMine ? "flex-end" : "flex-start",
-                maxWidth: "100%",
-              }}
+              className={`mb-4 flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-full`}
             >
               {!isMine && (
                 <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    marginBottom: "4px",
-                    fontWeight: 500,
-                  }}
+                  className="text-xs text-gray-600 mb-1 font-medium"
                 >
                   {msg.senderName}:
                 </span>
               )}
               <div
-                style={{
-                  maxWidth: "80%",
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  backgroundColor: isMine ? "#0d6efd" : "#e9ecef",
-                  color: isMine ? "white" : "black",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "break-word",
-                }}
+                className={`max-w-[80%] px-3 py-2 rounded-lg ${isMine ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'} break-words whitespace-pre-wrap overflow-wrap`}
               >
-                <p style={{ margin: 0, fontSize: "14px" }}>{msg.message}</p>
+                <p className="m-0 text-sm">{msg.message}</p>
               </div>
               <span
-                style={{
-                  fontSize: "11px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
+                className="text-xs text-gray-600 mt-1"
               >
                 {formatTime(msg.timestamp)}
               </span>
@@ -280,18 +227,10 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
       </div>
 
       <div
-        style={{
-          padding: CHAT_CONSTANTS.LAYOUT.PADDING,
-          borderTop: "1px solid #dee2e6",
-          backgroundColor: "white",
-        }}
+        className="p-4 border-t border-gray-200 bg-white"
       >
         <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "flex-end",
-          }}
+          className="flex gap-2 items-end"
         >
           <textarea
             ref={textAreaRef}
@@ -299,13 +238,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
+            className="flex-1 p-2.5 border border-gray-200 rounded-lg outline-none resize-none"
             style={{
-              flex: 1,
-              padding: "8px 12px",
-              border: "1px solid #dee2e6",
-              borderRadius: "8px",
-              outline: "none",
-              resize: "none",
               minHeight: `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`,
               maxHeight: `${CHAT_CONSTANTS.INPUT.MAX_HEIGHT}px`,
               lineHeight: `${CHAT_CONSTANTS.INPUT.LINE_HEIGHT}px`,
@@ -314,17 +248,10 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
           />
           <button
             onClick={handleSendMessage}
-            style={{
-              padding: "8px 12px",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              height: `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`,
-              flexShrink: 0,
-            }}
+            className="px-3 py-2 text-white border-none rounded-lg cursor-pointer h-[40px] flex-shrink-0"
+            style={{ backgroundColor: "#0d6efd" }}
           >
-            <Send size={25} strokeWidth={2} color={"#0d6efd"} />
+            <Send size={25} strokeWidth={2} color={"white"} />
           </button>
         </div>
       </div>

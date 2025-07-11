@@ -28,15 +28,11 @@ const GithubIcon: React.FC<GithubIconProps> = ({ repoUrl }) => {
       href={repoUrl}
       target="_blank"
       rel="noopener noreferrer"
-      style={{
-        borderRadius: "9999px",
-        transition: "background-color 0.2s",
-        cursor: "pointer",
-      }}
+      className="rounded-full transition-colors duration-200 cursor-pointer"
     >
       <FontAwesomeIcon
         icon={faGithub}
-        style={{ width: "30px", height: "30px", color: "#000000" }}
+        className="w-[30px] h-[30px] text-black"
       />
     </a>
   );

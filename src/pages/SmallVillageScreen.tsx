@@ -15,15 +15,23 @@
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
-import SmallVillage from "./SmallVillage";
-import { RoomProvider } from "./context/RoomContext";
-import SmallVillageScene from "./scenes/SmallVillageScene";
-import LoadingSpinner from "./LoadingSpinner";
+import SmallVillage from "../components/SmallVillage";
+import { RoomProvider } from "../context/RoomContext";
+import SmallVillageScene from "../scenes/SmallVillageScene";
+import LoadingSpinner from "../components/LoadingSpinner";
+import {
+  RealtimeKitProvider,
+  useRealtimeKitClient,
+} from "@cloudflare/realtimekit-react";
+import { createRTKToken } from "../lib/supabaseFunctions";
+
+import { Room } from "../types";
 
 interface SmallVillageScreenProps {
   userId: string;
   characterIndex: number;
   characterName: string;
+  room: Room;
   onExit: () => void;
 }
 
@@ -31,12 +39,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   userId,
   characterIndex,
   characterName,
+  room,
   onExit,
 }: SmallVillageScreenProps) => {
   const [readyScene, setReadyScene] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const [gameInstance, setGameInstance] = useState<Phaser.Game>();
   const [scene, setScene] = useState<SmallVillageScene>();
+  const [isJoined, setIsJoined] = useState(false);
+  const [meeting, initMeeting] = useRealtimeKitClient();
 
   const handleResize = useCallback(() => {
     if (!gameInstance) {
@@ -73,6 +84,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     game.scene.start("SmallVillageScene", {
       characterIndex,
       characterName,
+      roomId: room.id,
       userId,
     });
 
@@ -88,7 +100,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     return () => {
       game.destroy(true);
     };
-  }, [characterIndex, characterName, userId]);
+  }, [characterIndex, characterName, userId, room.id]);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
@@ -97,31 +109,51 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isReady = readyScene && scene;
+  useEffect(() => {
+    const joinRoom = async () => {
+      try {
+        const token = await createRTKToken(room.id, userId, characterName);
+        await initMeeting({
+          authToken: token,
+          defaults: {
+            video: false,
+            audio: true,
+          },
+        });
+
+        setIsJoined(true);
+      } catch (error) {
+        console.error("Error joining room:", error);
+      }
+    };
+
+    joinRoom();
+  }, [initMeeting, userId, characterName, room.id]);
+
+  const isReady = readyScene && scene && isJoined;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="relative w-full h-full">
       <div
         ref={gameContainerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          overflow: "hidden",
-        }}
+        className="w-full h-full overflow-hidden"
       />
 
       {!isReady ? (
         <LoadingSpinner message="Strolling into the Small Village..." />
       ) : (
-        <RoomProvider userId={userId} userName={characterName}>
-          <SmallVillage
-            userId={userId!}
-            characterIndex={characterIndex}
-            characterName={characterName}
-            scene={scene}
-            onExit={onExit}
-          />
-        </RoomProvider>
+        <RealtimeKitProvider value={meeting}>
+          <RoomProvider userId={userId} userName={characterName}>
+            <SmallVillage
+              room={room}
+              userId={userId!}
+              characterIndex={characterIndex}
+              characterName={characterName}
+              scene={scene}
+              onExit={onExit}
+            />
+          </RoomProvider>
+        </RealtimeKitProvider>
       )}
     </div>
   );

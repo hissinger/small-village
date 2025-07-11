@@ -29,7 +29,7 @@ export default function ExitButton(props: ExitButtonProps) {
       activeColor="#888888"
       size={23}
       strokeWidth={2}
-      style={{ marginLeft: "10px" }} // Additional styles
+      className="ml-2.5"
     />
   );
 }

@@ -65,26 +65,14 @@ const AudioVisualizer = (props: AudioVisualizerProps) => {
 
   return (
     <div
-      style={{
-        width: props.width,
-        display: "flex",
-        justifyContent: "space-between",
-        gap: "5px",
-        border: "1px solid #bbb",
-        borderRadius: "5px",
-        padding: "5px",
-      }}
+      className={`flex justify-between gap-1.5 border border-gray-400 rounded-md p-1.5 ${props.width}`}
     >
       {colorPids().map((color, index) => (
         <div
           key={index}
           ref={(el) => (pidsRef.current[index] = el)}
-          style={{
-            width: "calc(10% - 10px)",
-            height: "6px",
-            backgroundColor: color,
-            borderRadius: "3px",
-          }}
+          className="w-[calc(10%-4px)] h-1.5 rounded-sm"
+          style={{ backgroundColor: color }}
         />
       ))}
     </div>

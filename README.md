@@ -9,7 +9,7 @@ Join the village and start chatting with other villagers. https://smallvillage.n
 
 ## Architecture
 - **Supabase**: Supabase is used as a database to store user information and chat messages.
-- **Cloudflare Calls**: Cloudflare Calls is SFU media server that is used to create voice calls between users.
+- **Cloudflare RealtimeKit**: Cloudflare RealtimeKit is SFU media server that is used to create voice calls between users.
 
 
 ## Installation
@@ -26,14 +26,6 @@ Create a `.env` file in the root directory of the project and add the following 
 - `REACT_APP_SUPABASE_URL`: Supabase URL
 - `REACT_APP_SUPABASE_KEY`: Supabase Key
 
-2. turn server environment variables
-- `REACT_APP_TURN_SERVER_URL`: Turn server URL
-- `REACT_APP_TURN_SERVER_USERNAME`: Turn server username
-- `REACT_APP_TURN_SERVER_CREDENTIAL`: Turn server credential
-
-3. cloudflare environment variables
-- `REACT_APP_CLOUDFLARE_APP_ID`: Cloudflare app id
-- `REACT_APP_CLOUDFLARE_APP_SECRET`: Cloudflare app secret
 
 ### npm install
 
@@ -50,7 +42,7 @@ npm start
 
 ## References
 - [Modular Game Worlds in Phaser 3 (Tilemaps #1) — Static Maps](https://medium.com/@michaelwesthadley/modular-game-worlds-in-phaser-3-tilemaps-1-958fc7e6bbd6)
-- [Cloudflare Calls documents](https://developers.cloudflare.com/calls/)
+- [Cloudflare RealtimeKit documents](https://docs.realtime.cloudflare.com/)
 - [Using WebRTC + React + WebAudio to create spatial audio](https://blog.livekit.io/tutorial-using-webrtc-react-webaudio-to-create-spatial-audio/)
 
 ## Assets

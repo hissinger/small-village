@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 const CHANNEL_ONLINE_USERS = "online-users";
 
@@ -25,6 +25,7 @@ interface OnlineUser {
 }
 
 interface useOnlineUsersProps {
+  roomId: string;
   userId: string;
   onJoin: (userId: string) => void;
   onLeave: (userId: string) => void;
@@ -35,6 +36,7 @@ export default function useOnlineUsers(props: useOnlineUsersProps) {
     onJoin: props.onJoin,
     onLeave: props.onLeave,
   });
+  const channelName = `${CHANNEL_ONLINE_USERS}-${props.roomId}`;
 
   useEffect(() => {
     // props 업데이트
@@ -47,7 +49,7 @@ export default function useOnlineUsers(props: useOnlineUsersProps) {
   useEffect(() => {
     // 현재 온라인 유저를 추적하는 presence 채널 구독
     const channelOnlineUsers = supabase
-      .channel(CHANNEL_ONLINE_USERS)
+      .channel(channelName)
       .on("presence", { event: "sync" }, () => {
         // 현재 온라인인 모든 유저
         // const presenceState = channelOnlineUsers.presenceState();
@@ -100,7 +102,7 @@ export default function useOnlineUsers(props: useOnlineUsersProps) {
     return () => {
       channelOnlineUsers.unsubscribe();
     };
-  }, [props.userId]);
+  }, [props.userId, channelName]);
 
   return {};
 }

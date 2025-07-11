@@ -15,7 +15,7 @@
  */
 
 import { LucideProps } from "lucide-react";
-import React, { CSSProperties } from "react";
+import React from "react";
 
 interface IconButtonProps {
   onClick: () => void;
@@ -26,7 +26,7 @@ interface IconButtonProps {
   inactiveColor?: string;
   size: number;
   strokeWidth: number;
-  style?: CSSProperties;
+  className?: string;
 }
 
 const IconButton: React.FC<IconButtonProps> = ({
@@ -38,20 +38,11 @@ const IconButton: React.FC<IconButtonProps> = ({
   inactiveColor,
   size,
   strokeWidth,
-  style,
+  className,
 }) => {
   return (
     <button
-      style={{
-        border: "none",
-        borderRadius: "8px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "50px",
-        ...style, // Merge additional styles
-      }}
+      className={`border-none rounded-lg cursor-pointer flex items-center justify-center w-[50px] ${className}`}
       onClick={onClick}
     >
       {isActive || !InactiveIcon ? (

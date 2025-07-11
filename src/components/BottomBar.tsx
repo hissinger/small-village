@@ -34,17 +34,7 @@ export default function BottomBar(props: BottomBarProps) {
     <div>
       <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <div
-        style={{
-          position: "fixed",
-          bottom: "0",
-          left: "0",
-          width: "100%",
-          height: "50px",
-          display: "flex",
-          justifyContent: "right",
-          backgroundColor: "white",
-          padding: "10px",
-        }}
+        className="fixed bottom-0 left-0 w-full h-12 flex justify-end bg-white p-2.5"
       >
         <AudioInputSelect />
 

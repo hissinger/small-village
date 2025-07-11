@@ -15,17 +15,19 @@
  */
 
 import React, { memo, useCallback, useEffect } from "react";
-import { supabase } from "./supabaseClient";
-import useOnlineUsers from "./hooks/useOnlineUsers";
+import { supabase } from "../lib/supabaseClient";
+import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
-import { DATABASE_TABLES } from "./constants";
+import { DATABASE_TABLES } from "../constants";
 import BottomBar from "./BottomBar";
-import SmallVillageScene from "./scenes/SmallVillageScene";
-import { User } from "./types";
-import { useChatMessage } from "./hooks/useChatMessage";
-import { useToast } from "./hooks/useToast";
+import SmallVillageScene from "../scenes/SmallVillageScene";
+import { Room, User } from "../types";
+import { useChatMessage } from "../hooks/useChatMessage";
+import { useToast } from "../hooks/useToast";
+import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
-interface SmallVillageScreenProps {
+interface SmallVillageProps {
+  room: Room;
   userId: string;
   characterIndex: number;
   characterName: string;
@@ -36,12 +38,14 @@ interface SmallVillageScreenProps {
 const INACTIVE_TIMEOUT_MS = 15_000;
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
-const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
+const SmallVillage: React.FC<SmallVillageProps> = ({
+  room,
   userId,
   scene,
   onExit,
 }) => {
   const toast = useToast();
+  const { meeting } = useRealtimeKitMeeting();
 
   const deleteUserDataFromDatebase = useCallback(async () => {
     await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
@@ -77,6 +81,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     supabase
       .from(DATABASE_TABLES.USERS)
       .select("*")
+      .eq("room_id", room.id)
       .then(({ data, error }) => {
         if (error) {
           console.error(error);
@@ -120,7 +125,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
-          if (payload.new.id === userId) return;
+          if (payload.new.room_id !== room.id) return;
           const newUser = payload.new as User;
           // if exists, update user data, otherwise add new user
           const existingUser = scene.users?.find(
@@ -145,6 +150,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
+          if (payload.new.room_id !== room.id) return;
           if (payload.new.id === userId) return;
 
           const prevUsers = scene.users;
@@ -202,6 +208,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   );
 
   useOnlineUsers({
+    roomId: room.id,
     userId,
     onJoin: handleJoinUser,
     onLeave: handleLeaveUser,
@@ -212,6 +219,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
     // delete user data from database
     await deleteUserDataFromDatebase();
+
+    meeting.leave();
 
     // call onExit function
     onExit();
@@ -234,7 +243,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, [chatMessage, sendChatMessage]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="relative w-full h-full">
       <div>
         <BottomBar onExit={handleExit} userId={userId} />
         <Conference userId={userId} />
@@ -243,4 +252,4 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   );
 };
 
-export default memo(SmallVillageScreen);
+export default memo(SmallVillage);

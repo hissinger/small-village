@@ -15,15 +15,17 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import CharacterSelectModal from "./CharacterSelectModal";
-import SmallVillageScreen from "./SmallVillageScreen";
+import CharacterSelectScreen from "./pages/CharacterSelectScreen";
+import SmallVillageScreen from "./pages/SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
-import GithubIcon from "./GithubIcon";
+import GithubIcon from "./components/GithubIcon";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+import { Room } from "./types";
 
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
@@ -36,6 +38,7 @@ const App: React.FC = () => {
     null
   );
   const [username, setUsername] = useState<string | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   const [currentStep, setCurrentStep] = useState<string>(
     Steps.CHARACTER_SELECT
   );
@@ -78,10 +81,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleCharacterSelect = useCallback(
-    (characterIndex: number, name: string) => {
+  const handleEnterRoom = useCallback(
+    (characterIndex: number, name: string, room: Room) => {
       setSelectedCharacter(characterIndex);
       setUsername(name);
+      setRoom(room);
       goToNextStep();
     },
     [goToNextStep]
@@ -96,36 +100,22 @@ const App: React.FC = () => {
   return (
     <>
       <MessageProvider userId={userId!}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "0 20px",
-            position: "relative",
-          }}
-        >
-          <h1 className="text-center">Small Village</h1>
-          <div
-            style={{
-              position: "absolute",
-              right: "20px",
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
+        <div className="flex justify-center px-5 relative">
+          <h1 className="text-center text-4xl font-bold py-2">Small Village</h1>
+          <div className="absolute right-5 flex items-center h-full">
             <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
           </div>
         </div>
 
         {currentStep === Steps.CHARACTER_SELECT && (
-          <CharacterSelectModal onSelect={handleCharacterSelect} />
+          <CharacterSelectScreen onEnterRoom={handleEnterRoom} />
         )}
         {currentStep === Steps.SMALL_VILLAGE && (
           <SmallVillageScreen
             userId={userId!}
             characterIndex={selectedCharacter!}
             characterName={username!}
+            room={room!}
             onExit={onExit}
           />
         )}
