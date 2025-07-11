@@ -131,13 +131,11 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   }, [initMeeting, userId, characterName, room.id]);
 
   const isReady = readyScene && scene && isJoined;
+  console.log("SmallVillageScreen isReady:", isReady);
 
   return (
     <div className="relative w-full h-full">
-      <div
-        ref={gameContainerRef}
-        className="w-full h-full overflow-hidden"
-      />
+      <div ref={gameContainerRef} className="w-full h-full overflow-hidden" />
 
       {!isReady ? (
         <LoadingSpinner message="Strolling into the Small Village..." />
