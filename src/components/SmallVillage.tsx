@@ -19,12 +19,10 @@ import { supabase } from "../lib/supabaseClient";
 import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
 import { DATABASE_TABLES } from "../constants";
-import BottomBar from "./BottomBar";
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import { Room, User } from "../types";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useToast } from "../hooks/useToast";
-import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
 interface SmallVillageProps {
   room: Room;
@@ -45,7 +43,6 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
   onExit,
 }) => {
   const toast = useToast();
-  const { meeting } = useRealtimeKitMeeting();
 
   const deleteUserDataFromDatebase = useCallback(async () => {
     await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
@@ -165,8 +162,6 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
         { event: "DELETE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
           if (userId === payload.old.id) {
-            // exit the game
-            handleExit();
             return;
           }
 
@@ -214,18 +209,6 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
     onLeave: handleLeaveUser,
   });
 
-  const handleExit = async () => {
-    console.log("Exiting game");
-
-    // delete user data from database
-    await deleteUserDataFromDatebase();
-
-    meeting.leave();
-
-    // call onExit function
-    onExit();
-  };
-
   // chat handling
   const sendChatMessage = useCallback(
     (senderId: string, message: string) => {
@@ -245,7 +228,6 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
   return (
     <div className="relative w-full h-full">
       <div>
-        <BottomBar onExit={handleExit} userId={userId} />
         <Conference userId={userId} />
       </div>
     </div>

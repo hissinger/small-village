@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import SmallVillage from "../components/SmallVillage";
 import { RoomProvider } from "../context/RoomContext";
 import SmallVillageScene from "../scenes/SmallVillageScene";
@@ -26,6 +26,7 @@ import {
 import { createRTKToken } from "../lib/supabaseFunctions";
 
 import { Room } from "../types";
+import BottomBar from "../components/BottomBar";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -44,30 +45,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 }: SmallVillageScreenProps) => {
   const [readyScene, setReadyScene] = useState(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
-  const [gameInstance, setGameInstance] = useState<Phaser.Game>();
   const [scene, setScene] = useState<SmallVillageScene>();
   const [isJoined, setIsJoined] = useState(false);
   const [meeting, initMeeting] = useRealtimeKitClient();
 
-  const handleResize = useCallback(() => {
-    if (!gameInstance) {
-      return;
-    }
-
-    const { innerWidth, innerHeight } = window;
-
-    gameInstance.scale.resize(innerWidth, innerHeight);
-    const scene = gameInstance.scene.getScene("SmallVillageScene");
-    scene?.cameras.main.setBounds(0, 0, innerWidth, innerHeight);
-  }, [gameInstance]);
-
   useEffect(() => {
-    const { innerWidth: width, innerHeight: height } = window;
-
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width,
-      height,
       parent: gameContainerRef.current as HTMLDivElement,
       scene: SmallVillageScene,
       pixelArt: true,
@@ -77,6 +61,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           gravity: { x: 0, y: 0 },
           debug: false,
         },
+      },
+      backgroundColor: "#000000",
+      width: 640 * 2,
+      height: 480 * 2,
+      scale: {
+        mode: Phaser.Scale.NONE,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
       },
     };
 
@@ -95,19 +86,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       }, 3_000);
     });
 
-    setGameInstance(game);
-
     return () => {
       game.destroy(true);
     };
   }, [characterIndex, characterName, userId, room.id]);
-
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const joinRoom = async () => {
@@ -130,29 +112,43 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     joinRoom();
   }, [initMeeting, userId, characterName, room.id]);
 
+  const handleExit = async () => {
+    console.log("Exiting game");
+
+    try {
+      await meeting?.leave();
+    } catch (error) {
+      console.error("Error leaving meeting:", error);
+    }
+
+    // call onExit function
+    onExit();
+  };
+
   const isReady = readyScene && scene && isJoined;
-  console.log("SmallVillageScreen isReady:", isReady);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={gameContainerRef} className="w-full h-full overflow-hidden" />
-
-      {!isReady ? (
-        <LoadingSpinner message="Strolling into the Small Village..." />
-      ) : (
-        <RealtimeKitProvider value={meeting}>
-          <RoomProvider userId={userId} userName={characterName}>
-            <SmallVillage
-              room={room}
-              userId={userId!}
-              characterIndex={characterIndex}
-              characterName={characterName}
-              scene={scene}
-              onExit={onExit}
-            />
-          </RoomProvider>
-        </RealtimeKitProvider>
-      )}
+    <div className="w-full h-full flex items-center justify-center bg-gray-800 relative">
+      <div ref={gameContainerRef} className="overflow-hidden" />
+      <div className="absolute inset-0">
+        {!isReady ? (
+          <LoadingSpinner message="Strolling into the Small Village..." />
+        ) : (
+          <RealtimeKitProvider value={meeting}>
+            <RoomProvider userId={userId} userName={characterName}>
+              <SmallVillage
+                room={room}
+                userId={userId!}
+                characterIndex={characterIndex}
+                characterName={characterName}
+                scene={scene}
+                onExit={onExit}
+              />
+              <BottomBar onExit={handleExit} userId={userId} />
+            </RoomProvider>
+          </RealtimeKitProvider>
+        )}
+      </div>
     </div>
   );
 };
