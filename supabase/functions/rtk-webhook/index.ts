@@ -52,7 +52,20 @@ Deno.serve(async (req) => {
   } else if (event === RoomEvent.PARTICIPANT_JOINED) {
   
   } else if (event === RoomEvent.PARTICIPANT_LEFT) {
+    const { customParticipantId} = body.participant;
 
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", customParticipantId);
+    
+    if (error) {
+      console.error("Failed to delete participant:", error);
+      return new Response(
+        JSON.stringify({ error: "db_delete_failed" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
   }
 
   return new Response(

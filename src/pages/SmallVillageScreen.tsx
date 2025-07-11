@@ -23,12 +23,15 @@ import {
   RealtimeKitProvider,
   useRealtimeKitClient,
 } from "@cloudflare/realtimekit-react";
-import { createMeeting, createRTKToken } from "../lib/supabaseFunctions";
+import { createRTKToken } from "../lib/supabaseFunctions";
+
+import { Room } from "../types";
 
 interface SmallVillageScreenProps {
   userId: string;
   characterIndex: number;
   characterName: string;
+  room: Room;
   onExit: () => void;
 }
 
@@ -36,6 +39,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   userId,
   characterIndex,
   characterName,
+  room,
   onExit,
 }: SmallVillageScreenProps) => {
   const [readyScene, setReadyScene] = useState(false);
@@ -80,6 +84,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     game.scene.start("SmallVillageScene", {
       characterIndex,
       characterName,
+      roomId: room.id,
       userId,
     });
 
@@ -95,7 +100,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     return () => {
       game.destroy(true);
     };
-  }, [characterIndex, characterName, userId]);
+  }, [characterIndex, characterName, userId, room.id]);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
@@ -107,9 +112,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   useEffect(() => {
     const joinRoom = async () => {
       try {
-        const meetingId = await createMeeting("Small Village");
-        const token = await createRTKToken(meetingId, userId, characterName);
-
+        const token = await createRTKToken(room.id, userId, characterName);
         await initMeeting({
           authToken: token,
           defaults: {
@@ -118,17 +121,14 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           },
         });
 
-        console.log("Meeting initialized:", meetingId);
         setIsJoined(true);
-
-        // await meeting?.joinRoom();
       } catch (error) {
         console.error("Error joining room:", error);
       }
     };
 
     joinRoom();
-  }, [initMeeting, userId, characterName]);
+  }, [initMeeting, userId, characterName, room.id]);
 
   const isReady = readyScene && scene && isJoined;
 
@@ -149,6 +149,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         <RealtimeKitProvider value={meeting}>
           <RoomProvider userId={userId} userName={characterName}>
             <SmallVillage
+              room={room}
               userId={userId!}
               characterIndex={characterIndex}
               characterName={characterName}

@@ -21,12 +21,13 @@ import Conference from "./Conference";
 import { DATABASE_TABLES } from "../constants";
 import BottomBar from "./BottomBar";
 import SmallVillageScene from "../scenes/SmallVillageScene";
-import { User } from "../types";
+import { Room, User } from "../types";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useToast } from "../hooks/useToast";
 import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
 interface SmallVillageProps {
+  room: Room;
   userId: string;
   characterIndex: number;
   characterName: string;
@@ -38,6 +39,7 @@ const INACTIVE_TIMEOUT_MS = 15_000;
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
 const SmallVillage: React.FC<SmallVillageProps> = ({
+  room,
   userId,
   scene,
   onExit,
@@ -79,6 +81,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
     supabase
       .from(DATABASE_TABLES.USERS)
       .select("*")
+      .eq("room_id", room.id)
       .then(({ data, error }) => {
         if (error) {
           console.error(error);
@@ -122,7 +125,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
-          if (payload.new.id === userId) return;
+          if (payload.new.room_id !== room.id) return;
           const newUser = payload.new as User;
           // if exists, update user data, otherwise add new user
           const existingUser = scene.users?.find(
@@ -147,6 +150,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
         (payload) => {
+          if (payload.new.room_id !== room.id) return;
           if (payload.new.id === userId) return;
 
           const prevUsers = scene.users;
@@ -204,6 +208,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
   );
 
   useOnlineUsers({
+    roomId: room.id,
     userId,
     onJoin: handleJoinUser,
     onLeave: handleLeaveUser,

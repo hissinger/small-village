@@ -25,6 +25,8 @@ import GithubIcon from "./components/GithubIcon";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { Room } from "./types";
+
 enum Steps {
   CHARACTER_SELECT = "CHARACTER_SELECT",
   SMALL_VILLAGE = "SMALL_VILLAGE",
@@ -36,6 +38,7 @@ const App: React.FC = () => {
     null
   );
   const [username, setUsername] = useState<string | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   const [currentStep, setCurrentStep] = useState<string>(
     Steps.CHARACTER_SELECT
   );
@@ -78,10 +81,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleCharacterSelect = useCallback(
-    (characterIndex: number, name: string) => {
+  const handleEnterRoom = useCallback(
+    (characterIndex: number, name: string, room: Room) => {
       setSelectedCharacter(characterIndex);
       setUsername(name);
+      setRoom(room);
       goToNextStep();
     },
     [goToNextStep]
@@ -119,13 +123,14 @@ const App: React.FC = () => {
         </div>
 
         {currentStep === Steps.CHARACTER_SELECT && (
-          <CharacterSelectModal onSelect={handleCharacterSelect} />
+          <CharacterSelectModal onEnterRoom={handleEnterRoom} />
         )}
         {currentStep === Steps.SMALL_VILLAGE && (
           <SmallVillageScreen
             userId={userId!}
             characterIndex={selectedCharacter!}
             characterName={username!}
+            room={room!}
             onExit={onExit}
           />
         )}

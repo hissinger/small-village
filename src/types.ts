@@ -18,8 +18,14 @@ export interface User {
   id: string;
   character_index: number;
   name: string;
+  room_id: string;
   x: number;
   y: number;
   last_active: string;
 }
 
+export interface Room {
+  id: string;
+  title: string;
+  created_at: string;
+}

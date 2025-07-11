@@ -56,6 +56,7 @@ const GAME_CONFIG = {
 interface GameSceneConfig {
   characterIndex: number;
   characterName: string;
+  roomId: string;
   userId: string;
   users: User[];
 }
@@ -259,6 +260,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
   > = {};
 
+  private roomId: string = "";
   private userId: string = "";
   private characterIndex: number = 0;
   private characterName: string = "";
@@ -275,6 +277,7 @@ export default class SmallVillageScene extends Phaser.Scene {
   init(data: GameSceneConfig) {
     this.characterIndex = data.characterIndex;
     this.characterName = data.characterName;
+    this.roomId = data.roomId;
     this.userId = data.userId;
     this.users = data.users || [];
   }
@@ -418,6 +421,7 @@ export default class SmallVillageScene extends Phaser.Scene {
         id: this.userId,
         name: this.characterName,
         character_index: this.characterIndex,
+        room_id: this.roomId,
         x: Math.floor(this.sprite.x),
         y: Math.floor(this.sprite.y),
       });
