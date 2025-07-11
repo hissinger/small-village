@@ -15,7 +15,7 @@
  */
 
 import React, { memo, useCallback, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
 import { DATABASE_TABLES } from "../constants";
@@ -26,7 +26,7 @@ import { useChatMessage } from "../hooks/useChatMessage";
 import { useToast } from "../hooks/useToast";
 import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 
-interface SmallVillageScreenProps {
+interface SmallVillageProps {
   userId: string;
   characterIndex: number;
   characterName: string;
@@ -37,7 +37,7 @@ interface SmallVillageScreenProps {
 const INACTIVE_TIMEOUT_MS = 15_000;
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
-const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
+const SmallVillage: React.FC<SmallVillageProps> = ({
   userId,
   scene,
   onExit,
@@ -247,4 +247,4 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   );
 };
 
-export default memo(SmallVillageScreen);
+export default memo(SmallVillage);

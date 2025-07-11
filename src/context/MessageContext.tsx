@@ -23,7 +23,7 @@ import React, {
   useState,
 } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 export const CHANNEL_MESSAGE = "message";
 export const RECEIVER_ALL = "all";

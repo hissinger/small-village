@@ -15,7 +15,7 @@
  */
 
 import { User } from "../types";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 import { DATABASE_TABLES, NUM_CHARACTERS } from "../constants";
 
 const GAME_CONFIG = {

@@ -15,8 +15,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import CharacterSelectModal from "./components/CharacterSelectModal";
-import SmallVillageScreen from "./components/SmallVillageScreen";
+import CharacterSelectModal from "./pages/CharacterSelectModal";
+import SmallVillageScreen from "./pages/SmallVillageScreen";
 import { v4 as uuidv4 } from "uuid";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";

@@ -1,3 +1,13 @@
+-- rooms table
+create table
+  public.rooms (
+    id uuid not null default gen_random_uuid (),
+    created_at timestamp with time zone not null default now(),
+    title text null,
+    constraint rooms_pkey primary key (id)
+  ) TABLESPACE pg_default;
+
+
 -- users table
 create table
   public.users (
