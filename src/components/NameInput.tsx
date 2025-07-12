@@ -22,7 +22,7 @@ interface NameInputProps {
 }
 
 const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
-  <div className="mb-4">
+  <div className="mb-2">
     <label className="block text-gray-700 text-sm font-bold mb-2">
       Enter Your Name
     </label>

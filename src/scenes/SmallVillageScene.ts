@@ -367,7 +367,8 @@ export default class SmallVillageScene extends Phaser.Scene {
     above1Layer.setScale(GAME_CONFIG.LAYER.SCALE);
     above1Layer.setDepth(11);
 
-    const { innerWidth: width, innerHeight: height } = window;
+    const width = GAME_CONFIG.LAYER.TILE_WIDTH * map.width * GAME_CONFIG.LAYER.SCALE;
+    const height = GAME_CONFIG.LAYER.TILE_HEIGHT * map.height * GAME_CONFIG.LAYER.SCALE;
     this.cameras.main.setBounds(0, 0, width, height);
     this.physics.world.setBounds(0, 0, width, height);
 
