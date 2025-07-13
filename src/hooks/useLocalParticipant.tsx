@@ -44,7 +44,6 @@ export const useLocalParticipant = (): User | undefined => {
   }, [userId]);
 
   useEffect(() => {
-    console.log("useLocalParticipant", roomId, userId);
     const usersChannelName = `realtime:public:${DATABASE_TABLES.USERS}:useLocalParticipant`;
     const usersChannel = supabase
       .channel(usersChannelName)
