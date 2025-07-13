@@ -100,6 +100,13 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           defaults: {
             video: false,
             audio: true,
+            mediaConfiguration: {
+              audio: {
+                echoCancellation: true,
+                noiseSupression: true,
+                autoGainControl: true,
+              },
+            },
           },
         });
 
