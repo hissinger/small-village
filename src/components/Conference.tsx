@@ -15,8 +15,12 @@
  */
 
 import { useEffect } from "react";
-import { RtkParticipantsAudio } from "@cloudflare/realtimekit-react-ui";
-import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
+import {
+  useRealtimeKitMeeting,
+  useRealtimeKitSelector,
+} from "@cloudflare/realtimekit-react";
+import { SpatialAudioController } from "./SpatialAudioController";
+import { useLocalParticipant } from "../hooks/useLocalParticipant";
 
 interface ConferenceProps {
   userId: string;
@@ -24,6 +28,12 @@ interface ConferenceProps {
 
 export default function Conference({ userId }: ConferenceProps) {
   const { meeting } = useRealtimeKitMeeting();
+  const localUser = useLocalParticipant();
+  const { participants } = useRealtimeKitSelector((meeting) => ({
+    participants: meeting.participants,
+  }));
+
+  const myPosition = localUser ? { x: localUser.x, y: localUser.y } : null;
 
   useEffect(() => {
     try {
@@ -34,5 +44,14 @@ export default function Conference({ userId }: ConferenceProps) {
     }
   }, [meeting]);
 
-  return <RtkParticipantsAudio meeting={meeting} />;
+  if (!myPosition) {
+    return null;
+  }
+
+  return (
+    <SpatialAudioController
+      participants={participants}
+      myPosition={myPosition}
+    />
+  );
 }

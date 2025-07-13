@@ -17,8 +17,10 @@
 import React, { createContext, useState } from "react";
 
 interface RoomContextType {
-  currentUserId: string;
-  currentUserName: string;
+  roomId: string;
+  roomTitle: string;
+  userId: string;
+  userName: string;
 }
 
 const RoomContext = createContext<RoomContextType | null>(null);
@@ -26,23 +28,30 @@ const RoomContext = createContext<RoomContextType | null>(null);
 interface RoomProviderProps {
   userId: string;
   userName: string;
+  roomId: string;
+  roomTitle: string;
   children: React.ReactNode;
 }
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({
-  userId,
-  userName,
+  userId: initialUserId,
+  userName: initialUserName,
+  roomId: initialRoomId,
+  roomTitle: initialRoomTitle,
   children,
 }) => {
-  const [currentUserId] = useState<string>(userId);
-  const [currentUserName] = useState<string>(userName);
-  useState<MediaStreamTrack | null>(null);
+  const [roomId] = useState<string>(initialRoomId);
+  const [roomTitle] = useState<string>(initialRoomTitle);
+  const [userId] = useState<string>(initialUserId);
+  const [userName] = useState<string>(initialUserName);
 
   return (
     <RoomContext.Provider
       value={{
-        currentUserId,
-        currentUserName,
+        roomId,
+        roomTitle,
+        userId,
+        userName,
       }}
     >
       {children}
