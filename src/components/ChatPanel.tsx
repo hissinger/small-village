@@ -57,7 +57,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const { currentUserId: userId, currentUserName: userName } = useRoomContext();
+  const { userId, userName } = useRoomContext();
 
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString(undefined, {
@@ -179,11 +179,13 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   return (
     <div
       ref={chatPanelRef}
-      className={`fixed right-0 top-0 h-full w-[${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      className={`fixed right-0 top-0 h-full w-[${
+        CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH
+      }px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
     >
-      <div
-        className="flex justify-between items-center py-3 px-4 bg-gray-100 border-b border-gray-200"
-      >
+      <div className="flex justify-between items-center py-3 px-4 bg-gray-100 border-b border-gray-200">
         <h3 className="m-0 text-lg font-semibold">Chat</h3>
         <button
           onClick={onClose}
@@ -193,31 +195,29 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         </button>
       </div>
 
-      <div
-        className="flex-1 overflow-y-auto p-4"
-      >
+      <div className="flex-1 overflow-y-auto p-4">
         {messages.map((msg, index) => {
           const isMine = msg.senderId === userId;
           return (
             <div
               key={index}
-              className={`mb-4 flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-full`}
+              className={`mb-4 flex flex-col ${
+                isMine ? "items-end" : "items-start"
+              } max-w-full`}
             >
               {!isMine && (
-                <span
-                  className="text-xs text-gray-600 mb-1 font-medium"
-                >
+                <span className="text-xs text-gray-600 mb-1 font-medium">
                   {msg.senderName}:
                 </span>
               )}
               <div
-                className={`max-w-[80%] px-3 py-2 rounded-lg ${isMine ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'} break-words whitespace-pre-wrap overflow-wrap`}
+                className={`max-w-[80%] px-3 py-2 rounded-lg ${
+                  isMine ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                } break-words whitespace-pre-wrap overflow-wrap`}
               >
                 <p className="m-0 text-sm">{msg.message}</p>
               </div>
-              <span
-                className="text-xs text-gray-600 mt-1"
-              >
+              <span className="text-xs text-gray-600 mt-1">
                 {formatTime(msg.timestamp)}
               </span>
             </div>
@@ -226,12 +226,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div
-        className="p-4 border-t border-gray-200 bg-white"
-      >
-        <div
-          className="flex gap-2 items-end"
-        >
+      <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="flex gap-2 items-end">
           <textarea
             ref={textAreaRef}
             value={inputMessage}

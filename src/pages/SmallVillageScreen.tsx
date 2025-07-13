@@ -135,7 +135,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           <LoadingSpinner message="Strolling into the Small Village..." />
         ) : (
           <RealtimeKitProvider value={meeting}>
-            <RoomProvider userId={userId} userName={characterName}>
+            <RoomProvider
+              userId={userId}
+              userName={characterName}
+              roomId={room.id}
+              roomTitle={room.title}
+            >
               <SmallVillage
                 room={room}
                 userId={userId!}
