@@ -34,7 +34,6 @@ const CHAT_CONSTANTS = {
     LINE_HEIGHT: 20,
   },
   LAYOUT: {
-    PANEL_WIDTH: 400,
     PADDING: 16,
   },
 } as const;
@@ -54,6 +53,7 @@ interface ChatPanelProps {
 const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isComposing, setIsComposing] = useState(false);
   const { sendMessage } = useMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
@@ -142,12 +142,25 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     // handle Enter key
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (!isComposing) {
+        handleSendMessage();
+      }
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
+    adjustTextAreaHeight();
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = (
+    e: React.CompositionEvent<HTMLTextAreaElement>
+  ) => {
+    setIsComposing(false);
     adjustTextAreaHeight();
   };
 
@@ -180,11 +193,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   return (
     <div
       ref={chatPanelRef}
-      className={`fixed right-0 top-0 h-full w-[${
-        CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH
-      }px] min-w-[${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px] max-w-[${
-        CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH
-      }px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      className={`fixed right-0 top-0 h-full w-[400px] min-w-[400px] max-w-[400px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
@@ -214,7 +223,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
                 </span>
               )}
               <div
-                className={`w-full max-w-[80%] px-3 py-2 rounded-lg ${
+                className={`px-3 py-2 rounded-lg ${
                   isMine ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
                 } break-all whitespace-pre-wrap`}
               >
@@ -245,6 +254,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             value={inputMessage}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
             placeholder="Type a message..."
             className="flex-1 p-2.5 border border-gray-200 rounded-lg outline-none resize-none"
             style={{
