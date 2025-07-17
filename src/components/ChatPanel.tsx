@@ -25,6 +25,7 @@ import {
 } from "../context/MessageContext";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useRoomContext } from "../context/RoomContext";
+import Linkify from "linkify-react";
 
 const CHAT_CONSTANTS = {
   INPUT: {
@@ -33,7 +34,7 @@ const CHAT_CONSTANTS = {
     LINE_HEIGHT: 20,
   },
   LAYOUT: {
-    PANEL_WIDTH: 300,
+    PANEL_WIDTH: 400,
     PADDING: 16,
   },
 } as const;
@@ -181,6 +182,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
       ref={chatPanelRef}
       className={`fixed right-0 top-0 h-full w-[${
         CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH
+      }px] min-w-[${CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH}px] max-w-[${
+        CHAT_CONSTANTS.LAYOUT.PANEL_WIDTH
       }px] bg-white shadow-lg transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
@@ -211,11 +214,20 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
                 </span>
               )}
               <div
-                className={`max-w-[80%] px-3 py-2 rounded-lg ${
+                className={`w-full max-w-[80%] px-3 py-2 rounded-lg ${
                   isMine ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
-                } break-words whitespace-pre-wrap overflow-wrap`}
+                } break-all whitespace-pre-wrap`}
               >
-                <p className="m-0 text-sm">{msg.message}</p>
+                <Linkify
+                  options={{
+                    target: "_blank",
+                    className: isMine
+                      ? "text-white underline break-all"
+                      : "text-blue-600 underline break-all",
+                  }}
+                >
+                  {msg.message}
+                </Linkify>
               </div>
               <span className="text-xs text-gray-600 mt-1">
                 {formatTime(msg.timestamp)}
