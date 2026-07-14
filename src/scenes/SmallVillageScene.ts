@@ -15,8 +15,8 @@
  */
 
 import { User } from "../types";
-import { supabase } from "../lib/supabaseClient";
-import { DATABASE_TABLES, NUM_CHARACTERS } from "../constants";
+import { upsertUserState } from "../lib/userState";
+import { NUM_CHARACTERS } from "../constants";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -424,12 +424,11 @@ export default class SmallVillageScene extends Phaser.Scene {
       .setDepth(12);
 
     try {
-      // 강제로 사용자 데이터를 업데이트
-      await supabase
-        .from(DATABASE_TABLES.USERS)
-        .delete()
-        .match({ id: this.userId });
-      await supabase.from(DATABASE_TABLES.USERS).insert({
+      // 초기 사용자 데이터 등록. 같은 id(sessionStorage uuid) row 가 이미
+      // 있을 수 있으므로(재접속·이전 세션·StrictMode 이중 마운트 등) insert 대신
+      // upsert 로 멱등하게 쓴다. insert + 선행 delete 는 비원자적이라 레이스 시
+      // PK 충돌(409)이 났다. 이동 동기화(update)도 동일하게 upsert 를 쓴다.
+      await upsertUserState({
         id: this.userId,
         name: this.characterName,
         character_index: this.characterIndex,
@@ -690,10 +689,11 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     try {
       if (isMoving) {
-        await supabase.from(DATABASE_TABLES.USERS).upsert({
+        await upsertUserState({
           id: this.userId,
           name: this.characterName,
           character_index: this.characterIndex,
+          room_id: this.roomId,
           x: Math.floor(this.sprite.x),
           y: Math.floor(this.sprite.y),
         });
