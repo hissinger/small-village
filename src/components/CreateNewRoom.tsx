@@ -21,51 +21,69 @@ import { createMeeting } from "../lib/supabaseFunctions";
 interface CreateNewRoomProps {
   disabled: boolean;
   onEnterRoom: (room: Room) => void;
+  roomCount: number;
 }
 
 const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
   disabled,
   onEnterRoom,
+  roomCount,
 }) => {
   const [newRoomTitle, setNewRoomTitle] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateRoom = async () => {
-    if (!newRoomTitle) return;
-    const newRoom = await createMeeting(newRoomTitle);
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newRoomTitle.trim();
+    if (!title || isCreating) return;
 
-    onEnterRoom({
-      id: newRoom,
-      title: newRoomTitle,
-      created_at: new Date().toISOString(),
-    });
+    setIsCreating(true);
+    try {
+      const newRoom = await createMeeting(title);
+      onEnterRoom({
+        id: newRoom,
+        title,
+        created_at: new Date().toISOString(),
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
+  // When there are no rooms yet, nudge the user with a solid primary button;
+  // otherwise keep it as a quieter outline action next to the list.
+  const isPrimary = roomCount === 0;
+  const buttonTone = isPrimary
+    ? "bg-orange-700 text-white hover:bg-orange-800 active:bg-orange-900"
+    : "border border-orange-400/70 text-orange-200 hover:bg-white/10";
+
   return (
-    <div className="p-4 w-7/12">
-      <div>
-        <div className="mb-2">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Create a New Room
-          </label>
-          <div className="flex">
-            <input
-              type="text"
-              placeholder="Room Title"
-              value={newRoomTitle}
-              onChange={(e) => setNewRoomTitle(e.target.value)}
-              className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-            <button
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-2 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
-              disabled={disabled || !newRoomTitle}
-              onClick={handleCreateRoom}
-            >
-              CREATE
-            </button>
-          </div>
-        </div>
+    <form onSubmit={handleCreateRoom}>
+      <label
+        htmlFor="room-title"
+        className="mb-2 block text-sm font-bold uppercase tracking-wider text-stone-100"
+      >
+        Create a New Room
+      </label>
+      <div className="flex gap-2">
+        <input
+          id="room-title"
+          type="text"
+          placeholder="Room title"
+          value={newRoomTitle}
+          maxLength={30}
+          onChange={(e) => setNewRoomTitle(e.target.value)}
+          className="w-full rounded-xl border border-stone-900/10 bg-[#fffdf7] px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
+        />
+        <button
+          type="submit"
+          className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-stone-700/50 disabled:text-white/70 disabled:hover:bg-stone-700/50 ${buttonTone}`}
+          disabled={disabled || !newRoomTitle.trim() || isCreating}
+        >
+          {isCreating ? "Creating..." : "Create"}
+        </button>
       </div>
-    </div>
+    </form>
   );
 };
 

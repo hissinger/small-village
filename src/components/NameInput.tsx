@@ -22,16 +22,21 @@ interface NameInputProps {
 }
 
 const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
-  <div className="mb-2">
-    <label className="block text-gray-700 text-sm font-bold mb-2">
-      Enter Your Name
+  <div>
+    <label
+      htmlFor="player-name"
+      className="mb-2 block text-sm font-bold text-stone-100"
+    >
+      Your Name <span className="text-orange-300">*</span>
     </label>
     <input
+      id="player-name"
       type="text"
-      placeholder="Name"
+      placeholder="e.g. Mina"
       value={name}
+      maxLength={20}
       onChange={(e) => onChange(e.target.value)}
-      className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      className="w-full rounded-xl border border-stone-900/10 bg-[#fffdf7] px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
     />
   </div>
 );

@@ -17,3 +17,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 8-bit pixel typography for hero title and step badges */
+.sv-font-pixel {
+  font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
+}
+
+/* Soft terracotta pixel drop-shadow for the hero title */
+.sv-pixel-shadow {
+  text-shadow: 3px 3px 0 rgba(120, 53, 15, 0.18);
+}

@@ -23,9 +23,9 @@ import { NUM_CHARACTERS } from "../constants";
 import { useRooms } from "../hooks/useRooms";
 import { Room } from "../types";
 import RoomList from "../components/RoomList";
-import NameInput from "../components/NameInput";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
+import LobbyBackground from "../components/LobbyBackground";
 
 interface CharacterSelectScreenProps {
   onEnterRoom: (characterIndex: number, name: string, room: Room) => void;
@@ -90,20 +90,43 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-        {/* Body */}
-        <div className="flex flex-col pt-4">
-          <div className="flex flex-col flex-grow">
-            <div className="flex flex-grow">
-              {/* Choose your character */}
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Pixel-art village background (full screen, crisp, no blur) */}
+      <LobbyBackground />
+      {/* Feather-light scrim: let the pixel-art village read as vividly as
+          possible and only lift a touch of warmth at the very bottom. */}
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-stone-900/10 via-stone-900/5 to-orange-950/20" />
+      {/* Centered radial pool: adds just enough contrast behind the floating
+          UI while the edges of the frame stay fully exposed. */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(12,10,9,0.32)_0%,_rgba(12,10,9,0.14)_45%,_rgba(12,10,9,0)_75%)]" />
+
+      {/* Floating UI — no cards, content sits directly on the scrim */}
+      <div className="relative flex min-h-full items-center justify-center p-4">
+        <div className="w-full max-w-4xl">
+          {/* Hero title */}
+          <h1 className="mb-8 text-center text-xl leading-relaxed text-orange-100 sv-font-pixel sv-pixel-shadow sm:text-2xl">
+            Welcome to Small Village
+          </h1>
+
+          {/* Two independent translucent panels floating over the pixel-art
+              village: the background still reads through (bg-stone-900/70 +
+              backdrop-blur), while the border + shadow give each block a clear
+              "lobby window" edge that separates UI from scenery. */}
+          <div className="relative grid grid-cols-1 items-stretch gap-8 md:grid-cols-5">
+            {/* Left panel: character + name */}
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-2">
               <ChooseYourCharacter
                 previewContainerRef={previewContainerRef}
                 handlePrevious={handlePrevious}
                 handleNext={handleNext}
+                currentIndex={currentIndex}
+                name={name}
+                onNameChange={setName}
               />
+            </div>
 
-              {/* Room List */}
+            {/* Right panel: room list + create */}
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-3">
               <RoomList
                 disabled={!name}
                 rooms={rooms}
@@ -113,28 +136,24 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 loading={loading}
                 refetch={refetch}
               />
-            </div>
-            <div className="flex items-center">
-              {/* Character Name Input */}
-              <div className="p-4 border-r w-5/12">
-                <NameInput name={name} onChange={setName} />
+              <div className="mt-auto border-t border-white/15 pt-4">
+                <CreateNewRoom
+                  disabled={!name}
+                  roomCount={rooms.length}
+                  onEnterRoom={(room: Room) =>
+                    onEnterRoom(currentIndex, name, room)
+                  }
+                />
               </div>
-
-              {/* Create New Room */}
-              <CreateNewRoom
-                disabled={!name}
-                onEnterRoom={(room: Room) =>
-                  onEnterRoom(currentIndex, name, room)
-                }
-              />
             </div>
+
+            {!readyScene && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-stone-950/60 backdrop-blur-sm">
+                <LoadingSpinner message="Loading assets..." />
+              </div>
+            )}
           </div>
         </div>
-        {!readyScene && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-            <LoadingSpinner message="Loading assets..." />
-          </div>
-        )}
       </div>
     </div>
   );
