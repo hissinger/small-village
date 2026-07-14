@@ -268,6 +268,9 @@ export default class SmallVillageScene extends Phaser.Scene {
   private characterName: string = "";
   private onUserClick: (user: User) => void;
   private speechBubbleHideTimer: Phaser.Time.TimerEvent | null = null;
+  // rooms row 보장 + 최초 users 등록이 끝나기 전에는 이동 write 를 막는 플래그.
+  // 초기화 중 움직이면 users write 가 rooms 보장보다 앞서 FK 위반(409)을 낼 수 있다.
+  private ready: boolean = false;
 
   users: User[] = [];
 
@@ -439,6 +442,9 @@ export default class SmallVillageScene extends Phaser.Scene {
     } catch (error) {
       console.error(error);
     }
+
+    // rooms 보장 + 최초 등록이 끝났으니 이제 이동 write 를 허용한다.
+    this.ready = true;
 
     this.createAnimations();
   }
@@ -688,7 +694,9 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
 
     try {
-      if (isMoving) {
+      // 최초 등록(create)이 끝나기 전에는 이동 write 를 보내지 않는다. 초기화 중
+      // 움직이면 write 가 create 보다 앞서 나가 레이스로 409 를 낼 수 있다.
+      if (isMoving && this.ready) {
         await upsertUserState({
           id: this.userId,
           name: this.characterName,

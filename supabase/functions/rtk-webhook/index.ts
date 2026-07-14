@@ -23,10 +23,12 @@ Deno.serve(async (req) => {
   const body = await req.json()
   const event = body.event
   if (event === RoomEvent.STARTED) {
+    // rooms row 는 이제 create-meeting 이 생성 시점에 넣는다. 이 이벤트는
+    // 안전망일 뿐이므로, 이미 있으면 충돌하지 않도록 upsert 로 처리한다.
     const { id, title } = body.meeting;
     const { error } = await supabase
       .from(ROOMS_TABLE)
-      .insert([{ id, title }]);
+      .upsert([{ id, title }]);
 
     if (error) {
       console.error("DB insert error:", error);
