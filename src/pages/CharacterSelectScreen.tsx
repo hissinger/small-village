@@ -25,6 +25,7 @@ import { Room } from "../types";
 import RoomList from "../components/RoomList";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
+import LobbyBackground from "../components/LobbyBackground";
 
 interface CharacterSelectScreenProps {
   onEnterRoom: (characterIndex: number, name: string, room: Room) => void;
@@ -89,7 +90,9 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-orange-200 via-amber-100 to-stone-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Pixel-art village background (full screen, crisp, no blur) */}
+      <LobbyBackground />
       {/* Feather-light scrim: let the pixel-art village read as vividly as
           possible and only lift a touch of warmth at the very bottom. */}
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-stone-900/10 via-stone-900/5 to-orange-950/20" />
