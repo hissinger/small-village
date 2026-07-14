@@ -20,8 +20,9 @@
 // arrow function 안에서 `super(...args)` 를 호출하는 패턴을 담고 있어, classes
 // 변환 없이 parameters 만 변환하면 Babel 이 컴파일을 거부한다
 // ("it's not possible to compile `super()` in an arrow function ...").
-// 모든 babel-loader 규칙에 transform-classes 를 주입해 이 조합을 성립시킨다.
-// (커스텀 웹팩을 새로 짜는 게 아니라 CRA 기본 설정에 플러그인 하나만 더한다.)
+// dependencies 용 babel-loader 에만 transform-classes 를 주입해 이 조합을
+// 성립시킨다(아래 isDependenciesLoader 참고). 커스텀 웹팩을 새로 짜는 게 아니라
+// CRA 기본 설정에 플러그인 하나만 더하는 것이다.
 const transformClasses = require.resolve("@babel/plugin-transform-classes");
 
 // CRA 의 node_modules 전용 babel-loader 만 골라낸다. 이 규칙은
@@ -31,8 +32,11 @@ const transformClasses = require.resolve("@babel/plugin-transform-classes");
 // 우리 TS 클래스가 깨지므로, 반드시 dependencies 규칙에만 주입해야 한다.
 function isDependenciesLoader(options) {
   if (!options || !Array.isArray(options.presets)) return false;
-  const flat = JSON.stringify(options.presets);
-  return flat.includes("babel-preset-react-app/dependencies");
+  // require.resolve 가 돌려준 절대경로라 OS 구분자(posix `/`, Windows `\`)
+  // 양쪽을 허용한다.
+  return /babel-preset-react-app[\\/]dependencies/.test(
+    JSON.stringify(options.presets)
+  );
 }
 
 function addTransformClasses(entry) {
@@ -55,7 +59,6 @@ function walkRules(rules) {
   rules.forEach((rule) => {
     if (!rule) return;
     if (Array.isArray(rule.oneOf)) walkRules(rule.oneOf);
-    if (Array.isArray(rule.use)) rule.use.forEach(addTransformClasses);
     addTransformClasses(rule);
   });
 }
