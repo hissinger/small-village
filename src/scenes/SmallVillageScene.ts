@@ -369,14 +369,43 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     const width = GAME_CONFIG.LAYER.TILE_WIDTH * map.width * GAME_CONFIG.LAYER.SCALE;
     const height = GAME_CONFIG.LAYER.TILE_HEIGHT * map.height * GAME_CONFIG.LAYER.SCALE;
-    this.cameras.main.setBounds(0, 0, width, height);
+    // 물리/충돌은 맵 크기 기준으로 유지해 캐릭터가 맵 밖으로 나가지 못하게 한다.
     this.physics.world.setBounds(0, 0, width, height);
+    const cam = this.cameras.main;
+    cam.setBackgroundColor("#3a5a40");
 
     this.sprite = this.physics.add
       .sprite(width / 2, height / 2, `character_${this.characterIndex}`, 0)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
+
+    // 화면 크기에 따라 카메라 모드를 분기 처리한다.
+    //  - 뷰포트가 맵보다 크거나 같으면: 카메라 고정 + 맵을 화면 중앙에 정적 배치(맵 전체가 보임).
+    //  - 뷰포트가 맵보다 작으면: 카메라 bounds 를 맵으로 잡고 캐릭터를 추종(탐험 가능).
+    // 물리 bounds(맵 기준)는 위에서 이미 세팅했으므로 여기서 건드리지 않는다.
+    const applyCameraMode = () => {
+      const vw = window.innerWidth || cam.width;
+      const vh = window.innerHeight || cam.height;
+      if (vw >= width && vh >= height) {
+        // 정적 모드: 추종 해제 후 카메라 bounds 를 완전 제거(자유 카메라)하고 맵 중앙에 고정
+        cam.stopFollow();
+        cam.removeBounds();
+        cam.centerOn(width / 2, height / 2);
+      } else {
+        // 추종 모드: 카메라 bounds 를 맵으로 잡고 캐릭터를 따라가게 한다
+        cam.setBounds(0, 0, width, height);
+        if (this.sprite) {
+          cam.startFollow(this.sprite, true, 1, 1);
+        }
+      }
+    };
+    applyCameraMode();
+    // 리사이즈 시 모드 재계산(뷰포트가 맵보다 커지면 정적, 작아지면 추종)
+    this.scale.on(Phaser.Scale.Events.RESIZE, applyCameraMode);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, applyCameraMode);
+    });
 
     this.nameText = this.add
       .text(
