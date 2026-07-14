@@ -108,9 +108,13 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
             Welcome to Small Village
           </h1>
 
+          {/* Two independent translucent panels floating over the pixel-art
+              village: the background still reads through (bg-stone-900/70 +
+              backdrop-blur), while the border + shadow give each block a clear
+              "lobby window" edge that separates UI from scenery. */}
           <div className="relative grid grid-cols-1 gap-8 md:grid-cols-5">
-            {/* Left column: character + name */}
-            <div className="md:col-span-2">
+            {/* Left panel: character + name */}
+            <div className="rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-2">
               <ChooseYourCharacter
                 previewContainerRef={previewContainerRef}
                 handlePrevious={handlePrevious}
@@ -121,8 +125,8 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               />
             </div>
 
-            {/* Right column: room list + create */}
-            <div className="flex flex-col md:col-span-3">
+            {/* Right panel: room list + create */}
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-3">
               <RoomList
                 disabled={!name}
                 rooms={rooms}
@@ -144,7 +148,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
             </div>
 
             {!readyScene && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-stone-950/60 backdrop-blur-sm">
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-stone-950/60 backdrop-blur-sm">
                 <LoadingSpinner message="Loading assets..." />
               </div>
             )}
