@@ -14,29 +14,46 @@
  * limitations under the License.
  */
 
+import React from "react";
 import CharacterPreview from "./CharacterPreview";
+import NameInput from "./NameInput";
 
 interface ChooseYourCharacterProps {
   previewContainerRef: React.RefObject<HTMLDivElement>;
   handlePrevious: () => void;
   handleNext: () => void;
+  currentIndex: number;
+  name: string;
+  onNameChange: (value: string) => void;
 }
 
 const ChooseYourCharacter: React.FC<ChooseYourCharacterProps> = ({
   previewContainerRef,
   handlePrevious,
   handleNext,
+  currentIndex,
+  name,
+  onNameChange,
 }) => (
-  <div className="flex flex-1 flex-col items-center p-4 border-r w-5/12">
-    <h5 className="text-center mb-4 text-lg font-medium">
-      Choose Your Character
-    </h5>
-    <div className="flex flex-1 items-center">
-      <CharacterPreview
-        previewContainerRef={previewContainerRef}
-        onPrevious={handlePrevious}
-        onNext={handleNext}
-      />
+  <div className="flex h-full flex-col">
+    <div className="mb-4 flex items-center gap-2">
+      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-orange-700 text-xs text-white sv-font-pixel">
+        1
+      </span>
+      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
+        My Character
+      </h2>
+    </div>
+
+    <CharacterPreview
+      previewContainerRef={previewContainerRef}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+      currentIndex={currentIndex}
+    />
+
+    <div className="mt-auto pt-6">
+      <NameInput name={name} onChange={onNameChange} />
     </div>
   </div>
 );

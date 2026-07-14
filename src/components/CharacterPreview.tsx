@@ -15,39 +15,48 @@
  */
 
 import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NUM_CHARACTERS } from "../constants";
 
 interface CharacterPreviewProps {
   previewContainerRef: React.RefObject<HTMLDivElement>;
   onPrevious: () => void;
   onNext: () => void;
+  currentIndex: number;
 }
+
+const arrowClass =
+  "absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-700 ring-1 ring-stone-900/10 transition hover:bg-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1";
 
 const CharacterPreview: React.FC<CharacterPreviewProps> = ({
   previewContainerRef,
   onPrevious,
   onNext,
+  currentIndex,
 }) => (
-  <div className="flex flex-col items-center justify-center w-full">
-    <div className="flex items-center justify-center mb-3">
+  <div className="flex w-full flex-col items-center">
+    <div className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-orange-50/70 ring-1 ring-amber-900/10">
+      <div ref={previewContainerRef} className="[image-rendering:pixelated]" />
       <button
         type="button"
-        className="px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 mr-3"
+        aria-label="Previous character"
+        className={`left-2 ${arrowClass}`}
         onClick={onPrevious}
       >
-        ◀
+        <ChevronLeft size={20} strokeWidth={2.5} />
       </button>
-      <div
-        ref={previewContainerRef}
-        className="w-[120px] h-[100px] border rounded"
-      />
       <button
         type="button"
-        className="px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 ml-3"
+        aria-label="Next character"
+        className={`right-2 ${arrowClass}`}
         onClick={onNext}
       >
-        ▶
+        <ChevronRight size={20} strokeWidth={2.5} />
       </button>
     </div>
+    <p className="mt-3 text-xs tabular-nums text-stone-500">
+      {currentIndex + 1}/{NUM_CHARACTERS}
+    </p>
   </div>
 );
 

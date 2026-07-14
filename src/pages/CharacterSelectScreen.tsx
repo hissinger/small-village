@@ -23,7 +23,6 @@ import { NUM_CHARACTERS } from "../constants";
 import { useRooms } from "../hooks/useRooms";
 import { Room } from "../types";
 import RoomList from "../components/RoomList";
-import NameInput from "../components/NameInput";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
 
@@ -90,51 +89,52 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg">
-        {/* Body */}
-        <div className="flex flex-col pt-4">
-          <div className="flex flex-col flex-grow">
-            <div className="flex flex-grow">
-              {/* Choose your character */}
-              <ChooseYourCharacter
-                previewContainerRef={previewContainerRef}
-                handlePrevious={handlePrevious}
-                handleNext={handleNext}
-              />
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gradient-to-br from-orange-200 via-amber-100 to-stone-200 p-4">
+      <div className="w-full max-w-4xl">
+        {/* Hero title */}
+        <h1 className="mb-6 text-center text-xl leading-relaxed text-orange-800 sv-font-pixel sv-pixel-shadow sm:text-2xl">
+          Welcome to Small Village
+        </h1>
 
-              {/* Room List */}
-              <RoomList
-                disabled={!name}
-                rooms={rooms}
-                onEnterRoom={(room: Room) =>
-                  onEnterRoom(currentIndex, name, room)
-                }
-                loading={loading}
-                refetch={refetch}
-              />
-            </div>
-            <div className="flex items-center">
-              {/* Character Name Input */}
-              <div className="p-4 border-r w-5/12">
-                <NameInput name={name} onChange={setName} />
-              </div>
+        <div className="relative grid grid-cols-1 gap-4 md:grid-cols-5">
+          {/* Left card: character + name */}
+          <div className="rounded-xl bg-[#fffdf7]/95 p-5 shadow-lg shadow-amber-900/15 ring-1 ring-amber-900/10 md:col-span-2">
+            <ChooseYourCharacter
+              previewContainerRef={previewContainerRef}
+              handlePrevious={handlePrevious}
+              handleNext={handleNext}
+              currentIndex={currentIndex}
+              name={name}
+              onNameChange={setName}
+            />
+          </div>
 
-              {/* Create New Room */}
+          {/* Right card: room list + create */}
+          <div className="flex flex-col rounded-xl bg-[#fffdf7]/95 p-5 shadow-lg shadow-amber-900/15 ring-1 ring-amber-900/10 md:col-span-3">
+            <RoomList
+              disabled={!name}
+              rooms={rooms}
+              onEnterRoom={(room: Room) => onEnterRoom(currentIndex, name, room)}
+              loading={loading}
+              refetch={refetch}
+            />
+            <div className="mt-4 border-t border-stone-200 pt-4">
               <CreateNewRoom
                 disabled={!name}
+                roomCount={rooms.length}
                 onEnterRoom={(room: Room) =>
                   onEnterRoom(currentIndex, name, room)
                 }
               />
             </div>
           </div>
+
+          {!readyScene && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-[#fffdf7]/80">
+              <LoadingSpinner message="Loading assets..." />
+            </div>
+          )}
         </div>
-        {!readyScene && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-            <LoadingSpinner message="Loading assets..." />
-          </div>
-        )}
       </div>
     </div>
   );

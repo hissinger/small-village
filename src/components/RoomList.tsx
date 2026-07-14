@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 import { Room } from "../types";
-import IconButton from "./IconButton";
 import LoadingSpinner from "./LoadingSpinner";
+import PixelHouse from "./PixelHouse";
 
 interface RoomListProps {
   disabled: boolean;
@@ -34,52 +34,66 @@ const RoomList: React.FC<RoomListProps> = ({
   loading,
   refetch,
 }: RoomListProps) => (
-  <div className="p-4 flex flex-col w-7/12 h-full">
-    <div className="flex justify-center items-center mb-4">
-      <h5 className="text-center mb-0 mr-2 text-lg font-medium">
+  <div className="flex flex-col">
+    <div className="mb-4 flex items-center gap-2">
+      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-orange-700 text-xs text-white sv-font-pixel">
+        2
+      </span>
+      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
         Available Rooms
-      </h5>
-      <IconButton
+      </h2>
+      <span className="rounded-md bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">
+        {rooms.length}
+      </span>
+      <button
+        type="button"
+        aria-label="Refresh room list"
         onClick={refetch}
-        ActiveIcon={RefreshCw}
-        activeColor="#6c757d"
-        size={20}
-        strokeWidth={2}
-        className="w-auto px-2"
-      />
+        className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-orange-50 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1"
+      >
+        <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+      </button>
     </div>
-    <div className="h-[200px] overflow-y-auto pr-2 relative">
+    <div className="relative h-[200px] overflow-y-auto pr-1">
       {loading ? (
-        <div className="flex items-center justify-center h-full min-h-[100px]">
+        <div className="flex h-full min-h-[100px] items-center justify-center">
           <LoadingSpinner />
         </div>
       ) : rooms.length > 0 ? (
-        <ul className="list-none p-0">
+        <ul className="flex list-none flex-col gap-2 p-0">
           {rooms.map((room) => (
             <li
               key={room.id}
-              className="flex justify-between items-center border-b py-2 last:border-b-0"
+              className="flex items-center justify-between rounded-xl border border-stone-200 p-3 transition-colors hover:border-orange-300"
             >
-              <div>
-                <span className="font-bold">{room.title}</span>
-                <br />
-                <small className="text-gray-500">
-                  {`Created at: ${new Date(room.created_at).toLocaleString()}`}
-                </small>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate font-semibold text-stone-800">
+                    {room.title}
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <Users size={12} strokeWidth={2.5} />
+                    Open
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  {`Created ${new Date(room.created_at).toLocaleString()}`}
+                </p>
               </div>
               <button
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+                className="ml-3 shrink-0 rounded-lg bg-orange-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 active:bg-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:hover:bg-stone-300"
                 disabled={disabled}
                 onClick={() => onEnterRoom(room)}
               >
-                Enter
+                Join
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="flex flex-1 items-center justify-center min-h-[200px]">
-          <p className="text-center text-gray-500">No available rooms.</p>
+        <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-center">
+          <PixelHouse size={72} />
+          <p className="text-sm text-stone-500">The village is quiet</p>
         </div>
       )}
     </div>
