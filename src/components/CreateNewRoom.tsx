@@ -73,11 +73,11 @@ const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
           value={newRoomTitle}
           maxLength={30}
           onChange={(e) => setNewRoomTitle(e.target.value)}
-          className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-white placeholder:text-white/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
+          className="w-full rounded-xl border border-stone-900/10 bg-[#fffdf7] px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
         />
         <button
           type="submit"
-          className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-white/10 disabled:text-white/40 disabled:hover:bg-white/10 ${buttonTone}`}
+          className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-stone-700/50 disabled:text-white/70 disabled:hover:bg-stone-700/50 ${buttonTone}`}
           disabled={disabled || !newRoomTitle.trim() || isCreating}
         >
           {isCreating ? "Creating..." : "Create"}

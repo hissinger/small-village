@@ -36,7 +36,7 @@ const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
       value={name}
       maxLength={20}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-white placeholder:text-white/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
+      className="w-full rounded-xl border border-stone-900/10 bg-[#fffdf7] px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
     />
   </div>
 );

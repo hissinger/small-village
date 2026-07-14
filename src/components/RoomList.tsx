@@ -93,7 +93,7 @@ const RoomList: React.FC<RoomListProps> = ({
       ) : (
         <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-center">
           <PixelHouse size={72} />
-          <p className="rounded-full bg-black/25 px-3 py-1 text-sm font-medium text-white">
+          <p className="rounded-full bg-black/30 px-3 py-1 text-sm font-medium text-white">
             The village is quiet
           </p>
         </div>
