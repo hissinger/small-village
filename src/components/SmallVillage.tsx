@@ -18,6 +18,7 @@ import React, { memo, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
+import SpeakerIndicators from "./SpeakerIndicators";
 import { DATABASE_TABLES } from "../constants";
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import { Room, User } from "../types";
@@ -230,6 +231,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
       <div>
         <Conference userId={userId} />
       </div>
+      <SpeakerIndicators scene={scene} />
     </div>
   );
 };
