@@ -249,6 +249,8 @@ class SpeechBubble extends Phaser.GameObjects.Container {
 export default class SmallVillageScene extends Phaser.Scene {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private sprite: Phaser.Physics.Arcade.Sprite | null = null;
+  private mapWidth: number = 0;
+  private mapHeight: number = 0;
   private nameText: Phaser.GameObjects.Text | null = null;
   private speechBubble: SpeechBubble | null = null;
   private userSprites: Record<
@@ -369,14 +371,23 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     const width = GAME_CONFIG.LAYER.TILE_WIDTH * map.width * GAME_CONFIG.LAYER.SCALE;
     const height = GAME_CONFIG.LAYER.TILE_HEIGHT * map.height * GAME_CONFIG.LAYER.SCALE;
-    this.cameras.main.setBounds(0, 0, width, height);
+    // 물리/충돌은 맵 크기 기준으로 유지해 캐릭터가 맵 밖으로 나가지 못하게 한다.
     this.physics.world.setBounds(0, 0, width, height);
+    const cam = this.cameras.main;
+    cam.setBackgroundColor("#3a5a40");
 
     this.sprite = this.physics.add
       .sprite(width / 2, height / 2, `character_${this.characterIndex}`, 0)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
+
+    // 카메라는 startFollow/ setBounds 대신 update() 의 positionCamera() 에서
+    // 축별로 수동 제어한다. (setBounds + follow 는 맵보다 뷰포트가 넓은 축에서
+    // 스크롤이 0 으로 클램프돼 맵이 한쪽에 붙는 문제가 있다.)
+    this.mapWidth = width;
+    this.mapHeight = height;
+    this.positionCamera();
 
     this.nameText = this.add
       .text(
@@ -636,10 +647,35 @@ export default class SmallVillageScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 카메라 스크롤을 X/Y 축별로 갱신한다(axisScroll 참고).
+   * 매 프레임 재계산되므로 뷰포트 리사이즈에도 별도 핸들러가 필요 없다.
+   */
+  private positionCamera(): void {
+    if (!this.sprite) return;
+
+    const cam = this.cameras.main;
+    cam.scrollX = this.axisScroll(this.mapWidth, cam.width, this.sprite.x);
+    cam.scrollY = this.axisScroll(this.mapHeight, cam.height, this.sprite.y);
+  }
+
+  /**
+   * 한 축의 카메라 스크롤 값을 계산한다.
+   *  - 맵이 뷰포트보다 작거나 같으면: 중앙 정렬(음수 스크롤 → 양쪽 여백은 배경색).
+   *  - 맵이 더 크면: 대상 위치를 따라가되 맵 경계로 클램프한다.
+   */
+  private axisScroll(mapSize: number, viewSize: number, target: number): number {
+    return mapSize <= viewSize
+      ? (mapSize - viewSize) / 2
+      : Phaser.Math.Clamp(target - viewSize / 2, 0, mapSize - viewSize);
+  }
+
   async update() {
     if (!this.sprite || !this.cursors) return;
 
     const isMoving = this.handleMovement();
+
+    this.positionCamera();
 
     if (this.nameText) {
       this.nameText.setPosition(

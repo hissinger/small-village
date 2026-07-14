@@ -100,25 +100,31 @@ const App: React.FC = () => {
   return (
     <>
       <MessageProvider userId={userId!}>
-        <div className="flex justify-center px-5 relative">
-          <h1 className="text-center text-4xl font-bold py-2">Small Village</h1>
-          <div className="absolute right-5 flex items-center h-full">
-            <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
+        {/* 헤더(고정 높이) + 본문(나머지 영역)으로 세로 분할한다.
+            게임 화면이 뷰포트 전체를 덮어 헤더를 가리지 않도록 본문을 flex-1 로 잡는다. */}
+        <div className="flex h-screen flex-col overflow-hidden">
+          <div className="relative flex shrink-0 justify-center px-5">
+            <h1 className="text-center text-4xl font-bold py-2">Small Village</h1>
+            <div className="absolute right-5 flex items-center h-full">
+              <GithubIcon repoUrl="https://github.com/hissinger/small-village" />
+            </div>
+          </div>
+
+          <div className="relative min-h-0 flex-1">
+            {currentStep === Steps.CHARACTER_SELECT && (
+              <CharacterSelectScreen onEnterRoom={handleEnterRoom} />
+            )}
+            {currentStep === Steps.SMALL_VILLAGE && (
+              <SmallVillageScreen
+                userId={userId!}
+                characterIndex={selectedCharacter!}
+                characterName={username!}
+                room={room!}
+                onExit={onExit}
+              />
+            )}
           </div>
         </div>
-
-        {currentStep === Steps.CHARACTER_SELECT && (
-          <CharacterSelectScreen onEnterRoom={handleEnterRoom} />
-        )}
-        {currentStep === Steps.SMALL_VILLAGE && (
-          <SmallVillageScreen
-            userId={userId!}
-            characterIndex={selectedCharacter!}
-            characterName={username!}
-            room={room!}
-            onExit={onExit}
-          />
-        )}
       </MessageProvider>
       <ToastContainer />
     </>
