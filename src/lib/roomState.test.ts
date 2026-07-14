@@ -46,8 +46,11 @@ describe("roomExists", () => {
     await expect(roomExists("dead-room")).resolves.toBe(false);
   });
 
-  it("does not block entry when the check itself errors (availability first)", async () => {
-    mockQuery({ error: { message: "network" } });
-    await expect(roomExists("room-1")).resolves.toBe(true);
+  it("retries once, then blocks entry when the check keeps failing", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const { eq } = mockQuery({ error: { message: "network" } });
+    await expect(roomExists("room-1")).resolves.toBe(false);
+    expect(eq).toHaveBeenCalledTimes(2); // 1회 재시도
+    spy.mockRestore();
   });
 });

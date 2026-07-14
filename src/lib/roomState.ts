@@ -26,15 +26,16 @@ import { DATABASE_TABLES } from "../constants";
  * 존재하지 않는 방(이미 종료됐거나 목록이 오래된 경우)에는 입장을 막는다.
  */
 export async function roomExists(roomId: string): Promise<boolean> {
-  const { count, error } = await supabase
-    .from(DATABASE_TABLES.ROOMS)
-    .select("id", { count: "exact", head: true })
-    .eq("id", roomId);
-
-  if (error) {
+  // 일시적 오류로 멀쩡한 방을 잘못 막지 않도록 1회 재시도한다. 그래도 확인이
+  // 안 되면 rooms 가 진실의 원천이므로 "확인 불가 = 입장 불가"로 막는다 — 방이
+  // 없는데 그냥 들여보내면 위치 write 마다 FK 위반(409)이 쏟아지기 때문이다.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { count, error } = await supabase
+      .from(DATABASE_TABLES.ROOMS)
+      .select("id", { count: "exact", head: true })
+      .eq("id", roomId);
+    if (!error) return (count ?? 0) > 0;
     console.error("Error checking room existence:", error);
-    // 확인 자체가 실패하면 입장을 막지 않는다(가용성 우선). write 단계에서 걸러진다.
-    return true;
   }
-  return (count ?? 0) > 0;
+  return false;
 }
