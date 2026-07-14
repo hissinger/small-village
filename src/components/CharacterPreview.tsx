@@ -54,7 +54,7 @@ const CharacterPreview: React.FC<CharacterPreviewProps> = ({
         <ChevronRight size={20} strokeWidth={2.5} />
       </button>
     </div>
-    <p className="mt-3 text-xs tabular-nums text-stone-500">
+    <p className="mt-3 text-xs tabular-nums text-white/70">
       {currentIndex + 1}/{NUM_CHARACTERS}
     </p>
   </div>

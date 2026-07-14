@@ -55,13 +55,13 @@ const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
   const isPrimary = roomCount === 0;
   const buttonTone = isPrimary
     ? "bg-orange-700 text-white hover:bg-orange-800 active:bg-orange-900"
-    : "border border-orange-700 text-orange-700 hover:bg-orange-50";
+    : "border border-orange-400/70 text-orange-200 hover:bg-white/10";
 
   return (
     <form onSubmit={handleCreateRoom}>
       <label
         htmlFor="room-title"
-        className="mb-2 block text-sm font-bold uppercase tracking-wider text-stone-700"
+        className="mb-2 block text-sm font-bold uppercase tracking-wider text-stone-100"
       >
         Create a New Room
       </label>
@@ -73,7 +73,7 @@ const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
           value={newRoomTitle}
           maxLength={30}
           onChange={(e) => setNewRoomTitle(e.target.value)}
-          className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1"
+          className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-white placeholder:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
         />
         <button
           type="submit"

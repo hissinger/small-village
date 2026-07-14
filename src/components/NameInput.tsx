@@ -25,9 +25,9 @@ const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
   <div>
     <label
       htmlFor="player-name"
-      className="mb-2 block text-sm font-bold text-stone-700"
+      className="mb-2 block text-sm font-bold text-stone-100"
     >
-      Your Name <span className="text-orange-700">*</span>
+      Your Name <span className="text-orange-300">*</span>
     </label>
     <input
       id="player-name"
@@ -36,7 +36,7 @@ const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
       value={name}
       maxLength={20}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1"
+      className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-white placeholder:text-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
     />
   </div>
 );

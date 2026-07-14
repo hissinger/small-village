@@ -39,17 +39,17 @@ const RoomList: React.FC<RoomListProps> = ({
       <span className="flex h-5 w-5 items-center justify-center rounded-md bg-orange-700 text-xs text-white sv-font-pixel">
         2
       </span>
-      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
+      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-100">
         Available Rooms
       </h2>
-      <span className="rounded-md bg-orange-100 px-1.5 py-0.5 text-xs font-semibold text-orange-700">
+      <span className="rounded-md bg-orange-500/25 px-1.5 py-0.5 text-xs font-semibold text-orange-100">
         {rooms.length}
       </span>
       <button
         type="button"
         aria-label="Refresh room list"
         onClick={refetch}
-        className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-orange-50 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1"
+        className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
       >
         <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
       </button>
@@ -64,19 +64,19 @@ const RoomList: React.FC<RoomListProps> = ({
           {rooms.map((room) => (
             <li
               key={room.id}
-              className="flex items-center justify-between rounded-xl border border-stone-200 p-3 transition-colors hover:border-orange-300"
+              className="flex items-center justify-between rounded-xl border border-white/15 bg-white/10 p-3 transition-colors hover:border-orange-400/60 hover:bg-white/15"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold text-stone-800">
+                  <span className="truncate font-semibold text-white">
                     {room.title}
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-400/20 px-1.5 py-0.5 text-xs font-medium text-emerald-200">
                     <Users size={12} strokeWidth={2.5} />
                     Open
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-stone-500">
+                <p className="mt-0.5 text-xs text-white/60">
                   {`Created ${new Date(room.created_at).toLocaleString()}`}
                 </p>
               </div>
@@ -93,7 +93,7 @@ const RoomList: React.FC<RoomListProps> = ({
       ) : (
         <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-center">
           <PixelHouse size={72} />
-          <p className="text-sm text-stone-500">The village is quiet</p>
+          <p className="text-sm text-white/70">The village is quiet</p>
         </div>
       )}
     </div>

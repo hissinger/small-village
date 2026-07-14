@@ -40,7 +40,7 @@ const ChooseYourCharacter: React.FC<ChooseYourCharacterProps> = ({
       <span className="flex h-5 w-5 items-center justify-center rounded-md bg-orange-700 text-xs text-white sv-font-pixel">
         1
       </span>
-      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
+      <h2 className="text-sm font-bold uppercase tracking-wider text-stone-100">
         My Character
       </h2>
     </div>

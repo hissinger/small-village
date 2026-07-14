@@ -89,51 +89,61 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gradient-to-br from-orange-200 via-amber-100 to-stone-200 p-4">
-      <div className="w-full max-w-4xl">
-        {/* Hero title */}
-        <h1 className="mb-6 text-center text-xl leading-relaxed text-orange-800 sv-font-pixel sv-pixel-shadow sm:text-2xl">
-          Welcome to Small Village
-        </h1>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-orange-200 via-amber-100 to-stone-200">
+      {/* Dark warm scrim over the fully-exposed backdrop: keeps the village
+          tones showing through while giving the floating UI enough contrast. */}
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-stone-950/60 via-stone-900/55 to-orange-950/60" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(12,10,9,0)_35%,_rgba(12,10,9,0.55)_100%)]" />
 
-        <div className="relative grid grid-cols-1 gap-4 md:grid-cols-5">
-          {/* Left card: character + name */}
-          <div className="rounded-xl bg-[#fffdf7]/95 p-5 shadow-lg shadow-amber-900/15 ring-1 ring-amber-900/10 md:col-span-2">
-            <ChooseYourCharacter
-              previewContainerRef={previewContainerRef}
-              handlePrevious={handlePrevious}
-              handleNext={handleNext}
-              currentIndex={currentIndex}
-              name={name}
-              onNameChange={setName}
-            />
-          </div>
+      {/* Floating UI — no cards, content sits directly on the scrim */}
+      <div className="relative flex min-h-full items-center justify-center p-4">
+        <div className="w-full max-w-4xl">
+          {/* Hero title */}
+          <h1 className="mb-8 text-center text-xl leading-relaxed text-orange-100 sv-font-pixel sv-pixel-shadow sm:text-2xl">
+            Welcome to Small Village
+          </h1>
 
-          {/* Right card: room list + create */}
-          <div className="flex flex-col rounded-xl bg-[#fffdf7]/95 p-5 shadow-lg shadow-amber-900/15 ring-1 ring-amber-900/10 md:col-span-3">
-            <RoomList
-              disabled={!name}
-              rooms={rooms}
-              onEnterRoom={(room: Room) => onEnterRoom(currentIndex, name, room)}
-              loading={loading}
-              refetch={refetch}
-            />
-            <div className="mt-4 border-t border-stone-200 pt-4">
-              <CreateNewRoom
+          <div className="relative grid grid-cols-1 gap-8 md:grid-cols-5">
+            {/* Left column: character + name */}
+            <div className="md:col-span-2">
+              <ChooseYourCharacter
+                previewContainerRef={previewContainerRef}
+                handlePrevious={handlePrevious}
+                handleNext={handleNext}
+                currentIndex={currentIndex}
+                name={name}
+                onNameChange={setName}
+              />
+            </div>
+
+            {/* Right column: room list + create */}
+            <div className="flex flex-col md:col-span-3">
+              <RoomList
                 disabled={!name}
-                roomCount={rooms.length}
+                rooms={rooms}
                 onEnterRoom={(room: Room) =>
                   onEnterRoom(currentIndex, name, room)
                 }
+                loading={loading}
+                refetch={refetch}
               />
+              <div className="mt-4 border-t border-white/15 pt-4">
+                <CreateNewRoom
+                  disabled={!name}
+                  roomCount={rooms.length}
+                  onEnterRoom={(room: Room) =>
+                    onEnterRoom(currentIndex, name, room)
+                  }
+                />
+              </div>
             </div>
-          </div>
 
-          {!readyScene && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-[#fffdf7]/80">
-              <LoadingSpinner message="Loading assets..." />
-            </div>
-          )}
+            {!readyScene && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-stone-950/60 backdrop-blur-sm">
+                <LoadingSpinner message="Loading assets..." />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
