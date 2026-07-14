@@ -24,6 +24,8 @@ import {
   useRealtimeKitClient,
 } from "@cloudflare/realtimekit-react";
 import { createRTKToken } from "../lib/supabaseFunctions";
+import { roomExists } from "../lib/roomState";
+import { useToast } from "../hooks/useToast";
 
 import { Room } from "../types";
 import BottomBar from "../components/BottomBar";
@@ -49,8 +51,31 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const [scene, setScene] = useState<SmallVillageScene>();
   const [isJoined, setIsJoined] = useState(false);
   const [meeting, initMeeting] = useRealtimeKitClient();
+  // null = 확인 중, true = 존재, false = 없음(입장 불가 → 로비로)
+  const [roomValid, setRoomValid] = useState<boolean | null>(null);
+  const toast = useToast();
+
+  // rooms 는 진실의 원천이다. 방이 없으면(이미 종료됐거나 목록이 오래됨) 입장하지
+  // 않는다 — 그대로 게임을 켜면 users write 가 FK 위반(409)으로 쏟아진다.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const exists = await roomExists(room.id);
+      if (cancelled) return;
+      if (!exists) {
+        toast.error("이미 종료된 방입니다.");
+        onExit();
+        return;
+      }
+      setRoomValid(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [room.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (roomValid !== true) return;
     const parent = gameContainerRef.current;
     if (!parent) return;
 
@@ -102,9 +127,10 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     return () => {
       game.destroy(true);
     };
-  }, [characterIndex, characterName, userId, room.id]);
+  }, [characterIndex, characterName, userId, room.id, roomValid]);
 
   useEffect(() => {
+    if (roomValid !== true) return;
     const joinRoom = async () => {
       try {
         const token = await createRTKToken(room.id, userId, characterName);
@@ -130,7 +156,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     };
 
     joinRoom();
-  }, [initMeeting, userId, characterName, room.id]);
+  }, [initMeeting, userId, characterName, room.id, roomValid]);
 
   const handleExit = async () => {
     console.log("Exiting game");
