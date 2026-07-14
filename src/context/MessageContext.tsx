@@ -29,12 +29,7 @@ export const CHANNEL_MESSAGE = "message";
 export const RECEIVER_ALL = "all";
 
 export enum MessageType {
-  REQUEST_CALL = "request_call",
-  ACCEPT_CALL = "accept_call",
-  CLOSE_CALL = "close_call",
-  PEER_SIGNAL = "peer_signal",
   CHAT = "chat",
-  JOIN_USER = "JOIN_USER",
 }
 
 export interface Message {
