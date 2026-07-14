@@ -27,6 +27,7 @@ import { createRTKToken } from "../lib/supabaseFunctions";
 
 import { Room } from "../types";
 import BottomBar from "../components/BottomBar";
+import { BOTTOM_BAR_HEIGHT } from "../constants";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -50,9 +51,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const [meeting, initMeeting] = useRealtimeKitClient();
 
   useEffect(() => {
+    const parent = gameContainerRef.current;
+    if (!parent) return;
+
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      parent: gameContainerRef.current as HTMLDivElement,
+      parent,
       scene: SmallVillageScene,
       pixelArt: true,
       physics: {
@@ -63,13 +67,14 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         },
       },
       backgroundColor: "#3a5a40",
-      width: window.innerWidth,
-      height: window.innerHeight,
+      // 캔버스 크기는 뷰포트 전체가 아니라 게임 컨테이너(헤더 아래 영역) 기준으로 잡는다.
+      // RESIZE 모드가 이후 부모 크기에 맞춰 자동 보정한다.
+      width: parent.clientWidth,
+      height: parent.clientHeight,
       scale: {
         // RESIZE keeps the canvas exactly the size of its parent container,
         // filling the viewport without letterboxing or bottom-crop.
         mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
       },
       render: {
         // 개발/테스트 환경에서만 WebGL 캔버스 스크린샷 캡처를 위해 보존.
@@ -143,8 +148,14 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const isReady = readyScene && scene && isJoined;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-gray-800">
-      <div ref={gameContainerRef} className="absolute inset-0 overflow-hidden" />
+    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+      {/* 게임 캔버스는 헤더 아래 ~ 하단 바(BottomBar) 위 영역만 채운다.
+          하단 바가 캔버스를 덮으면 맵의 상/하 여백이 비대칭으로 보이므로 바 높이만큼 예약. */}
+      <div
+        ref={gameContainerRef}
+        className="absolute inset-x-0 top-0 overflow-hidden"
+        style={{ bottom: BOTTOM_BAR_HEIGHT }}
+      />
       <div className="absolute inset-0">
         {!isReady ? (
           <LoadingSpinner message="Strolling into the Small Village..." />

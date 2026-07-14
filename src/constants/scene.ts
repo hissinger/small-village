@@ -15,3 +15,7 @@
  */
 
 export const NUM_CHARACTERS = 40;
+
+// 게임 화면 하단 바(BottomBar)의 높이(px).
+// 게임 캔버스가 하단 바를 침범하지 않도록 이 값만큼 아래를 비워둔다.
+export const BOTTOM_BAR_HEIGHT = 48;

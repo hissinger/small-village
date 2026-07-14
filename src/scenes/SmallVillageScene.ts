@@ -249,6 +249,8 @@ class SpeechBubble extends Phaser.GameObjects.Container {
 export default class SmallVillageScene extends Phaser.Scene {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private sprite: Phaser.Physics.Arcade.Sprite | null = null;
+  private mapWidth: number = 0;
+  private mapHeight: number = 0;
   private nameText: Phaser.GameObjects.Text | null = null;
   private speechBubble: SpeechBubble | null = null;
   private userSprites: Record<
@@ -380,32 +382,12 @@ export default class SmallVillageScene extends Phaser.Scene {
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
 
-    // 화면 크기에 따라 카메라 모드를 분기 처리한다.
-    //  - 뷰포트가 맵보다 크거나 같으면: 카메라 고정 + 맵을 화면 중앙에 정적 배치(맵 전체가 보임).
-    //  - 뷰포트가 맵보다 작으면: 카메라 bounds 를 맵으로 잡고 캐릭터를 추종(탐험 가능).
-    // 물리 bounds(맵 기준)는 위에서 이미 세팅했으므로 여기서 건드리지 않는다.
-    const applyCameraMode = () => {
-      const vw = window.innerWidth || cam.width;
-      const vh = window.innerHeight || cam.height;
-      if (vw >= width && vh >= height) {
-        // 정적 모드: 추종 해제 후 카메라 bounds 를 완전 제거(자유 카메라)하고 맵 중앙에 고정
-        cam.stopFollow();
-        cam.removeBounds();
-        cam.centerOn(width / 2, height / 2);
-      } else {
-        // 추종 모드: 카메라 bounds 를 맵으로 잡고 캐릭터를 따라가게 한다
-        cam.setBounds(0, 0, width, height);
-        if (this.sprite) {
-          cam.startFollow(this.sprite, true, 1, 1);
-        }
-      }
-    };
-    applyCameraMode();
-    // 리사이즈 시 모드 재계산(뷰포트가 맵보다 커지면 정적, 작아지면 추종)
-    this.scale.on(Phaser.Scale.Events.RESIZE, applyCameraMode);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.scale.off(Phaser.Scale.Events.RESIZE, applyCameraMode);
-    });
+    // 카메라는 startFollow/ setBounds 대신 update() 의 positionCamera() 에서
+    // 축별로 수동 제어한다. (setBounds + follow 는 맵보다 뷰포트가 넓은 축에서
+    // 스크롤이 0 으로 클램프돼 맵이 한쪽에 붙는 문제가 있다.)
+    this.mapWidth = width;
+    this.mapHeight = height;
+    this.positionCamera();
 
     this.nameText = this.add
       .text(
@@ -665,10 +647,35 @@ export default class SmallVillageScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 카메라 스크롤을 X/Y 축별로 갱신한다(axisScroll 참고).
+   * 매 프레임 재계산되므로 뷰포트 리사이즈에도 별도 핸들러가 필요 없다.
+   */
+  private positionCamera(): void {
+    if (!this.sprite) return;
+
+    const cam = this.cameras.main;
+    cam.scrollX = this.axisScroll(this.mapWidth, cam.width, this.sprite.x);
+    cam.scrollY = this.axisScroll(this.mapHeight, cam.height, this.sprite.y);
+  }
+
+  /**
+   * 한 축의 카메라 스크롤 값을 계산한다.
+   *  - 맵이 뷰포트보다 작거나 같으면: 중앙 정렬(음수 스크롤 → 양쪽 여백은 배경색).
+   *  - 맵이 더 크면: 대상 위치를 따라가되 맵 경계로 클램프한다.
+   */
+  private axisScroll(mapSize: number, viewSize: number, target: number): number {
+    return mapSize <= viewSize
+      ? (mapSize - viewSize) / 2
+      : Phaser.Math.Clamp(target - viewSize / 2, 0, mapSize - viewSize);
+  }
+
   async update() {
     if (!this.sprite || !this.cursors) return;
 
     const isMoving = this.handleMovement();
+
+    this.positionCamera();
 
     if (this.nameText) {
       this.nameText.setPosition(
