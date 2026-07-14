@@ -112,9 +112,9 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               village: the background still reads through (bg-stone-900/70 +
               backdrop-blur), while the border + shadow give each block a clear
               "lobby window" edge that separates UI from scenery. */}
-          <div className="relative grid grid-cols-1 gap-8 md:grid-cols-5">
+          <div className="relative grid grid-cols-1 items-stretch gap-8 md:grid-cols-5">
             {/* Left panel: character + name */}
-            <div className="rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-2">
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-2">
               <ChooseYourCharacter
                 previewContainerRef={previewContainerRef}
                 handlePrevious={handlePrevious}
@@ -136,7 +136,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 loading={loading}
                 refetch={refetch}
               />
-              <div className="mt-4 border-t border-white/15 pt-4">
+              <div className="mt-auto border-t border-white/15 pt-4">
                 <CreateNewRoom
                   disabled={!name}
                   roomCount={rooms.length}
