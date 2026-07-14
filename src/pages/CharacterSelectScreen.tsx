@@ -90,10 +90,12 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-orange-200 via-amber-100 to-stone-200">
-      {/* Dark warm scrim over the fully-exposed backdrop: keeps the village
-          tones showing through while giving the floating UI enough contrast. */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-stone-950/60 via-stone-900/55 to-orange-950/60" />
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(12,10,9,0)_35%,_rgba(12,10,9,0.55)_100%)]" />
+      {/* Feather-light scrim: let the pixel-art village read as vividly as
+          possible and only lift a touch of warmth at the very bottom. */}
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-stone-900/10 via-stone-900/5 to-orange-950/20" />
+      {/* Centered radial pool: adds just enough contrast behind the floating
+          UI while the edges of the frame stay fully exposed. */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(12,10,9,0.32)_0%,_rgba(12,10,9,0.14)_45%,_rgba(12,10,9,0)_75%)]" />
 
       {/* Floating UI — no cards, content sits directly on the scrim */}
       <div className="relative flex min-h-full items-center justify-center p-4">

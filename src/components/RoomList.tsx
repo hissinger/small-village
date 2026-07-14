@@ -64,24 +64,24 @@ const RoomList: React.FC<RoomListProps> = ({
           {rooms.map((room) => (
             <li
               key={room.id}
-              className="flex items-center justify-between rounded-xl border border-white/15 bg-white/10 p-3 transition-colors hover:border-orange-400/60 hover:bg-white/15"
+              className="flex items-center justify-between rounded-xl border border-stone-900/10 bg-white/80 p-3 shadow-sm backdrop-blur-[2px] transition-colors hover:border-orange-500 hover:bg-white/90"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold text-white">
+                  <span className="truncate font-semibold text-stone-800">
                     {room.title}
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-400/20 px-1.5 py-0.5 text-xs font-medium text-emerald-200">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
                     <Users size={12} strokeWidth={2.5} />
                     Open
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-white/60">
+                <p className="mt-0.5 text-xs text-stone-500">
                   {`Created ${new Date(room.created_at).toLocaleString()}`}
                 </p>
               </div>
               <button
-                className="ml-3 shrink-0 rounded-lg bg-orange-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 active:bg-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:hover:bg-stone-300"
+                className="ml-3 shrink-0 rounded-lg bg-orange-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 active:bg-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:hover:bg-stone-200"
                 disabled={disabled}
                 onClick={() => onEnterRoom(room)}
               >
@@ -93,7 +93,9 @@ const RoomList: React.FC<RoomListProps> = ({
       ) : (
         <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-center">
           <PixelHouse size={72} />
-          <p className="text-sm text-white/70">The village is quiet</p>
+          <p className="rounded-full bg-black/25 px-3 py-1 text-sm font-medium text-white">
+            The village is quiet
+          </p>
         </div>
       )}
     </div>
