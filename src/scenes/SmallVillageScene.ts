@@ -51,6 +51,16 @@ const GAME_CONFIG = {
   ANIMATION: {
     FRAME_RATE: 3,
   },
+  // 발화 표시 링(스피커 링): 캐릭터 발밑의 반투명 초록 타원. 발화 중 pulsing.
+  RING: {
+    OFFSET_Y: 30, // 스프라이트 중심 기준 발밑으로 내리는 값
+    WIDTH: 48,
+    HEIGHT: 24,
+    COLOR: 0x22c55e,
+    ALPHA: 0.45,
+    PULSE_SCALE: 1.15,
+    PULSE_DURATION: 600,
+  },
 } as const;
 
 interface GameSceneConfig {
@@ -262,6 +272,13 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
   > = {};
 
+  // 발화 링: userId(로컬 포함) → 타원 GameObject + pulsing tween. lazy 생성.
+  // ring/tween 을 한 엔트리로 묶어 생성·정리·삭제가 한 곳에서만 일어나게 한다.
+  private speakerRings: Record<
+    string,
+    { ring: Phaser.GameObjects.Ellipse; tween?: Phaser.Tweens.Tween }
+  > = {};
+
   private roomId: string = "";
   private userId: string = "";
   private characterIndex: number = 0;
@@ -449,6 +466,86 @@ export default class SmallVillageScene extends Phaser.Scene {
     this.createAnimations();
   }
 
+  // userId 로 스프라이트를 찾는다(로컬은 this.sprite, 원격은 userSprites). 없으면 undefined.
+  private getSprite(userId: string): Phaser.GameObjects.Sprite | undefined {
+    return userId === this.userId
+      ? this.sprite ?? undefined
+      : this.userSprites[userId]?.sprite;
+  }
+
+  /**
+   * 발화 표시 링을 켜고 끈다. 대상 스프라이트가 아직 없으면 no-op.
+   *  - 링은 userId 별 최초 1회 lazy 생성(발밑, 스프라이트보다 한 단계 뒤).
+   *  - speaking=true → 보이기 + pulsing tween, false → 숨김 + tween 정지.
+   */
+  setSpeaking(userId: string, speaking: boolean) {
+    const sprite = this.getSprite(userId);
+    if (!sprite) return;
+
+    // off 는 항상 on 이후에만 오므로, speaking=false 인데 링이 없으면 만들 필요가 없다.
+    let ring = this.speakerRings[userId]?.ring;
+    if (!speaking && !ring) return;
+
+    if (!ring) {
+      ring = this.add
+        .ellipse(
+          sprite.x,
+          sprite.y + GAME_CONFIG.RING.OFFSET_Y,
+          GAME_CONFIG.RING.WIDTH,
+          GAME_CONFIG.RING.HEIGHT,
+          GAME_CONFIG.RING.COLOR,
+          GAME_CONFIG.RING.ALPHA
+        )
+        .setVisible(false);
+      // 스프라이트와 같은 depth(0) 로 두되 표시목록에서 스프라이트 바로 뒤로 보낸다.
+      // ground 레이어(depth 0, 먼저 삽입됨) 위·캐릭터 아래에 그려지게 한다.
+      ring.setDepth(sprite.depth);
+      this.children.moveBelow(ring, sprite);
+      this.speakerRings[userId] = { ring };
+    }
+
+    const entry = this.speakerRings[userId];
+    if (speaking) {
+      ring.setVisible(true);
+      if (!entry.tween) {
+        entry.tween = this.tweens.add({
+          targets: ring,
+          scaleX: GAME_CONFIG.RING.PULSE_SCALE,
+          scaleY: GAME_CONFIG.RING.PULSE_SCALE,
+          duration: GAME_CONFIG.RING.PULSE_DURATION,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+      }
+    } else {
+      ring.setVisible(false);
+      if (entry.tween) {
+        entry.tween.stop();
+        entry.tween = undefined;
+      }
+      ring.setScale(1);
+    }
+  }
+
+  private syncSpeakerRings() {
+    Object.entries(this.speakerRings).forEach(([userId, { ring }]) => {
+      const sprite = this.getSprite(userId);
+      if (sprite) {
+        ring.setPosition(sprite.x, sprite.y + GAME_CONFIG.RING.OFFSET_Y);
+      }
+    });
+  }
+
+  private removeSpeakerRing(userId: string) {
+    const entry = this.speakerRings[userId];
+    if (entry) {
+      entry.tween?.stop();
+      entry.ring.destroy();
+      delete this.speakerRings[userId];
+    }
+  }
+
   showChatMessage(userId: string, message: string) {
     if (userId === this.userId) {
       if (this.sprite && this.speechBubble) {
@@ -527,6 +624,7 @@ export default class SmallVillageScene extends Phaser.Scene {
       userSprite.nameText.destroy();
       userSprite.sprite.destroy();
       userSprite.speechBubble.destroy();
+      this.removeSpeakerRing(userId);
 
       delete this.userSprites[userId];
     }
@@ -711,6 +809,9 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
 
     this.updateOtherUsers();
+
+    // 발화 링을 각 스프라이트 발밑에 동기화(이름표 패턴과 동일).
+    this.syncSpeakerRings();
   }
 
   updateUsers(users: User[]) {

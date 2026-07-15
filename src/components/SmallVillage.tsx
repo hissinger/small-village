@@ -18,6 +18,7 @@ import React, { memo, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
+import SpeakerIndicators from "./SpeakerIndicators";
 import {
   DATABASE_TABLES,
   INACTIVE_TIMEOUT_MS,
@@ -231,6 +232,7 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
       <div>
         <Conference userId={userId} />
       </div>
+      <SpeakerIndicators scene={scene} />
     </div>
   );
 };
