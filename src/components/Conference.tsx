@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { useEffect } from "react";
+import type RTKClient from "@cloudflare/realtimekit";
 import {
-  useRealtimeKitMeeting,
+  RTKParticipants,
   useRealtimeKitSelector,
 } from "@cloudflare/realtimekit-react";
 import { SpatialAudioController } from "./SpatialAudioController";
@@ -26,32 +26,28 @@ interface ConferenceProps {
   userId: string;
 }
 
+/**
+ * useRealtimeKitSelector 용 selector.
+ * 매 호출마다 새 객체로 래핑하면 리렌더 churn 이 늘어나므로, 참조가 안정적인
+ * 단일 값(participants)만 그대로 리턴한다.
+ */
+export const selectParticipants = (meeting: RTKClient): RTKParticipants =>
+  meeting.participants;
+
 export default function Conference({ userId }: ConferenceProps) {
-  const { meeting } = useRealtimeKitMeeting();
   const localUser = useLocalParticipant();
-  const { participants } = useRealtimeKitSelector((meeting) => ({
-    participants: meeting.participants,
-  }));
+  const participants = useRealtimeKitSelector(selectParticipants);
 
   const myPosition = localUser ? { x: localUser.x, y: localUser.y } : null;
 
-  useEffect(() => {
-    try {
-      meeting?.join();
-      console.log("Joined room successfully");
-    } catch (error) {
-      console.error("Error joining room:", error);
-    }
-  }, [meeting]);
+  // join 은 SmallVillageScreen 의 join effect 에서 await 로 처리한다.
+  // 여기서는 이미 join 된 meeting 의 participants 만 소비한다.
 
   if (!myPosition) {
     return null;
   }
 
   return (
-    <SpatialAudioController
-      participants={participants}
-      myPosition={myPosition}
-    />
+    <SpatialAudioController participants={participants} myPosition={myPosition} />
   );
 }

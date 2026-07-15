@@ -51,9 +51,27 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const [scene, setScene] = useState<SmallVillageScene>();
   const [isJoined, setIsJoined] = useState(false);
   const [meeting, initMeeting] = useRealtimeKitClient();
+  // 게임 생성 effect 의 cleanup 은 최초 1회(roomValid 확정 시)만 실행되며 meeting
+  // 이 아직 undefined 인 시점에 클로저가 고정된다. leave() 를 언마운트 시 부르려면
+  // 항상 최신 meeting 을 가리키는 ref 가 필요하다.
+  const meetingRef = useRef(meeting);
+  // leave() 는 Exit 버튼(handleExit)과 언마운트 cleanup 양쪽에서 호출될 수 있다.
+  // 한 세션당 한 번만 실제로 leave 하도록 가드한다(두 번째부터는 no-op).
+  const leftRef = useRef(false);
   // null = 확인 중, true = 존재, false = 없음(입장 불가 → 로비로)
   const [roomValid, setRoomValid] = useState<boolean | null>(null);
   const toast = useToast();
+
+  useEffect(() => {
+    meetingRef.current = meeting;
+  }, [meeting]);
+
+  // 미팅 leave 를 1회만 수행하는 헬퍼. 어느 경로로 불려도 중복 leave 를 막는다.
+  const leaveOnce = () => {
+    if (leftRef.current) return undefined;
+    leftRef.current = true;
+    return meetingRef.current?.leave();
+  };
 
   // rooms 는 진실의 원천이다. 방이 없으면(이미 종료됐거나 목록이 오래됨) 입장하지
   // 않는다 — 그대로 게임을 켜면 users write 가 FK 위반(409)으로 쏟아진다.
@@ -126,6 +144,19 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
     return () => {
       game.destroy(true);
+      // Exit 버튼(handleExit) 외의 경로로 언마운트돼도 미팅 세션을 정리한다.
+      // await 는 하지 않고 실패는 로그만 남긴다. handleExit 이 이미 leave 했다면
+      // leaveOnce 가 no-op 를 돌려주므로 중복 leave 는 발생하지 않는다.
+      try {
+        const leaving = leaveOnce();
+        if (leaving) {
+          leaving.catch((error) =>
+            console.error("Error leaving meeting on unmount:", error)
+          );
+        }
+      } catch (error) {
+        console.error("Error leaving meeting on unmount:", error);
+      }
     };
   }, [characterIndex, characterName, userId, room.id, roomValid]);
 
@@ -134,7 +165,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     const joinRoom = async () => {
       try {
         const token = await createRTKToken(room.id, userId, characterName);
-        await initMeeting({
+        const initedMeeting = await initMeeting({
           authToken: token,
           defaults: {
             video: false,
@@ -149,20 +180,27 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           },
         });
 
+        // initMeeting 이 재진입 등으로 undefined 를 리턴하면 join 을 건너뛴 채
+        // joined 로 표시되는 상태 불일치가 생긴다. 명시적으로 실패 처리한다.
+        if (!initedMeeting) throw new Error("initMeeting returned undefined");
+        // initMeeting 성공 ≠ join 성공. join 이 resolve 된 뒤에만 isJoined 로 본다.
+        await initedMeeting.join();
         setIsJoined(true);
       } catch (error) {
         console.error("Error joining room:", error);
+        toast.error("음성 연결에 실패했습니다.");
       }
     };
 
     joinRoom();
-  }, [initMeeting, userId, characterName, room.id, roomValid]);
+    // toast 는 매 렌더 새 객체라 의존성에서 제외한다(join 은 1회성).
+  }, [initMeeting, userId, characterName, room.id, roomValid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExit = async () => {
     console.log("Exiting game");
 
     try {
-      await meeting?.leave();
+      await leaveOnce();
     } catch (error) {
       console.error("Error leaving meeting:", error);
     }

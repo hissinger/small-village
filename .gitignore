@@ -23,3 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 .env
+
+# Hermes/Claude agent task + review scratch files (untracked scratch, not part of source)
+.claude_*.md
+.claude_*_out.txt
