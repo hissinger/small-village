@@ -40,7 +40,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   const gameInstance = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<CharacterPreviewScene | null>(null);
   const [readyScene, setReadyScene] = useState(false);
-  const { rooms, refetch, loading } = useRooms();
+  const { rooms, counts, refetch, loading } = useRooms();
 
   useEffect(() => {
     const config: Phaser.Types.Core.GameConfig = {
@@ -130,6 +130,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               <RoomList
                 disabled={!name}
                 rooms={rooms}
+                counts={counts}
                 onEnterRoom={(room: Room) =>
                   onEnterRoom(currentIndex, name, room)
                 }

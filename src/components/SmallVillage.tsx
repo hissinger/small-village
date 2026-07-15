@@ -19,7 +19,11 @@ import { supabase } from "../lib/supabaseClient";
 import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
 import SpeakerIndicators from "./SpeakerIndicators";
-import { DATABASE_TABLES } from "../constants";
+import {
+  DATABASE_TABLES,
+  INACTIVE_TIMEOUT_MS,
+  HEARTBEAT_INTERVAL_MS,
+} from "../constants";
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import { Room, User } from "../types";
 import { useChatMessage } from "../hooks/useChatMessage";
@@ -33,9 +37,6 @@ interface SmallVillageProps {
   scene: SmallVillageScene;
   onExit: () => void;
 }
-
-const INACTIVE_TIMEOUT_MS = 15_000;
-const HEARTBEAT_INTERVAL_MS = 10_000;
 
 const SmallVillage: React.FC<SmallVillageProps> = ({
   room,
