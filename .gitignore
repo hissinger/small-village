@@ -27,3 +27,6 @@ yarn-error.log*
 # Hermes/Claude agent task + review scratch files (untracked scratch, not part of source)
 .claude_*.md
 .claude_*_out.txt
+
+# Local end-to-end test media
+test-fixtures/
