@@ -95,28 +95,24 @@ async function analyzeBiggestCanvas(page) {
 > 120×100)를 잡으므로, 게임 월드를 보고 싶으면 면적이 가장 큰 캔버스를
 > 골라야 한다(위 패턴 참고).
 
-## ⚠️ 핵심 한계 — 인게임 진입은 RTK 오디오 join 이 필요
+## ⚠️ 인게임 진입 — RTK join 의존 (환경에 따라 다름)
 
 게임 화면은 `isReady = readyScene && scene && isJoined` 일 때만 언마스크된다.
-`isJoined` 는 `createRTKToken` → `meeting.join()` 이 **성공**해야 true 다
-(`SmallVillageScreen.tsx`). 즉:
+`isJoined` 는 `createRTKToken` → `meeting.join()` 이 성공해야 true 다
+(`SmallVillageScreen.tsx`).
 
-- 헤드리스 테스트에서 **Cloudflare RealtimeKit 토큰 발급/미팅 join 이 실패**
-  하면(네트워크 불가, 잘못된 키, rate limit 등) `isReady` 가 false 가 되어
-  **"Strolling into the Small Village..." 로딩 오버레이가 게임 캔버스를 덮는다.**
-- 이때 캔버스 픽셀 분석은 "정상 렌더(99.9%)"를 보고하지만, **사용자가 보는
-  화면은 로딩 스피너** 다. 비전 모델로 봐도 "로딩 화면"으로 오인한다.
-- 따라서 "인게임이 실제로 떴는지" 판별하려면 **캔버스 픽셀 + 바텀바(Exit/
-  마이크/채팅 버튼) DOM 존재 여부를 함께 본다.** (로딩 오버레이일 땐 바텀바
-  버튼이 안 뜬다.)
-
-### 인게임까지 검증하려면
-
-1. `.env.local` 의 `REACT_APP_SUPABASE_URL/KEY` 가 유효하고,
-2. RealtimeKit 엣지 함수(`create-rtk-token`)가 동작하는 환경에서 실행.
-3. 아니면 `isReady` 조건에서 `isJoined` 를 빼는 **테스트 전용 분기**를 두거나,
-   `useRealtimeKitClient` mock 으로 join 을 강제 성공시킨다(별도 테스트
-   하니스 필요 — 현재는 미구현).
+- **검증 결과(2026-07-15):** 이 테스트 머신에서 `.env.local` 키가 유효할
+  때는 RTK join 이 **성공**하여 실제 인게임(마을 맵 + 캐릭터 + 바텀바:
+  마이크/채팅/나가기/`Fake Default Audio Input`)까지 정상 렌더됨을 확인.
+  즉 헤드리스에서도 **인게임 진입 → 바텀바 표시 → 게임 월드 캔버스 렌더**
+  까지 end-to-end 로 검증 가능.
+- 반면 **토큰 발급/미팅 join 이 실패**하면(네트워크 불가, 잘못된 키,
+  rate limit) `isReady` 가 false 가 되어 "Strolling into the Small Village..."
+  로딩 오버레이가 게임 캔버스를 덮는다. 이때 캔버스 픽셀 분석은
+  "정상 렌더(99.9%)"를 보고하지만 사용자가 보는 화면은 로딩 스피너 다.
+- 따라서 "인게임이 실제로 떴는지" 판별하려면 **캔버스 픽셀 + 바텀바
+  (Exit/마이크/채팅 버튼) DOM 존재 여부를 함께 본다.** (로딩 오버레이일
+  땐 바텀바 버튼이 안 뜬다.)
 
 ## 기존 e2e 와의 정합
 
