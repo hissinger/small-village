@@ -34,7 +34,7 @@ export interface UserStateWrite {
 /**
  * 내 캐릭터 상태를 users 테이블에 멱등하게 upsert 한다.
  *
- * 같은 id(sessionStorage uuid) row 가 이미 있을 수 있으므로(재접속·이전 세션·
+ * 같은 id(localStorage uuid) row 가 이미 있을 수 있으므로(재접속·이전 세션·
  * dev StrictMode 이중 마운트 등) insert 를 쓰면 PK 충돌(409)이 난다. upsert 는
  * 충돌을 merge 로 흡수하므로 최초 등록과 이동 동기화 모두 이 함수 하나로 처리한다.
  */

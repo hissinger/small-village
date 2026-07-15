@@ -15,14 +15,12 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
+import { NAME_MAX_LENGTH } from "../constants";
 
 // 방문(브라우저 세션)을 넘어 살아남아야 하는 값들은 localStorage 에 둔다.
 // sessionStorage 는 탭을 닫으면 사라지므로 재방문 시 신원/이름이 초기화됐다.
 const USER_ID_KEY = "smallvillage_user_id";
 const USER_NAME_KEY = "smallvillage_user_name";
-
-// NameInput 의 maxLength 와 동일하게 맞춘다. 이보다 긴 이름은 저장하지 않는다.
-const NAME_MAX_LENGTH = 20;
 
 /**
  * 유저 id 를 가져온다. 없으면 uuid v4 를 새로 만들어 저장하고 반환한다.
@@ -48,7 +46,7 @@ export function getStoredName(): string | null {
 }
 
 /**
- * 표시 이름을 저장한다. maxLength(20) 를 넘는 이름은 잘라서 저장한다.
+ * 표시 이름을 저장한다. NAME_MAX_LENGTH 를 넘는 이름은 잘라서 저장한다.
  */
 export function setStoredName(name: string): void {
   localStorage.setItem(USER_NAME_KEY, name.slice(0, NAME_MAX_LENGTH));
