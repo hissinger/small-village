@@ -22,6 +22,7 @@ import PixelHouse from "./PixelHouse";
 interface RoomListProps {
   disabled: boolean;
   rooms: Room[];
+  counts: Record<string, number>;
   onEnterRoom: (room: Room) => void;
   loading: boolean;
   refetch: () => Promise<void>;
@@ -30,6 +31,7 @@ interface RoomListProps {
 const RoomList: React.FC<RoomListProps> = ({
   disabled,
   rooms,
+  counts,
   onEnterRoom,
   loading,
   refetch,
@@ -61,34 +63,43 @@ const RoomList: React.FC<RoomListProps> = ({
         </div>
       ) : rooms.length > 0 ? (
         <ul className="flex list-none flex-col gap-2 p-0">
-          {rooms.map((room) => (
-            <li
-              key={room.id}
-              className="flex items-center justify-between rounded-xl border border-stone-900/10 bg-white/80 p-3 shadow-sm backdrop-blur-[2px] transition-colors hover:border-orange-500 hover:bg-white/90"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold text-stone-800">
-                    {room.title}
-                  </span>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
-                    <Users size={12} strokeWidth={2.5} />
-                    Open
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-stone-500">
-                  {`Created ${new Date(room.created_at).toLocaleString()}`}
-                </p>
-              </div>
-              <button
-                className="ml-3 shrink-0 rounded-lg bg-orange-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 active:bg-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:hover:bg-stone-200"
-                disabled={disabled}
-                onClick={() => onEnterRoom(room)}
+          {rooms.map((room) => {
+            const count = counts[room.id] ?? 0;
+            return (
+              <li
+                key={room.id}
+                className="flex items-center justify-between rounded-xl border border-stone-900/10 bg-white/80 p-3 shadow-sm backdrop-blur-[2px] transition-colors hover:border-orange-500 hover:bg-white/90"
               >
-                Join
-              </button>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold text-stone-800">
+                      {room.title}
+                    </span>
+                    {count > 0 ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                        <Users size={12} strokeWidth={2.5} />
+                        {count}
+                      </span>
+                    ) : (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-stone-500/15 px-1.5 py-0.5 text-xs font-medium text-stone-500">
+                        비어 있음
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-stone-500">
+                    {`Created ${new Date(room.created_at).toLocaleString()}`}
+                  </p>
+                </div>
+                <button
+                  className="ml-3 shrink-0 rounded-lg bg-orange-700 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 active:bg-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:hover:bg-stone-200"
+                  disabled={disabled}
+                  onClick={() => onEnterRoom(room)}
+                >
+                  Join
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-center">

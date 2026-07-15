@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
-export * from "./database";
-export * from "./presence";
-export * from "./scene";
+// presence(접속 상태) 관련 공유 상수.
+// users row 는 휘발성이라 heartbeat 로 갱신하고, 일정 시간 조용하면 죽은 것으로 본다.
+export const INACTIVE_TIMEOUT_MS = 15_000;
+export const HEARTBEAT_INTERVAL_MS = 10_000;
