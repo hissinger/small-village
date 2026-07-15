@@ -23,3 +23,6 @@ yarn-debug.log*
 yarn-error.log*
 
 .env
+
+# Local end-to-end test media
+test-fixtures/
