@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-export * from "./database";
-export * from "./presence";
-export * from "./scene";
-export * from "./user";
+// 표시 이름 최대 길이. NameInput 의 maxLength 와 storage 저장 시 자르는 길이가
+// 어긋나지 않도록 이 상수 하나로만 참조한다.
+export const NAME_MAX_LENGTH = 20;

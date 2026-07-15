@@ -26,6 +26,7 @@ import RoomList from "../components/RoomList";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
 import LobbyBackground from "../components/LobbyBackground";
+import { getStoredName, setStoredName } from "../lib/storage";
 
 interface CharacterSelectScreenProps {
   onEnterRoom: (characterIndex: number, name: string, room: Room) => void;
@@ -34,8 +35,15 @@ interface CharacterSelectScreenProps {
 const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   onEnterRoom,
 }) => {
-  const [name, setName] = useState("");
+  // 지난 방문에서 저장해 둔 이름으로 초기화한다(없으면 빈 문자열).
+  const [name, setName] = useState(() => getStoredName() ?? "");
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 이름이 바뀔 때마다 localStorage 에 반영해 다음 방문에 그대로 보이게 한다.
+  const handleNameChange = (value: string) => {
+    setName(value);
+    setStoredName(value);
+  };
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<CharacterPreviewScene | null>(null);
@@ -121,7 +129,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 handleNext={handleNext}
                 currentIndex={currentIndex}
                 name={name}
-                onNameChange={setName}
+                onNameChange={handleNameChange}
               />
             </div>
 

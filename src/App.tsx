@@ -17,7 +17,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import CharacterSelectScreen from "./pages/CharacterSelectScreen";
 import SmallVillageScreen from "./pages/SmallVillageScreen";
-import { v4 as uuidv4 } from "uuid";
+import { getOrCreateUserId } from "./lib/storage";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
@@ -70,15 +70,8 @@ const App: React.FC = () => {
   }, [currentStep]);
 
   useEffect(() => {
-    const USER_ID_KEY = "smallvillage_user_id";
-    let storedUserId = sessionStorage.getItem(USER_ID_KEY);
-    if (!storedUserId) {
-      const newUserId = uuidv4();
-      newUserId && sessionStorage.setItem(USER_ID_KEY, newUserId);
-      setUserId(newUserId);
-    } else {
-      setUserId(storedUserId);
-    }
+    // localStorage 에 신원(uuid)을 두어 재방문해도 같은 유저로 이어진다.
+    setUserId(getOrCreateUserId());
   }, []);
 
   const handleEnterRoom = useCallback(

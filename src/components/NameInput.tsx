@@ -15,6 +15,7 @@
  */
 
 import React from "react";
+import { NAME_MAX_LENGTH } from "../constants";
 
 interface NameInputProps {
   name: string;
@@ -34,7 +35,7 @@ const NameInput: React.FC<NameInputProps> = ({ name, onChange }) => (
       type="text"
       placeholder="e.g. Mina"
       value={name}
-      maxLength={20}
+      maxLength={NAME_MAX_LENGTH}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-xl border border-stone-900/10 bg-[#fffdf7] px-3 py-2 text-stone-800 placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
     />
