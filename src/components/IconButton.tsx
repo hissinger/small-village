@@ -28,6 +28,7 @@ interface IconButtonProps {
   strokeWidth: number;
   className?: string;
   ariaLabel?: string;
+  ariaExpanded?: boolean;
 }
 
 // "Toggle Microphone" → "toggle-microphone" 형태로 변환한다.
@@ -49,12 +50,16 @@ const IconButton: React.FC<IconButtonProps> = ({
   strokeWidth,
   className,
   ariaLabel,
+  ariaExpanded,
 }) => {
   return (
     <button
-      className={`border-none rounded-lg cursor-pointer flex items-center justify-center w-[50px] ${className}`}
+      // 고정 높이(h-[50px]) + 내부 세로 중앙 정렬로, SVG 아이콘 고유 높이 차이와
+      // 무관하게 모든 바텀바 버튼이 같은 박스에 정렬되게 한다.
+      className={`border-none rounded-lg cursor-pointer flex items-center justify-center w-[50px] h-[50px] ${className}`}
       onClick={onClick}
       aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
       data-testid={ariaLabel ? `bottombar-${toKebabCase(ariaLabel)}` : undefined}
     >
       {isActive || !InactiveIcon ? (

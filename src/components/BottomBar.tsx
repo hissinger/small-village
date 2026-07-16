@@ -21,6 +21,7 @@ import { useState } from "react";
 import ChatPanel from "./ChatPanel";
 import { MessageCircle } from "lucide-react";
 import IconButton from "./IconButton";
+import ReactionPicker from "./ReactionPicker";
 import { BOTTOM_BAR_HEIGHT } from "../constants";
 
 interface BottomBarProps {
@@ -35,7 +36,7 @@ export default function BottomBar(props: BottomBarProps) {
     <div>
       <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <div
-        className="fixed bottom-0 left-0 w-full flex justify-end bg-white p-2.5"
+        className="fixed bottom-0 left-0 w-full flex items-center justify-end bg-white p-2.5"
         style={{ height: BOTTOM_BAR_HEIGHT }}
       >
         <AudioInputSelect />
@@ -48,6 +49,8 @@ export default function BottomBar(props: BottomBarProps) {
           size={25}
           strokeWidth={2}
         />
+
+        <ReactionPicker />
 
         <AudioMuteButton />
         <ExitButton onClick={props.onExit} />

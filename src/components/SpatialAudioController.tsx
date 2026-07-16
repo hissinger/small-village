@@ -15,9 +15,15 @@
  */
 
 import { RTKParticipants } from "@cloudflare/realtimekit-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { SpatialAudioRenderer } from "./SpatialAudioRenderer";
 import { useRemoteParticipants } from "../hooks/useRemoteParticipants";
+import { useRoomContext } from "../context/RoomContext";
+import { pushEvent } from "../lib/analytics";
+import { ANALYTICS_EVENTS } from "../constants";
+
+// 근접 발화 계측은 스로틀 창당 1회만 보낸다(컴포넌트가 매 렌더 실행되므로).
+const PROXIMITY_THROTTLE_MS = 30_000;
 
 interface SpatialAudioControllerProps {
   participants: RTKParticipants;
@@ -30,6 +36,32 @@ export function SpatialAudioController({
 }: SpatialAudioControllerProps) {
   const audioContext = useMemo(() => new AudioContext(), []);
   const users = useRemoteParticipants();
+  const { roomId } = useRoomContext();
+  const lastSentRef = useRef(0);
+
+  // audioTrack 이 있고 위치를 아는 원격 참가자 = "근접 발화 후보". D5 참조.
+  const peerCount = useMemo(
+    () =>
+      [...participants.joined.values()].filter(
+        (p) =>
+          p.audioTrack &&
+          p.customParticipantId &&
+          users.get(p.customParticipantId)
+      ).length,
+    [participants, users]
+  );
+
+  useEffect(() => {
+    if (peerCount <= 0) return;
+    const now = Date.now();
+    if (now - lastSentRef.current < PROXIMITY_THROTTLE_MS) return;
+    lastSentRef.current = now;
+    pushEvent(ANALYTICS_EVENTS.PROXIMITY_TALK, {
+      room_id: roomId,
+      peer_count: peerCount,
+    });
+  }, [peerCount, roomId]);
+
   return (
     <>
       {[...participants.joined.values()].map((p) => {

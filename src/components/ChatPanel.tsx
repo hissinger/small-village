@@ -25,6 +25,8 @@ import {
 } from "../context/MessageContext";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useRoomContext } from "../context/RoomContext";
+import { pushEvent } from "../lib/analytics";
+import { ANALYTICS_EVENTS } from "../constants";
 import Linkify from "linkify-react";
 
 const CHAT_CONSTANTS = {
@@ -58,7 +60,7 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const { userId, userName } = useRoomContext();
+  const { userId, userName, roomId } = useRoomContext();
 
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString(undefined, {
@@ -117,7 +119,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   }, [isOpen, onClose]);
 
   const handleSendMessage = () => {
-    if (inputMessage.trim() === "") return;
+    const trimmed = inputMessage.trim();
+    if (trimmed === "") return;
 
     const payload: Message = {
       type: MessageType.CHAT,
@@ -128,6 +131,11 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
       timestamp: new Date().toISOString(),
     };
     sendMessage(CHANNEL_MESSAGE, payload);
+    // 본문(개인정보)은 절대 보내지 않는다 — 길이만 계측한다.
+    pushEvent(ANALYTICS_EVENTS.CHAT_MESSAGE_SENT, {
+      room_id: roomId,
+      length: trimmed.length,
+    });
     setInputMessage("");
 
     if (textAreaRef.current) {

@@ -16,7 +16,7 @@
 
 import { User } from "../types";
 import { upsertUserState } from "../lib/userState";
-import { NUM_CHARACTERS } from "../constants";
+import { NUM_CHARACTERS, REACTION_ANIMATION } from "../constants";
 import { SpeechBubble } from "./SpeechBubble";
 
 const GAME_CONFIG = {
@@ -94,6 +94,11 @@ export default class SmallVillageScene extends Phaser.Scene {
     string,
     { ring: Phaser.GameObjects.Ellipse; tween?: Phaser.Tweens.Tween }
   > = {};
+
+  // 떠오르는 리액션 이모지. 여러 개가 동시에 뜰 수 있어 배열로 관리한다.
+  // 각 Text 는 소속 userId(`reactionUserId`)와 시작 시각(`reactionStart`)을 data 로 갖고,
+  // update() 에서 해당 스프라이트를 매 프레임 따라가며 위로 떠오른다.
+  private reactionEmojis: Phaser.GameObjects.Text[] = [];
 
   private roomId: string = "";
   private userId: string = "";
@@ -361,6 +366,79 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 수신한 emoji 를 아바타 머리 위로 떠오르며 사라지게 표시한다.
+   * self/remote 스프라이트 모두 getSprite 로 매칭한다. 대상이 없으면 no-op.
+   * 여러 번 눌리면 emoji 가 누적 떠오르며, 소멸형이라 메모리 누수는 없다.
+   *
+   * 위치(x,y)는 tween 이 아니라 update() 에서 매 프레임 스프라이트를 따라가며
+   * 갱신한다(이름표/말풍선과 동일). 이동 중 리액션해도 머리에서 이탈하지 않는다.
+   */
+  showReaction(userId: string, emoji: string) {
+    const sprite = this.getSprite(userId);
+    if (!sprite) return;
+
+    const emojiText = this.add
+      .text(sprite.x, sprite.y + REACTION_ANIMATION.OFFSET_Y, emoji, {
+        fontSize: REACTION_ANIMATION.FONT_SIZE,
+        align: "center",
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(20);
+
+    emojiText.setData("reactionUserId", userId);
+    emojiText.setData("reactionStart", this.time.now);
+
+    this.reactionEmojis.push(emojiText);
+  }
+
+  /**
+   * 떠오르는 리액션 이모지들을 매 프레임 갱신한다.
+   *  - x,y 는 소속 스프라이트를 따라가며(이동 추적) OFFSET_Y 에서 위로 상승.
+   *  - 경과에 따라 상승 offset + alpha 를 직접 계산해 tween 과 위치 추적이 충돌하지 않게 한다.
+   *  - 애니메이션이 끝났거나 소속 유저가 사라지면 정리한다.
+   */
+  private updateReactionEmojis() {
+    if (this.reactionEmojis.length === 0) return;
+
+    const now = this.time.now;
+    this.reactionEmojis = this.reactionEmojis.filter((emojiText) => {
+      const userId = emojiText.getData("reactionUserId") as string;
+      const startTime = emojiText.getData("reactionStart") as number;
+      const sprite = this.getSprite(userId);
+
+      const progress = Phaser.Math.Clamp(
+        (now - startTime) / REACTION_ANIMATION.DURATION_MS,
+        0,
+        1
+      );
+
+      // 소속 스프라이트가 사라졌거나 애니메이션이 끝나면 제거한다.
+      if (!sprite || progress >= 1) {
+        emojiText.destroy();
+        return false;
+      }
+
+      const eased = Phaser.Math.Easing.Sine.Out(progress);
+      emojiText.setPosition(
+        sprite.x,
+        sprite.y + REACTION_ANIMATION.OFFSET_Y - REACTION_ANIMATION.RISE_DISTANCE * eased
+      );
+      emojiText.setAlpha(1 - progress);
+      return true;
+    });
+  }
+
+  private removeReactionEmojis(userId: string) {
+    this.reactionEmojis = this.reactionEmojis.filter((emojiText) => {
+      if (emojiText.getData("reactionUserId") === userId) {
+        emojiText.destroy();
+        return false;
+      }
+      return true;
+    });
+  }
+
   showChatMessage(userId: string, message: string) {
     // 버블 위치는 매 프레임 update()/updateOtherUsers() 에서 스프라이트 좌표로
     // 갱신되므로 여기서 setPosition 은 불필요하다. 각 버블이 자기 hideTimer 를
@@ -420,6 +498,7 @@ export default class SmallVillageScene extends Phaser.Scene {
       userSprite.sprite.destroy();
       userSprite.speechBubble.destroy();
       this.removeSpeakerRing(userId);
+      this.removeReactionEmojis(userId);
 
       delete this.userSprites[userId];
     }
@@ -607,6 +686,9 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     // 발화 링을 각 스프라이트 발밑에 동기화(이름표 패턴과 동일).
     this.syncSpeakerRings();
+
+    // 떠오르는 리액션 이모지를 스프라이트 머리 위에 동기화(이동 추적).
+    this.updateReactionEmojis();
   }
 
   updateUsers(users: User[]) {
