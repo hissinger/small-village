@@ -27,6 +27,8 @@ import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
 import LobbyBackground from "../components/LobbyBackground";
 import { getStoredName, setStoredName } from "../lib/storage";
+import { pushEvent } from "../lib/analytics";
+import { ANALYTICS_EVENTS } from "../constants";
 
 interface CharacterSelectScreenProps {
   onEnterRoom: (characterIndex: number, name: string, room: Room) => void;
@@ -49,6 +51,24 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   const sceneRef = useRef<CharacterPreviewScene | null>(null);
   const [readyScene, setReadyScene] = useState(false);
   const { rooms, counts, refetch, loading } = useRooms();
+
+  // 캐릭터 확정 전용 버튼이 없으므로, 방 Join/Create 로 입장이 확정되는 시점에
+  // 현재 선택 인덱스를 character_selected 로 함께 계측한다(RoomList/CreateNewRoom 공통).
+  const handleEnterRoom = (room: Room) => {
+    pushEvent(ANALYTICS_EVENTS.CHARACTER_SELECTED, {
+      character_index: currentIndex,
+    });
+    onEnterRoom(currentIndex, name, room);
+  };
+
+  // 로비 방 목록이 처음 렌더될 때(loading true→false) 1회만 계측한다.
+  const listViewSentRef = useRef(false);
+  useEffect(() => {
+    if (!loading && !listViewSentRef.current) {
+      listViewSentRef.current = true;
+      pushEvent(ANALYTICS_EVENTS.ROOM_LIST_VIEW, { room_count: rooms.length });
+    }
+  }, [loading, rooms.length]);
 
   useEffect(() => {
     const config: Phaser.Types.Core.GameConfig = {
@@ -139,9 +159,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 disabled={!name}
                 rooms={rooms}
                 counts={counts}
-                onEnterRoom={(room: Room) =>
-                  onEnterRoom(currentIndex, name, room)
-                }
+                onEnterRoom={handleEnterRoom}
                 loading={loading}
                 refetch={refetch}
               />
@@ -149,9 +167,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 <CreateNewRoom
                   disabled={!name}
                   roomCount={rooms.length}
-                  onEnterRoom={(room: Room) =>
-                    onEnterRoom(currentIndex, name, room)
-                  }
+                  onEnterRoom={handleEnterRoom}
                 />
               </div>
             </div>
