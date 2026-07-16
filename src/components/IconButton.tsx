@@ -27,7 +27,16 @@ interface IconButtonProps {
   size: number;
   strokeWidth: number;
   className?: string;
+  ariaLabel?: string;
 }
+
+// "Toggle Microphone" → "toggle-microphone" 형태로 변환한다.
+const toKebabCase = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const IconButton: React.FC<IconButtonProps> = ({
   onClick,
@@ -39,11 +48,14 @@ const IconButton: React.FC<IconButtonProps> = ({
   size,
   strokeWidth,
   className,
+  ariaLabel,
 }) => {
   return (
     <button
       className={`border-none rounded-lg cursor-pointer flex items-center justify-center w-[50px] ${className}`}
       onClick={onClick}
+      aria-label={ariaLabel}
+      data-testid={ariaLabel ? `bottombar-${toKebabCase(ariaLabel)}` : undefined}
     >
       {isActive || !InactiveIcon ? (
         <ActiveIcon size={size} strokeWidth={strokeWidth} color={activeColor} />

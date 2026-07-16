@@ -29,6 +29,7 @@ const AudioInputSelect: React.FC = () => {
     <div>
       <select
         id="audio-input-select"
+        aria-label="Select Microphone"
         value={microphoneId || ""}
         onChange={handleChange}
         className="w-[250px] h-full rounded-md text-sm border border-gray-300 mx-2.5 py-1 px-2.5"
