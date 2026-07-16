@@ -36,6 +36,7 @@ jest.mock("../../context/RoomContext", () => ({
     roomTitle: "R",
     userId: "me",
     userName: "나야",
+    characterIndex: 3,
   }),
 }));
 
@@ -85,6 +86,17 @@ describe("ParticipantPanel", () => {
     expect(screen.getByText("Participants (2)")).toBeInTheDocument();
   });
 
+  it("각 참가자 행에 캐릭터 아바타(상체)를 렌더한다", () => {
+    render(<ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />);
+    // self(character 3) + 원격 u1(character 0) → 아바타 2개 (장식용이라 data-testid 로 조회).
+    const avatars = screen.getAllByTestId("character-avatar");
+    expect(avatars).toHaveLength(2);
+    // self 아바타는 RoomContext characterIndex(3) → 003.png 스프라이트를 쓴다.
+    expect(avatars[0]).toHaveStyle({
+      backgroundImage: "url(/assets/characters/003.png)",
+    });
+  });
+
   it("마이크 on/off 아이콘을 상태별로 렌더한다", () => {
     render(<ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />);
     // self(audioEnabled=true) → on, u1(false) → off
@@ -129,5 +141,38 @@ describe("ParticipantPanel", () => {
     // 패널 바깥(document.body)에서 mousedown → useEffect 의 바깥 클릭 닫기 발동.
     fireEvent.mouseDown(document.body);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // 애니메이션: ChatPanel 과 동일하게 슬라이드 컨테이너는 항상 존재하고,
+  // isOpen 에 따라 translate 클래스만 토글된다.
+  it("열림/닫힘에 따라 좌측 슬라이드 트랜지션 클래스를 토글한다", () => {
+    const { container, rerender } = render(
+      <ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />
+    );
+    const panel = () => container.firstElementChild as HTMLElement;
+    // 열림: 화면 안(translate-x-0), 트랜지션 클래스 존재.
+    expect(panel()).toHaveClass("transition-transform", "translate-x-0");
+    expect(panel()).not.toHaveClass("-translate-x-full");
+
+    // 닫힘: 컨테이너는 그대로 남고 좌측 밖(-translate-x-full)으로 슬라이드.
+    rerender(<ParticipantPanel isOpen={false} onClose={() => {}} remoteMap={remoteMap} />);
+    expect(panel()).toHaveClass("transition-transform", "-translate-x-full");
+    expect(panel()).not.toHaveClass("translate-x-0");
+  });
+
+  // R1: 닫힘 트랜지션이 끝나면 Body(구독 보유)가 언마운트돼 목록이 사라진다.
+  it("닫힘 트랜지션 종료 후 Body 가 언마운트된다", () => {
+    const { container, rerender } = render(
+      <ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />
+    );
+    expect(screen.getByText("나야")).toBeInTheDocument();
+
+    // 닫기 → 슬라이드 아웃 동안엔 Body 가 아직 마운트(구독 유지 UX 무방).
+    rerender(<ParticipantPanel isOpen={false} onClose={() => {}} remoteMap={remoteMap} />);
+    expect(screen.getByText("나야")).toBeInTheDocument();
+
+    // 트랜지션 종료(컨테이너 자신) → Body 언마운트 → 목록 제거(구독 해제).
+    fireEvent.transitionEnd(container.firstElementChild as HTMLElement);
+    expect(screen.queryByText("나야")).not.toBeInTheDocument();
   });
 });

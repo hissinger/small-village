@@ -23,13 +23,16 @@ export interface ParticipantEntry {
   isMe: boolean;
   micOn: boolean;
   speaking: boolean;
+  // 캐릭터 스프라이트 인덱스 (아바타 상체 렌더용).
+  characterIndex: number;
 }
 
-// 나(self) 정보. 이름은 RoomContext, 마이크 상태는 RTK self.audioEnabled 에서 온다.
+// 나(self) 정보. 이름/캐릭터는 RoomContext, 마이크 상태는 RTK self.audioEnabled 에서 온다.
 export interface ParticipantSelf {
   id: string;
   name: string;
   audioEnabled: boolean;
+  characterIndex: number;
 }
 
 // buildParticipantList 가 필요로 하는 RTK 참가자의 최소 형태.
@@ -71,6 +74,7 @@ export function buildParticipantList(
       isMe: true,
       micOn: self.audioEnabled,
       speaking: speakingIds.has(self.id),
+      characterIndex: self.characterIndex,
     },
   ];
 
@@ -83,6 +87,7 @@ export function buildParticipantList(
       isMe: false,
       micOn: micById.get(u.id) ?? false,
       speaking: speakingIds.has(u.id),
+      characterIndex: u.character_index,
     });
   });
 

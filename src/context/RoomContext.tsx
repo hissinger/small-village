@@ -21,6 +21,7 @@ interface RoomContextType {
   roomTitle: string;
   userId: string;
   userName: string;
+  characterIndex: number;
 }
 
 const RoomContext = createContext<RoomContextType | null>(null);
@@ -30,6 +31,7 @@ interface RoomProviderProps {
   userName: string;
   roomId: string;
   roomTitle: string;
+  characterIndex: number;
   children: React.ReactNode;
 }
 
@@ -38,12 +40,14 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({
   userName: initialUserName,
   roomId: initialRoomId,
   roomTitle: initialRoomTitle,
+  characterIndex: initialCharacterIndex,
   children,
 }) => {
   const [roomId] = useState<string>(initialRoomId);
   const [roomTitle] = useState<string>(initialRoomTitle);
   const [userId] = useState<string>(initialUserId);
   const [userName] = useState<string>(initialUserName);
+  const [characterIndex] = useState<number>(initialCharacterIndex);
 
   return (
     <RoomContext.Provider
@@ -52,6 +56,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({
         roomTitle,
         userId,
         userName,
+        characterIndex,
       }}
     >
       {children}

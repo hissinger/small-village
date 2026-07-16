@@ -19,17 +19,17 @@ import { User } from "../types";
 
 // User 는 위치/타임스탬프 등 필드가 많지만 목록 병합엔 id·name 만 쓰인다.
 // 테스트 가독성을 위해 최소 필드만 채우는 헬퍼.
-const user = (id: string, name: string): User => ({
+const user = (id: string, name: string, characterIndex = 0): User => ({
   id,
   name,
-  character_index: 0,
+  character_index: characterIndex,
   room_id: "room-1",
   x: 0,
   y: 0,
   last_active: "2026-01-01T00:00:00.000Z",
 });
 
-const SELF = { id: "me", name: "나야", audioEnabled: true };
+const SELF = { id: "me", name: "나야", audioEnabled: true, characterIndex: 7 };
 
 describe("buildParticipantList", () => {
   it("원격이 없어도 self 는 항상 isMe=true 로 맨 앞에 포함된다", () => {
@@ -43,6 +43,14 @@ describe("buildParticipantList", () => {
     const list = buildParticipantList(SELF, remote, [], new Set());
     expect(list.map((p) => p.id)).toEqual(["me", "u1"]);
     expect(list[1]).toMatchObject({ id: "u1", name: "철수", isMe: false });
+  });
+
+  it("아바타용 characterIndex 를 self·원격에 실어 넘긴다", () => {
+    const remote = new Map<string, User>([["u1", user("u1", "철수", 12)]]);
+    const list = buildParticipantList(SELF, remote, [], new Set());
+    // self 는 RoomContext 의 characterIndex, 원격은 User.character_index.
+    expect(list[0].characterIndex).toBe(7);
+    expect(list[1].characterIndex).toBe(12);
   });
 
   it("RTK 참가자와 customParticipantId 로 매칭해 micOn 을 정한다", () => {

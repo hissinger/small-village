@@ -34,7 +34,7 @@ jest.mock("../ChatPanel", () => () => (
 jest.mock("../ParticipantPanel", () => () => (
   <div data-testid="mock-participant-panel" />
 ));
-jest.mock("../../hooks/useRemoteParticipants", () => ({
+jest.mock("../../context/RemoteParticipantsContext", () => ({
   useRemoteParticipants: () => new Map(),
 }));
 

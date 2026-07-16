@@ -23,7 +23,7 @@ import ParticipantPanel from "./ParticipantPanel";
 import { MessageCircle, Users } from "lucide-react";
 import IconButton from "./IconButton";
 import { BOTTOM_BAR_HEIGHT } from "../constants";
-import { useRemoteParticipants } from "../hooks/useRemoteParticipants";
+import { useRemoteParticipants } from "../context/RemoteParticipantsContext";
 
 interface BottomBarProps {
   userId: string;
