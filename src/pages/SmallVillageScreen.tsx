@@ -148,11 +148,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       userId,
     });
 
+    // READY 이후 3초 대기(씬 준비)와 무관하게 체류시간 측정 기준점은 READY
+    // 직후 즉시 잡는다. 그래야 3초 미만 세션도 exit_room duration_sec 가
+    // 정확히 잡히고 enter/exit 순서 역전이 생기지 않는다(B-3).
+    let readyTimer: ReturnType<typeof setTimeout> | undefined;
     game.events.once(Phaser.Core.Events.READY, () => {
-      setTimeout(() => {
+      enteredAtRef.current = Date.now();
+      readyTimer = setTimeout(() => {
         setReadyScene(true);
         setScene(game.scene.getScene("SmallVillageScene") as SmallVillageScene);
-        enteredAtRef.current = Date.now();
         // room_size 는 presence 가 비동기라 0 일 수 있어 users 테이블에서 직접 센다(D4).
         fetchRoomSize(room.id).then((room_size) => {
           pushEvent(ANALYTICS_EVENTS.ENTER_ROOM, {
@@ -165,6 +169,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     });
 
     return () => {
+      // 언마운트가 READY 대기(3초) 중에 일어나도 타이머가 살아남지 않게 정리한다(B-2).
+      if (readyTimer !== undefined) clearTimeout(readyTimer);
       game.destroy(true);
       // Exit 버튼(handleExit) 외의 경로로 언마운트돼도 미팅 세션을 정리한다.
       // await 는 하지 않고 실패는 로그만 남긴다. handleExit 이 이미 leave 했다면
@@ -230,11 +236,19 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         setIsJoined(true);
       } catch (error) {
         console.error("Error joining room:", error);
+        // error_msg 원문에는 내부 URL·토큰 조각·스택이 섞일 수 있어 GA4 로
+        // 유출된다. dataLayer 에는 error_code 만 올리고, 원문은 개발모드
+        // 콘솔로만 남긴다(운영 dataLayer 에는 절대 싣지 않는다).
         pushEvent(ANALYTICS_EVENTS.VOICE_JOIN_ERROR, {
           room_id: room.id,
           error_code: (error as { code?: string })?.code ?? "unknown",
-          error_msg: error instanceof Error ? error.message : String(error),
         });
+        if (process.env.NODE_ENV !== "production") {
+          console.debug(
+            "[voice_join_error]",
+            error instanceof Error ? error.message : String(error)
+          );
+        }
         toast.error("음성 연결에 실패했습니다.");
       }
     };
