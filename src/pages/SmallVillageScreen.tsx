@@ -93,6 +93,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       const exists = await roomExists(room.id);
       if (cancelled) return;
       if (!exists) {
+        pushEvent(ANALYTICS_EVENTS.ROOM_NOT_FOUND, { room_id: room.id });
         toast.error("이미 종료된 방입니다.");
         onExit();
         return;
