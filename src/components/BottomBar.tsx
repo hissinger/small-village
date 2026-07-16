@@ -42,6 +42,7 @@ export default function BottomBar(props: BottomBarProps) {
 
         <IconButton
           onClick={() => setIsChatOpen(!isChatOpen)}
+          ariaLabel="Toggle Chat"
           ActiveIcon={MessageCircle}
           activeColor="#4CAF50"
           size={25}

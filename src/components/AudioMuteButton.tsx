@@ -37,6 +37,7 @@ export default function AudioMuteButton() {
   return (
     <IconButton
       onClick={handleMuteClick}
+      ariaLabel={audioEnabled ? "Mute Microphone" : "Unmute Microphone"}
       isActive={!audioEnabled}
       ActiveIcon={MicOff}
       InactiveIcon={Mic}

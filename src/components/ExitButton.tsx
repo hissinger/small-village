@@ -25,6 +25,7 @@ export default function ExitButton(props: ExitButtonProps) {
   return (
     <IconButton
       onClick={props.onClick}
+      ariaLabel="Exit"
       ActiveIcon={LogOut}
       activeColor="#888888"
       size={23}
