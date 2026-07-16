@@ -31,6 +31,12 @@ jest.mock("../AudioInputSelect", () => () => (
 jest.mock("../ChatPanel", () => () => (
   <div data-testid="mock-chat-panel" />
 ));
+jest.mock("../ParticipantPanel", () => () => (
+  <div data-testid="mock-participant-panel" />
+));
+jest.mock("../../hooks/useRemoteParticipants", () => ({
+  useRemoteParticipants: () => new Map(),
+}));
 
 describe("IconButton 접근성 속성", () => {
   it("ariaLabel 을 주면 button 이 해당 aria-label 을 갖는다", () => {
@@ -79,5 +85,17 @@ describe("BottomBar", () => {
     expect(
       screen.getByRole("button", { name: "Toggle Chat" })
     ).toBeInTheDocument();
+  });
+
+  it("참가자 토글 버튼과 인원수 배지를 보여준다", () => {
+    render(<BottomBar userId="test-user" onExit={() => {}} />);
+    expect(
+      screen.getByRole("button", { name: "Toggle Participants" })
+    ).toBeInTheDocument();
+    // 원격 0명 + 나(self) = 1
+    const badge = screen.getByTestId("participant-count-badge");
+    expect(badge).toHaveTextContent("1");
+    // R3: 배지에 접근성 이름이 붙어 있다.
+    expect(badge).toHaveAccessibleName("참가자 1명");
   });
 });
