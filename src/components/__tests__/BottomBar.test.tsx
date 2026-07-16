@@ -31,6 +31,12 @@ jest.mock("../AudioInputSelect", () => () => (
 jest.mock("../ChatPanel", () => () => (
   <div data-testid="mock-chat-panel" />
 ));
+jest.mock("../ParticipantPanel", () => () => (
+  <div data-testid="mock-participant-panel" />
+));
+jest.mock("../../context/RemoteParticipantsContext", () => ({
+  useRemoteParticipants: () => new Map(),
+}));
 // ReactionPicker 는 Message/Room Context 에 의존하므로 목으로 대체한다.
 jest.mock("../ReactionPicker", () => () => (
   <div data-testid="mock-reaction-picker" />
@@ -102,6 +108,18 @@ describe("BottomBar", () => {
     expect(
       screen.getByRole("button", { name: "Toggle Chat" })
     ).toBeInTheDocument();
+  });
+
+  it("참가자 토글 버튼과 인원수 배지를 보여준다", () => {
+    render(<BottomBar userId="test-user" onExit={() => {}} />);
+    expect(
+      screen.getByRole("button", { name: "Toggle Participants" })
+    ).toBeInTheDocument();
+    // 원격 0명 + 나(self) = 1
+    const badge = screen.getByTestId("participant-count-badge");
+    expect(badge).toHaveTextContent("1");
+    // R3: 배지에 접근성 이름이 붙어 있다.
+    expect(badge).toHaveAccessibleName("참가자 1명");
   });
 
   it("바텀바의 주요 요소(채팅/나가기/리액션·오디오 목)가 렌더된다", () => {

@@ -17,6 +17,7 @@
 import React, { memo, useEffect, useRef, useState } from "react";
 import SmallVillage from "../components/SmallVillage";
 import { RoomProvider } from "../context/RoomContext";
+import { RemoteParticipantsProvider } from "../context/RemoteParticipantsContext";
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
@@ -291,16 +292,19 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
               userName={characterName}
               roomId={room.id}
               roomTitle={room.title}
+              characterIndex={characterIndex}
             >
-              <SmallVillage
-                room={room}
-                userId={userId!}
-                characterIndex={characterIndex}
-                characterName={characterName}
-                scene={scene}
-                onExit={onExit}
-              />
-              <BottomBar onExit={handleExit} userId={userId} />
+              <RemoteParticipantsProvider>
+                <SmallVillage
+                  room={room}
+                  userId={userId!}
+                  characterIndex={characterIndex}
+                  characterName={characterName}
+                  scene={scene}
+                  onExit={onExit}
+                />
+                <BottomBar onExit={handleExit} userId={userId} />
+              </RemoteParticipantsProvider>
             </RoomProvider>
           </RealtimeKitProvider>
         )}
