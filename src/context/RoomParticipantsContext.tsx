@@ -26,144 +26,89 @@ import { User } from "../types";
 import { supabase } from "../lib/supabaseClient";
 import {
   DATABASE_TABLES,
-  PARTICIPANT_FETCH_MAX_ATTEMPTS,
-  PARTICIPANT_FETCH_BACKOFF_MS,
+  RECONCILE_INTERVAL_MS,
+  ROSTER_STALE_TIMEOUT_MS,
 } from "../constants";
 import { useRoomContext } from "./RoomContext";
 
 /**
  * 방 로스터("누가 있나")의 단일 진실원.
  *
- * 설계(docs/presence-source-refactor-plan.md):
- * - **누가(membership)** → Supabase Presence 를 권위로 삼는다. presence `sync` 는 매번 전체
- *   접속자 집합을 주고 재연결에도 자가복구되므로, 이벤트가 유실돼도 다음 sync 로 수렴한다.
- *   제거는 오직 sync 전체집합 reconcile 로만 한다(leave 즉시제거 금지 — localStorage 공유 id 라
- *   같은 유저의 다른 탭이 살아있는데 한 탭 leave 로 오제거될 수 있다).
- * - **어디/무엇(state)** → `users` 테이블 + `postgres_changes`(INSERT/UPDATE) 를 데이터 채움의
- *   1차 경로로 쓴다. presence 멤버인데 아직 row 데이터가 없으면 개별 fetch 로 보강하되, 유한
- *   횟수(PARTICIPANT_FETCH_MAX_ATTEMPTS)로 재시도한다(무한 폴링 방지).
+ * 설계(docs/presence-source-refactor-plan.md, Option B):
+ * - 소스는 **`users` 테이블**이다(호스티드 Supabase presence 미동작 — supabase/realtime#1807).
+ *   방의 row 존재 = 접속 중. 초기 1회 fetch 로 전체 로스터를 잡고, `postgres_changes`
+ *   (INSERT/UPDATE/DELETE) 로 저latency 반영, 그리고 **주기 reconcile(방 전체 재조회)** 로
+ *   놓친 이벤트·재연결을 자가복구한다(S1/S3).
+ * - **비파괴**: 클라이언트는 남의 row 를 삭제하지 않는다(S2). 크래시로 정리 안 된 고아 row 는
+ *   `ROSTER_STALE_TIMEOUT_MS` 이상 침묵하면 뷰에서 제외만 하고 삭제는 beforeunload/webhook 에 맡긴다.
  *
- * 이 Provider 가 presence 채널(`online-users-<roomId>`)의 track/sync 를 단독 소유한다. 같은
- * 소켓에 동일 이름 채널을 중복 구독하면 토픽이 겹쳐 한쪽이 이벤트를 못 받으므로, presence 구독은
- * 여기 한 곳에만 둔다.
- *
- * 내부 맵은 self 를 포함한 전체 로스터이고, 노출 API `useRemoteParticipants()` 는 self 를 제외한
- * 뷰를 준다(패널·배지·공간오디오·게임 씬이 사용). self 는 각 소비자가 따로 다룬다.
+ * 노출 API `useRemoteParticipants()` 는 self 를 제외한 뷰를 준다(패널·배지·공간오디오·게임 씬 사용).
+ * 내부 맵은 self 포함 전체 로스터이며, self 는 각 소비자가 따로 다룬다.
  */
 const RoomParticipantsContext = createContext<Map<string, User> | null>(null);
-
-const ONLINE_USERS_CHANNEL_PREFIX = "online-users";
-
-interface PresenceMeta {
-  user_id: string;
-  online_at: string;
-}
 
 export const RoomParticipantsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const { roomId, userId } = useRoomContext();
+  const { roomId } = useRoomContext();
   const [participants, setParticipants] = useState<Map<string, User>>(
     new Map()
   );
 
-  // 멤버십(presence 권위)과 데이터(users row)를 분리해 ref 로 들고, 둘을 교집합해 노출 맵을 만든다.
-  const membersRef = useRef<Set<string>>(new Set());
+  // 알려진 방 유저 전체(self 포함). 노출 맵은 여기서 stale 을 걸러 파생한다.
   const dataRef = useRef<Map<string, User>>(new Map());
-  const fetchAttemptsRef = useRef<Map<string, number>>(new Map());
-  const fetchTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map()
-  );
 
   useEffect(() => {
     if (!roomId) return;
     let cancelled = false;
-    const fetchTimers = fetchTimersRef.current;
-    const fetchAttempts = fetchAttemptsRef.current;
 
-    // 노출 맵 = (presence 멤버) ∩ (데이터 있음). 멤버여도 데이터가 없으면 아직 감춘다.
+    // 노출 맵 = 최근 활동(last_active) row 만. 고아 row 는 감추되 삭제하진 않는다.
     const recompute = () => {
       if (cancelled) return;
+      const now = Date.now();
       const next = new Map<string, User>();
-      membersRef.current.forEach((id) => {
-        const u = dataRef.current.get(id);
-        if (u) next.set(id, u);
+      dataRef.current.forEach((u, id) => {
+        const activeAt = new Date(u.last_active).getTime();
+        // 파싱 불가(NaN) 는 방금 도착한 것으로 보고 포함(초기 write 레이스 방지).
+        if (Number.isNaN(activeAt) || now - activeAt <= ROSTER_STALE_TIMEOUT_MS) {
+          next.set(id, u);
+        }
       });
       setParticipants(next);
     };
 
-    const clearFetch = (id: string) => {
-      const timer = fetchTimers.get(id);
-      if (timer) {
-        clearTimeout(timer);
-        fetchTimers.delete(id);
-      }
-      fetchAttempts.delete(id);
-    };
-
-    // presence 멤버지만 데이터가 없는 id 를 개별 fetch. 유한 횟수 백오프로만 재시도한다.
-    const fetchMemberData = async (id: string) => {
-      if (cancelled) return;
-      if (dataRef.current.has(id) || !membersRef.current.has(id)) return;
-      const attempts = fetchAttempts.get(id) ?? 0;
-      if (attempts >= PARTICIPANT_FETCH_MAX_ATTEMPTS) return; // 상한 — 무한 폴링 방지
-      fetchAttempts.set(id, attempts + 1);
-
-      const { data, error } = await supabase
-        .from(DATABASE_TABLES.USERS)
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-      if (cancelled) return;
-      // fetch 대기 중 postgres INSERT 가 먼저 채웠거나 멤버가 빠졌으면 중단.
-      if (dataRef.current.has(id) || !membersRef.current.has(id)) return;
-
-      if (!error && data) {
-        dataRef.current.set(id, data as User);
-        clearFetch(id);
-        recompute();
-        return;
-      }
-      // 상한 도달: 이 멤버는 끝내 users row 를 못 채웠다(예: same-user 다중 탭에서 공유 row 삭제).
-      // 회귀 조기 감지를 위해 dev 에서만 남긴다(정상 warmup 노이즈가 아닌 진짜 실패 지점).
-      if (attempts + 1 >= PARTICIPANT_FETCH_MAX_ATTEMPTS) {
-        if (process.env.NODE_ENV !== "production") {
-          console.debug(
-            `[presence] member ${id} still has no users row after ${
-              attempts + 1
-            } attempts`
-          );
-        }
-        return;
-      }
-      // 실패/빈 결과 → 유한 백오프 후 재시도(그 사이 postgres INSERT 가 오면 위 guard 로 중단).
-      const timer = setTimeout(
-        () => fetchMemberData(id),
-        PARTICIPANT_FETCH_BACKOFF_MS * (attempts + 1)
-      );
-      fetchTimers.set(id, timer);
-    };
-
-    // 데이터 채널: users INSERT/UPDATE 가 데이터 채움의 1차 경로. DELETE 는 보조.
-    const dataChannelName = `realtime:public:${DATABASE_TABLES.USERS}_roomParticipants`;
-    const upsertData = (payload: { new: Record<string, unknown> }) => {
+    const upsertRow = (payload: { new: Record<string, unknown> }) => {
       if (payload.new.room_id !== roomId) return;
       const u = payload.new as unknown as User;
       dataRef.current.set(u.id, u);
-      clearFetch(u.id);
       recompute();
     };
-    const dataChannel = supabase
-      .channel(dataChannelName)
+
+    // 방 전체를 다시 읽어 dataRef 를 권위 스냅샷으로 교체(수렴). 초기 1회 + 주기 실행.
+    const reconcile = async () => {
+      const { data, error } = await supabase
+        .from(DATABASE_TABLES.USERS)
+        .select("*")
+        .eq("room_id", roomId);
+      if (cancelled || error || !data) return;
+      const next = new Map<string, User>();
+      data.forEach((u) => next.set((u as User).id, u as User));
+      dataRef.current = next;
+      recompute();
+    };
+
+    const channelName = `realtime:public:${DATABASE_TABLES.USERS}_roomParticipants`;
+    const channel = supabase
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
-        upsertData
+        upsertRow
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
-        upsertData
+        upsertRow
       )
       .on(
         "postgres_changes",
@@ -172,64 +117,22 @@ export const RoomParticipantsProvider: React.FC<{
           const id = (payload.old as { id?: string }).id;
           if (!id) return;
           dataRef.current.delete(id);
-          clearFetch(id);
           recompute();
         }
       )
       .subscribe();
 
-    // presence 채널: 멤버십의 권위. key=userId 로 track 해 sync 집합이 곧 user_id 집합이 되게 한다.
-    const presenceChannelName = `${ONLINE_USERS_CHANNEL_PREFIX}-${roomId}`;
-    const presenceChannel = supabase.channel(presenceChannelName, {
-      config: { presence: { key: userId } },
-    });
-
-    const handleSync = () => {
-      const state = presenceChannel.presenceState<PresenceMeta>();
-      // key 설정 여부와 무관하게 안전하도록 meta 의 user_id 로 집합을 만든다.
-      const ids = new Set<string>();
-      Object.values(state).forEach((metas) =>
-        metas.forEach((m) => {
-          if (m.user_id) ids.add(m.user_id);
-        })
-      );
-      membersRef.current = ids;
-
-      // 떠난 멤버 정리(데이터·진행 중 fetch 폐기).
-      Array.from(dataRef.current.keys()).forEach((id) => {
-        if (!ids.has(id)) {
-          dataRef.current.delete(id);
-          clearFetch(id);
-        }
-      });
-      // 데이터 없는 멤버 보강.
-      ids.forEach((id) => {
-        if (!dataRef.current.has(id)) void fetchMemberData(id);
-      });
-      recompute();
-    };
-
-    presenceChannel
-      .on("presence", { event: "sync" }, handleSync)
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          const meta: PresenceMeta = {
-            user_id: userId,
-            online_at: new Date().toISOString(),
-          };
-          await presenceChannel.track(meta);
-        }
-      });
+    // 초기 스냅샷 + 주기 reconcile. reconcile 이 매번 recompute 로 stale 필터를 재적용하므로
+    // (RECONCILE_INTERVAL_MS < ROSTER_STALE_TIMEOUT_MS) 별도 stale sweep 은 불필요하다.
+    reconcile();
+    const interval = setInterval(reconcile, RECONCILE_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      fetchTimers.forEach((timer) => clearTimeout(timer));
-      fetchTimers.clear();
-      fetchAttempts.clear();
-      dataChannel.unsubscribe();
-      presenceChannel.unsubscribe();
+      clearInterval(interval);
+      channel.unsubscribe();
     };
-  }, [roomId, userId]);
+  }, [roomId]);
 
   return (
     <RoomParticipantsContext.Provider value={participants}>

@@ -19,11 +19,13 @@
 export const INACTIVE_TIMEOUT_MS = 15_000;
 export const HEARTBEAT_INTERVAL_MS = 10_000;
 
-// presence 멤버로는 잡혔지만 users row 데이터가 아직 없을 때, 개별 fetch 를 재시도하는 정책.
-// presence sync 는 멤버십 변화·재연결에만 발동하고 주기적이지 않으므로, 일시 실패 시 유한 백오프로 채운다.
-// 무한 폴링은 금지한다 — same-user 다중 탭에서 공유 row 가 지워진 경우 영영 채워지지 않으므로 상한에서 멈춘다.
-export const PARTICIPANT_FETCH_MAX_ATTEMPTS = 4;
-export const PARTICIPANT_FETCH_BACKOFF_MS = 500;
+// 방 로스터(RoomParticipantsProvider)의 주기적 재조회(reconcile) 간격.
+// postgres_changes 이벤트를 놓치거나 재연결로 어긋나도 이 주기마다 방 전체를 다시 읽어 수렴한다.
+export const RECONCILE_INTERVAL_MS = 10_000;
+
+// 인룸 로스터에서 "고아 row"(크래시로 beforeunload/webhook 정리가 안 된 row)를 뷰에서 제외하는
+// 완만한 타임아웃. 하트비트(10s)보다 넉넉히 커서 정상 유저가 깜빡이지 않는다. row 를 삭제하진 않는다.
+export const ROSTER_STALE_TIMEOUT_MS = 30_000;
 
 // 입장 직후엔 기존 접속자들이 로스터에 한꺼번에 채워지므로, 이 워밍업 창 동안은 "입장" 토스트를
 // 띄우지 않는다. 창이 지난 뒤 새로 등장한 원격 유저만 진짜 입장으로 보고 토스트한다.
