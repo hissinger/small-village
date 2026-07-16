@@ -59,6 +59,14 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // 이 앱은 라우터가 없어 URL 이 안 바뀐다 → GTM History Change 트리거가 안 먹는다.
+    // 스텝 전환을 가상 페이지뷰로 수동 보정한다(GA_ID 있을 때만).
+    if (process.env.REACT_APP_GA_ID) {
+      ReactGA.send({ hitType: "pageview", page: `/${currentStep}` });
+    }
+  }, [currentStep]);
+
   const goToNextStep = useCallback(() => {
     switch (currentStep) {
       case Steps.CHARACTER_SELECT:
