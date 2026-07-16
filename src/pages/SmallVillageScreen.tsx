@@ -26,10 +26,12 @@ import {
 import { createRTKToken } from "../lib/supabaseFunctions";
 import { roomExists } from "../lib/roomState";
 import { useToast } from "../hooks/useToast";
+import { pushEvent } from "../lib/analytics";
+import { fetchRoomSize } from "../lib/roomSize";
 
 import { Room } from "../types";
 import BottomBar from "../components/BottomBar";
-import { BOTTOM_BAR_HEIGHT } from "../constants";
+import { ANALYTICS_EVENTS, BOTTOM_BAR_HEIGHT } from "../constants";
 
 interface SmallVillageScreenProps {
   userId: string;
@@ -58,6 +60,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   // leave() 는 Exit 버튼(handleExit)과 언마운트 cleanup 양쪽에서 호출될 수 있다.
   // 한 세션당 한 번만 실제로 leave 하도록 가드한다(두 번째부터는 no-op).
   const leftRef = useRef(false);
+  // 체류 시간(exit_room duration_sec) 계측용. READY 시점에 기록한다.
+  const enteredAtRef = useRef<number | null>(null);
   // null = 확인 중, true = 존재, false = 없음(입장 불가 → 로비로)
   const [roomValid, setRoomValid] = useState<boolean | null>(null);
   const toast = useToast();
@@ -70,6 +74,14 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   const leaveOnce = () => {
     if (leftRef.current) return undefined;
     leftRef.current = true;
+    // 퇴장의 모든 경로(handleExit·언마운트 cleanup)가 이 함수를 지나므로
+    // 체류시간 계측은 여기 한 곳이면 충분하다(DRY).
+    if (enteredAtRef.current !== null) {
+      pushEvent(ANALYTICS_EVENTS.EXIT_ROOM, {
+        room_id: room.id,
+        duration_sec: Math.round((Date.now() - enteredAtRef.current) / 1000),
+      });
+    }
     return meetingRef.current?.leave();
   };
 
@@ -139,6 +151,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       setTimeout(() => {
         setReadyScene(true);
         setScene(game.scene.getScene("SmallVillageScene") as SmallVillageScene);
+        enteredAtRef.current = Date.now();
+        // room_size 는 presence 가 비동기라 0 일 수 있어 users 테이블에서 직접 센다(D4).
+        fetchRoomSize(room.id).then((room_size) => {
+          pushEvent(ANALYTICS_EVENTS.ENTER_ROOM, {
+            room_id: room.id,
+            character_index: characterIndex,
+            room_size,
+          });
+        });
       }, 3_000);
     });
 
