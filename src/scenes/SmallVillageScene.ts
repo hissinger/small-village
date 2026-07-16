@@ -16,7 +16,7 @@
 
 import { User } from "../types";
 import { upsertUserState } from "../lib/userState";
-import { NUM_CHARACTERS } from "../constants";
+import { NUM_CHARACTERS, REACTION_ANIMATION } from "../constants";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -544,6 +544,34 @@ export default class SmallVillageScene extends Phaser.Scene {
       entry.ring.destroy();
       delete this.speakerRings[userId];
     }
+  }
+
+  /**
+   * 수신한 emoji 를 아바타 머리 위로 떠오르며 사라지게 표시한다.
+   * self/remote 스프라이트 모두 getSprite 로 매칭한다. 대상이 없으면 no-op.
+   * 여러 번 눌리면 emoji 가 누적 떠오르며, 소멸형이라 메모리 누수는 없다.
+   */
+  showReaction(userId: string, emoji: string) {
+    const sprite = this.getSprite(userId);
+    if (!sprite) return;
+
+    const startY = sprite.y + REACTION_ANIMATION.OFFSET_Y;
+    const emojiText = this.add
+      .text(sprite.x, startY, emoji, {
+        fontSize: REACTION_ANIMATION.FONT_SIZE,
+        align: "center",
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(20);
+
+    this.tweens.add({
+      targets: emojiText,
+      y: startY - REACTION_ANIMATION.RISE_DISTANCE,
+      alpha: 0,
+      duration: REACTION_ANIMATION.DURATION_MS,
+      ease: "Sine.easeOut",
+      onComplete: () => emojiText.destroy(),
+    });
   }
 
   showChatMessage(userId: string, message: string) {
