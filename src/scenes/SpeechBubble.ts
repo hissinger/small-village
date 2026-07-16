@@ -101,6 +101,12 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
    * @param durationMs 표시 유지 시간(ms). 기본 10초.
    */
   display(text: string, durationMs = 10000): void {
+    // 이미 정리된(destroy 된) 버블이면 no-op. 퇴장 이벤트와 채팅 broadcast 가
+    // 역순으로 도착하는 좁은 race 에서 destroyed 컨테이너에 접근하는 걸 막는다.
+    if (!this.scene || !this.active) {
+      return;
+    }
+
     // 이 버블의 이전 타이머만 정리한다(전역 공유 아님).
     if (this.hideTimer) {
       this.hideTimer.remove();
@@ -141,16 +147,8 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
 
     // Calculate bounds
     const bounds = this.textObject.getBounds();
-    let width = this.originalWidth;
+    const width = Math.max(this.originalWidth, bounds.width + this.margin);
     let height = this.margin;
-
-    if (bounds.width + this.margin > width) {
-      width = bounds.width + this.margin;
-    }
-
-    if (bounds.width + this.margin < width) {
-      width = bounds.width + this.margin;
-    }
 
     if (bounds.height + 14 > height) {
       height = bounds.height + 14;

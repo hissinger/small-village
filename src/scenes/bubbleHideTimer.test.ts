@@ -60,6 +60,7 @@ function makeBubble(scene: {
 } {
   const bubble = Object.create(SpeechBubble.prototype);
   bubble.scene = scene;
+  bubble.active = true; // 살아있는 컨테이너 상태를 모사 (display() 의 early-return 가드 통과용)
   const setText = jest.fn();
   const setAlpha = jest.fn();
   bubble.setText = setText;
