@@ -58,7 +58,7 @@ async function analyzeBiggestCanvas(page) {
     if (!cvs.length) return { hasCanvas: false };
     let big = cvs[0];
     for (const c of cvs) if (c.width * c.height > big.width * big.height) big = c;
-    return { w: big.width, h: big.height, url: big.toDataURL('image/png') };
+    return { hasCanvas: true, w: big.width, h: big.height, url: big.toDataURL('image/png') };
   });
   if (!res.hasCanvas) return res;
   const stats = await page.evaluate(async (url) => {
