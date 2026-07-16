@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-export * from "./database";
-export * from "./presence";
-export * from "./reaction";
-export * from "./scene";
-export * from "./user";
+// 정적 이모지 목록 (이미지 에셋 최소화 — 유니코드 문자열)
+export const REACTION_EMOJIS = ["👍", "❤️", "😂", "🎉", "😮", "😢"] as const;
+
+// 아바타 머리 위로 떠오르는 애니메이션 설정
+export const REACTION_ANIMATION = {
+  OFFSET_Y: -70, // 스프라이트 중심 기준 위로 띄우는 거리
+  RISE_DISTANCE: 40, // 떠오르며 이동하는 픽셀
+  DURATION_MS: 2000, // 표시 지속 시간
+  FONT_SIZE: "32px",
+} as const;
