@@ -16,7 +16,8 @@
 
 import { User } from "../types";
 import { upsertUserState } from "../lib/userState";
-import { NUM_CHARACTERS } from "../constants";
+import { NUM_CHARACTERS, REACTION_ANIMATION } from "../constants";
+import { SpeechBubble } from "./SpeechBubble";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -71,191 +72,6 @@ interface GameSceneConfig {
   users: User[];
 }
 
-class SpeechBubble extends Phaser.GameObjects.Container {
-  private textObject: Phaser.GameObjects.Text;
-  private borders: (Phaser.GameObjects.TileSprite | Phaser.GameObjects.Image)[];
-  private tail: Phaser.GameObjects.Image;
-  private originalWidth: number;
-  private offsetY: number;
-  private margin: number;
-
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    width: number,
-    offsetY: number,
-    text: string,
-    textStyle: Phaser.Types.GameObjects.Text.TextStyle = {}
-  ) {
-    super(scene, x, y);
-
-    this.originalWidth = width;
-    this.offsetY = offsetY;
-    this.margin = 18;
-
-    // Add this container to the scene
-    scene.add.existing(this);
-
-    // Default text style
-    const defaultTextStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: "16px",
-      color: "#111111",
-      wordWrap: {
-        width: width - this.margin,
-        useAdvancedWrap: true,
-      },
-      align: "left",
-    };
-
-    // Merge user-defined style with default style
-    const finalTextStyle = { ...defaultTextStyle, ...textStyle };
-
-    // Create plain text
-    this.textObject = scene.add.text(12, 4, text, finalTextStyle);
-
-    // Initialize borders and tail
-    this.borders = [];
-    this.tail = scene.add
-      .image(this.margin, 14 + this.offsetY, "bubble-tail")
-      .setOrigin(0.5, 1);
-
-    // Calculate and update the layout
-    this.updateLayout();
-
-    // Add text and tail to the container
-    this.add(this.tail);
-    this.add(this.textObject);
-
-    this.setInteractive();
-  }
-
-  /**
-   * Updates the text of the speech bubble.
-   * @param newText The new text to display.
-   */
-  setText(newText: string): SpeechBubble {
-    // Update the text
-    this.textObject.setText(newText);
-
-    // Recalculate layout and reposition the speech bubble
-    this.updateLayout();
-
-    this.add(this.tail);
-    this.add(this.textObject);
-
-    return this;
-  }
-
-  /**
-   * Updates the layout, recalculates bounds, and adjusts borders and size.
-   */
-  private updateLayout(): void {
-    // Remove previous tail
-    this.remove(this.tail);
-
-    // Remove previous text object
-    this.remove(this.textObject);
-
-    // Remove previous borders
-    this.borders.forEach((border) => border.destroy());
-    this.borders = [];
-
-    // Calculate bounds
-    const bounds = this.textObject.getBounds();
-    let width = this.originalWidth;
-    let height = this.margin;
-
-    if (bounds.width + this.margin > width) {
-      width = bounds.width + this.margin;
-    }
-
-    if (bounds.width + this.margin < width) {
-      width = bounds.width + this.margin;
-    }
-
-    if (bounds.height + 14 > height) {
-      height = bounds.height + 14;
-    }
-
-    const adjustedY = this.offsetY - height;
-
-    // Adjust the container's y position to expand upwards
-    this.textObject.setY(adjustedY + 4);
-
-    // Create new borders
-    this.borders = [
-      // Center tile
-      this.scene.add.tileSprite(
-        width / 2,
-        adjustedY + height / 2,
-        width - this.margin,
-        height - this.margin,
-        "bubble-border",
-        4
-      ),
-
-      // Top-left corner
-      this.scene.add.image(0, adjustedY, "bubble-border", 0).setOrigin(0, 0),
-      // Top-right corner
-      this.scene.add
-        .image(width, adjustedY, "bubble-border", 2)
-        .setOrigin(1, 0),
-      // Bottom-right corner
-      this.scene.add
-        .image(width, adjustedY + height, "bubble-border", 8)
-        .setOrigin(1, 1),
-      // Bottom-left corner
-      this.scene.add
-        .image(0, adjustedY + height, "bubble-border", 6)
-        .setOrigin(0, 1),
-      // Top edge
-      this.scene.add
-        .tileSprite(9, adjustedY, width - this.margin, 9, "bubble-border", 1)
-        .setOrigin(0, 0),
-      // Bottom edge
-      this.scene.add
-        .tileSprite(
-          9,
-          adjustedY + height,
-          width - this.margin,
-          9,
-          "bubble-border",
-          7
-        )
-        .setOrigin(0, 1),
-      // Left edge
-      this.scene.add
-        .tileSprite(
-          0,
-          adjustedY + 9,
-          9,
-          height - this.margin,
-          "bubble-border",
-          3
-        )
-        .setOrigin(0, 0),
-      // Right edge
-      this.scene.add
-        .tileSprite(
-          width,
-          adjustedY + 9,
-          9,
-          height - this.margin,
-          "bubble-border",
-          5
-        )
-        .setOrigin(1, 0),
-    ];
-
-    // Add new borders to the container
-    this.borders.forEach((border) => this.add(border));
-
-    // Update container size
-    this.setSize(width, height);
-  }
-}
-
 export default class SmallVillageScene extends Phaser.Scene {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private sprite: Phaser.Physics.Arcade.Sprite | null = null;
@@ -279,12 +95,16 @@ export default class SmallVillageScene extends Phaser.Scene {
     { ring: Phaser.GameObjects.Ellipse; tween?: Phaser.Tweens.Tween }
   > = {};
 
+  // 떠오르는 리액션 이모지. 여러 개가 동시에 뜰 수 있어 배열로 관리한다.
+  // 각 Text 는 소속 userId(`reactionUserId`)와 시작 시각(`reactionStart`)을 data 로 갖고,
+  // update() 에서 해당 스프라이트를 매 프레임 따라가며 위로 떠오른다.
+  private reactionEmojis: Phaser.GameObjects.Text[] = [];
+
   private roomId: string = "";
   private userId: string = "";
   private characterIndex: number = 0;
   private characterName: string = "";
   private onUserClick: (user: User) => void;
-  private speechBubbleHideTimer: Phaser.Time.TimerEvent | null = null;
   // rooms row 보장 + 최초 users 등록이 끝나기 전에는 이동 write 를 막는 플래그.
   // 초기화 중 움직이면 users write 가 rooms 보장보다 앞서 FK 위반(409)을 낼 수 있다.
   private ready: boolean = false;
@@ -546,35 +366,88 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
   }
 
-  showChatMessage(userId: string, message: string) {
-    if (userId === this.userId) {
-      if (this.sprite && this.speechBubble) {
-        this.setMessage(this.sprite, this.speechBubble, message);
-      }
-    } else {
-      const userSprite = this.userSprites[userId];
-      if (userSprite) {
-        const { sprite, speechBubble } = userSprite;
-        this.setMessage(sprite, speechBubble, message);
-      }
-    }
+  /**
+   * 수신한 emoji 를 아바타 머리 위로 떠오르며 사라지게 표시한다.
+   * self/remote 스프라이트 모두 getSprite 로 매칭한다. 대상이 없으면 no-op.
+   * 여러 번 눌리면 emoji 가 누적 떠오르며, 소멸형이라 메모리 누수는 없다.
+   *
+   * 위치(x,y)는 tween 이 아니라 update() 에서 매 프레임 스프라이트를 따라가며
+   * 갱신한다(이름표/말풍선과 동일). 이동 중 리액션해도 머리에서 이탈하지 않는다.
+   */
+  showReaction(userId: string, emoji: string) {
+    const sprite = this.getSprite(userId);
+    if (!sprite) return;
+
+    const emojiText = this.add
+      .text(sprite.x, sprite.y + REACTION_ANIMATION.OFFSET_Y, emoji, {
+        fontSize: REACTION_ANIMATION.FONT_SIZE,
+        align: "center",
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(20);
+
+    emojiText.setData("reactionUserId", userId);
+    emojiText.setData("reactionStart", this.time.now);
+
+    this.reactionEmojis.push(emojiText);
   }
 
-  setMessage(
-    sprite: Phaser.GameObjects.Sprite,
-    speechBubble: SpeechBubble,
-    message: string
-  ) {
-    if (this.speechBubbleHideTimer) {
-      this.speechBubbleHideTimer.remove();
-    }
+  /**
+   * 떠오르는 리액션 이모지들을 매 프레임 갱신한다.
+   *  - x,y 는 소속 스프라이트를 따라가며(이동 추적) OFFSET_Y 에서 위로 상승.
+   *  - 경과에 따라 상승 offset + alpha 를 직접 계산해 tween 과 위치 추적이 충돌하지 않게 한다.
+   *  - 애니메이션이 끝났거나 소속 유저가 사라지면 정리한다.
+   */
+  private updateReactionEmojis() {
+    if (this.reactionEmojis.length === 0) return;
 
-    speechBubble.setText(message).setAlpha(1);
-    speechBubble.setPosition(sprite.x, sprite.y);
+    const now = this.time.now;
+    this.reactionEmojis = this.reactionEmojis.filter((emojiText) => {
+      const userId = emojiText.getData("reactionUserId") as string;
+      const startTime = emojiText.getData("reactionStart") as number;
+      const sprite = this.getSprite(userId);
 
-    this.speechBubbleHideTimer = this.time.delayedCall(10000, () => {
-      speechBubble.setAlpha(0);
+      const progress = Phaser.Math.Clamp(
+        (now - startTime) / REACTION_ANIMATION.DURATION_MS,
+        0,
+        1
+      );
+
+      // 소속 스프라이트가 사라졌거나 애니메이션이 끝나면 제거한다.
+      if (!sprite || progress >= 1) {
+        emojiText.destroy();
+        return false;
+      }
+
+      const eased = Phaser.Math.Easing.Sine.Out(progress);
+      emojiText.setPosition(
+        sprite.x,
+        sprite.y + REACTION_ANIMATION.OFFSET_Y - REACTION_ANIMATION.RISE_DISTANCE * eased
+      );
+      emojiText.setAlpha(1 - progress);
+      return true;
     });
+  }
+
+  private removeReactionEmojis(userId: string) {
+    this.reactionEmojis = this.reactionEmojis.filter((emojiText) => {
+      if (emojiText.getData("reactionUserId") === userId) {
+        emojiText.destroy();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  showChatMessage(userId: string, message: string) {
+    // 버블 위치는 매 프레임 update()/updateOtherUsers() 에서 스프라이트 좌표로
+    // 갱신되므로 여기서 setPosition 은 불필요하다. 각 버블이 자기 hideTimer 를
+    // 소유하므로 동시 발화에도 서로의 타이머를 덮어쓰지 않는다.
+    if (userId === this.userId) {
+      this.speechBubble?.display(message);
+    } else {
+      this.userSprites[userId]?.speechBubble.display(message);
+    }
   }
 
   addUserSprite(user: User) {
@@ -625,6 +498,7 @@ export default class SmallVillageScene extends Phaser.Scene {
       userSprite.sprite.destroy();
       userSprite.speechBubble.destroy();
       this.removeSpeakerRing(userId);
+      this.removeReactionEmojis(userId);
 
       delete this.userSprites[userId];
     }
@@ -812,6 +686,9 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     // 발화 링을 각 스프라이트 발밑에 동기화(이름표 패턴과 동일).
     this.syncSpeakerRings();
+
+    // 떠오르는 리액션 이모지를 스프라이트 머리 위에 동기화(이동 추적).
+    this.updateReactionEmojis();
   }
 
   updateUsers(users: User[]) {
