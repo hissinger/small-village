@@ -31,6 +31,10 @@ jest.mock("../AudioInputSelect", () => () => (
 jest.mock("../ChatPanel", () => () => (
   <div data-testid="mock-chat-panel" />
 ));
+// ReactionPicker 는 Message/Room Context 에 의존하므로 목으로 대체한다.
+jest.mock("../ReactionPicker", () => () => (
+  <div data-testid="mock-reaction-picker" />
+));
 
 describe("IconButton 접근성 속성", () => {
   it("ariaLabel 을 주면 button 이 해당 aria-label 을 갖는다", () => {

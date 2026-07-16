@@ -21,6 +21,7 @@ import { useState } from "react";
 import ChatPanel from "./ChatPanel";
 import { MessageCircle } from "lucide-react";
 import IconButton from "./IconButton";
+import ReactionPicker from "./ReactionPicker";
 import { BOTTOM_BAR_HEIGHT } from "../constants";
 
 interface BottomBarProps {
@@ -48,6 +49,8 @@ export default function BottomBar(props: BottomBarProps) {
           size={25}
           strokeWidth={2}
         />
+
+        <ReactionPicker />
 
         <AudioMuteButton />
         <ExitButton onClick={props.onExit} />
