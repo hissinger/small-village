@@ -21,6 +21,7 @@ import {
   useRoomParticipants,
   useRemoteParticipants,
 } from "./RoomParticipantsContext";
+import { PARTICIPANT_FETCH_MAX_ATTEMPTS } from "../constants";
 
 // jest.mock 팩토리는 hoist 되므로 참조 변수는 `mock` 접두사가 필수.
 // 두 채널(데이터 postgres_changes / presence)의 핸들러와 fetch 를 캡처해 결정적으로 발동한다.
@@ -33,6 +34,7 @@ let mockSyncCb: (() => void) | null;
 let mockPresenceState: Record<string, { user_id: string; online_at: string }[]>;
 let mockRows: Record<string, Record<string, unknown>>;
 let mockTrackCalls: { user_id: string }[];
+let mockFetchCounts: Record<string, number>;
 
 jest.mock("../lib/supabaseClient", () => ({
   supabase: {
@@ -68,8 +70,10 @@ jest.mock("../lib/supabaseClient", () => ({
     from: () => ({
       select: () => ({
         eq: (_col: string, id: string) => ({
-          maybeSingle: () =>
-            Promise.resolve({ data: mockRows[id] ?? null, error: null }),
+          maybeSingle: () => {
+            mockFetchCounts[id] = (mockFetchCounts[id] ?? 0) + 1;
+            return Promise.resolve({ data: mockRows[id] ?? null, error: null });
+          },
         }),
       }),
     }),
@@ -122,6 +126,7 @@ beforeEach(() => {
   mockPresenceState = {};
   mockRows = {};
   mockTrackCalls = [];
+  mockFetchCounts = {};
 });
 
 describe("RoomParticipantsProvider", () => {
@@ -212,5 +217,31 @@ describe("RoomParticipantsProvider", () => {
     expect(result.current.all.has("u1")).toBe(true);
     expect(result.current.remote.has("me")).toBe(false);
     expect(result.current.remote.has("u1")).toBe(true);
+  });
+
+  // B1/R1 회귀: 데이터 없는 멤버(예: same-user 다중 탭에서 공유 row 삭제)를 무한 폴링하지 않고
+  // 상한에서 멈춘다. presence sync 는 주기적이지 않으므로 유한 백오프로만 재시도한다.
+  it("데이터 없는 멤버는 상한까지만 재시도하고 무한 폴링하지 않는다", async () => {
+    jest.useFakeTimers();
+    // mockRows 에 ghost 없음 → maybeSingle 은 항상 null.
+    const { result, unmount } = renderHook(() => useRoomParticipants(), {
+      wrapper,
+    });
+    mockPresenceState = presence("ghost", "me");
+    await act(async () => {
+      mockSyncCb!();
+      await Promise.resolve();
+    });
+    // 백오프 타이머를 넉넉히 흘려도 재시도는 상한에서 멈춘다.
+    for (let i = 0; i < PARTICIPANT_FETCH_MAX_ATTEMPTS + 3; i++) {
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+        await Promise.resolve();
+      });
+    }
+    expect(mockFetchCounts.ghost).toBe(PARTICIPANT_FETCH_MAX_ATTEMPTS);
+    expect(result.current.has("ghost")).toBe(false);
+    unmount();
+    jest.useRealTimers();
   });
 });

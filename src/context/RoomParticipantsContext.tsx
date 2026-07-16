@@ -125,6 +125,18 @@ export const RoomParticipantsProvider: React.FC<{
         recompute();
         return;
       }
+      // 상한 도달: 이 멤버는 끝내 users row 를 못 채웠다(예: same-user 다중 탭에서 공유 row 삭제).
+      // 회귀 조기 감지를 위해 dev 에서만 남긴다(정상 warmup 노이즈가 아닌 진짜 실패 지점).
+      if (attempts + 1 >= PARTICIPANT_FETCH_MAX_ATTEMPTS) {
+        if (process.env.NODE_ENV !== "production") {
+          console.debug(
+            `[presence] member ${id} still has no users row after ${
+              attempts + 1
+            } attempts`
+          );
+        }
+        return;
+      }
       // 실패/빈 결과 → 유한 백오프 후 재시도(그 사이 postgres INSERT 가 오면 위 guard 로 중단).
       const timer = setTimeout(
         () => fetchMemberData(id),
