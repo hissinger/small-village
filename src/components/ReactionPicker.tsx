@@ -43,7 +43,7 @@ export default function ReactionPicker() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative flex items-center justify-center w-[50px]">
       <IconButton
         onClick={() => setOpen(!open)}
         ariaLabel="Toggle Reactions"
