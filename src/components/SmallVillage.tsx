@@ -27,6 +27,7 @@ import {
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import { Room, User } from "../types";
 import { useChatMessage } from "../hooks/useChatMessage";
+import { useReactionMessage } from "../hooks/useReactionMessage";
 import { useToast } from "../hooks/useToast";
 
 interface SmallVillageProps {
@@ -226,6 +227,14 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
       sendChatMessage(senderId, message as string);
     }
   }, [chatMessage, sendChatMessage]);
+
+  // reaction handling
+  const reactionMessage = useReactionMessage();
+  useEffect(() => {
+    if (reactionMessage) {
+      scene.showReaction(reactionMessage.sender_id, reactionMessage.emoji);
+    }
+  }, [reactionMessage, scene]);
 
   return (
     <div className="relative w-full h-full">
