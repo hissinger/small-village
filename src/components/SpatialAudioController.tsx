@@ -17,7 +17,7 @@
 import { RTKParticipants } from "@cloudflare/realtimekit-react";
 import { useEffect, useMemo, useRef } from "react";
 import { SpatialAudioRenderer } from "./SpatialAudioRenderer";
-import { useRemoteParticipants } from "../context/RemoteParticipantsContext";
+import { useRemoteParticipants } from "../context/RoomParticipantsContext";
 import { useRoomContext } from "../context/RoomContext";
 import { pushEvent } from "../lib/analytics";
 import { ANALYTICS_EVENTS } from "../constants";

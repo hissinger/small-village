@@ -24,7 +24,7 @@ import { MessageCircle, Users } from "lucide-react";
 import IconButton from "./IconButton";
 import ReactionPicker from "./ReactionPicker";
 import { BOTTOM_BAR_HEIGHT } from "../constants";
-import { useRemoteParticipants } from "../context/RemoteParticipantsContext";
+import { useRemoteParticipants } from "../context/RoomParticipantsContext";
 
 interface BottomBarProps {
   userId: string;

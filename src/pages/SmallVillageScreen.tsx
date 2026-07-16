@@ -17,7 +17,7 @@
 import React, { memo, useEffect, useRef, useState } from "react";
 import SmallVillage from "../components/SmallVillage";
 import { RoomProvider } from "../context/RoomContext";
-import { RemoteParticipantsProvider } from "../context/RemoteParticipantsContext";
+import { RoomParticipantsProvider } from "../context/RoomParticipantsContext";
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
@@ -294,7 +294,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
               roomTitle={room.title}
               characterIndex={characterIndex}
             >
-              <RemoteParticipantsProvider>
+              <RoomParticipantsProvider>
                 <SmallVillage
                   room={room}
                   userId={userId!}
@@ -304,7 +304,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
                   onExit={onExit}
                 />
                 <BottomBar onExit={handleExit} userId={userId} />
-              </RemoteParticipantsProvider>
+              </RoomParticipantsProvider>
             </RoomProvider>
           </RealtimeKitProvider>
         )}

@@ -16,7 +16,6 @@
 
 import React, { memo, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import useOnlineUsers from "../hooks/useOnlineUsers";
 import Conference from "./Conference";
 import SpeakerIndicators from "./SpeakerIndicators";
 import {
@@ -178,39 +177,8 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 온라인 유저가 들어왔을 때
-  const handleJoinUser = useCallback((userId: string) => {
-    console.log(`User ${userId} joined.`);
-  }, []);
-
-  // 온라인 유저가 나갔을 때
-  const handleLeaveUser = useCallback(
-    (userId: string) => {
-      console.log(`User ${userId} left.`);
-
-      // remove user sprite from scene
-      scene.removeUser(userId);
-
-      // gabage collection
-      supabase
-        .from(DATABASE_TABLES.USERS)
-        .delete()
-        .match({ id: userId })
-        .then(({ error }) => {
-          if (error) {
-            console.error(`Failed to delete user ${userId}:`, error);
-          }
-        });
-    },
-    [scene]
-  );
-
-  useOnlineUsers({
-    roomId: room.id,
-    userId,
-    onJoin: handleJoinUser,
-    onLeave: handleLeaveUser,
-  });
+  // presence(멤버십)/leave-정리는 RoomParticipantsProvider 가 단독으로 소유한다.
+  // 씬 스프라이트 제거는 아래 postgres DELETE 핸들러가 계속 담당한다(PR-2 에서 provider 로 이관 예정).
 
   // chat handling
   const sendChatMessage = useCallback(
