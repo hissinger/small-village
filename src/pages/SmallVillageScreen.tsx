@@ -180,7 +180,9 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         console.error("Error leaving meeting on unmount:", error);
       }
     };
-  }, [characterIndex, characterName, userId, room.id, roomValid]);
+    // 게임 생성은 roomValid 확정 시 1회만 수행한다. leaveOnce 는 매 렌더 새로
+    // 정의되지만 여기 넣으면 게임이 재생성되므로 의도적으로 의존성에서 제외한다.
+  }, [characterIndex, characterName, userId, room.id, roomValid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (roomValid !== true) return;
