@@ -146,8 +146,11 @@ export class SpeechBubble extends Phaser.GameObjects.Container {
     this.borders = [];
 
     // Calculate bounds
+    // 폭은 텍스트 크기에 맞춰 줄였다 늘렸다 한다(shrink-to-fit). originalWidth 는
+    // 최소 폭이 아니라 wordWrap(줄바꿈) 기준 폭일 뿐이라, 짧은 텍스트까지 늘리면
+    // "안녕" 한 마디에 말풍선이 길게 나오는 회귀가 생긴다.
     const bounds = this.textObject.getBounds();
-    const width = Math.max(this.originalWidth, bounds.width + this.margin);
+    const width = bounds.width + this.margin;
     let height = this.margin;
 
     if (bounds.height + 14 > height) {
