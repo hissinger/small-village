@@ -18,7 +18,6 @@ import React from "react";
 import { renderHook, act } from "@testing-library/react";
 import {
   RoomParticipantsProvider,
-  useRoomParticipants,
   useRemoteParticipants,
 } from "./RoomParticipantsContext";
 import { PARTICIPANT_FETCH_MAX_ATTEMPTS } from "../constants";
@@ -131,7 +130,7 @@ beforeEach(() => {
 
 describe("RoomParticipantsProvider", () => {
   it("데이터 채널 1개 + presence 채널 1개를 만들고, presence 는 key=userId 로 track 한다", () => {
-    renderHook(() => useRoomParticipants(), { wrapper });
+    renderHook(() => useRemoteParticipants(), { wrapper });
     expect(mockChannelNames).toHaveLength(2);
     expect(mockChannelNames.some((n) => n.startsWith("online-users"))).toBe(true);
     expect(mockPresenceKey).toBe("me");
@@ -141,7 +140,7 @@ describe("RoomParticipantsProvider", () => {
 
   it("presence sync 로 잡힌 멤버의 데이터를 fetch 로 채운다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
     expect(result.current.get("u1")?.name).toBe("철수");
   });
@@ -149,14 +148,14 @@ describe("RoomParticipantsProvider", () => {
   // S1 회귀: INSERT 이벤트가 유실돼도(=수신 못 함) presence sync 기준으로 fetch 해 수렴해야 한다.
   it("INSERT 이벤트 유실 후에도 sync 로 기존 멤버가 채워진다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     // INSERT 콜백은 부르지 않는다(이벤트 유실 시뮬레이션).
     await syncTo(presence("u1", "me"));
     expect(result.current.get("u1")?.name).toBe("철수");
   });
 
   it("멤버십은 sync 전체집합으로만 바뀐다 — 데이터만 있고 presence 멤버가 아니면 노출 안 됨", async () => {
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     // presence 에 없는 u2 의 데이터가 INSERT 로 먼저 도착.
     act(() => mockInsertCb!({ new: userRow("u2", "영희") }));
     expect(result.current.has("u2")).toBe(false); // 멤버 아님 → 감춤
@@ -168,7 +167,7 @@ describe("RoomParticipantsProvider", () => {
   // S1 회귀 + leave 즉시제거 금지: DELETE 이벤트가 없어도 sync 에서 빠지면 제거된다.
   it("sync 집합에서 빠진 멤버는 DELETE 없이도 제거된다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
     expect(result.current.has("u1")).toBe(true);
     // u1 이 다음 sync 집합에서 빠짐 → 제거.
@@ -178,7 +177,7 @@ describe("RoomParticipantsProvider", () => {
 
   it("멤버가 유지되는 sync 는 기존 멤버를 지우지 않는다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
     // u1 이 계속 들어있는 sync 재발 → 유지.
     await syncTo(presence("u1", "me"));
@@ -187,7 +186,7 @@ describe("RoomParticipantsProvider", () => {
 
   it("UPDATE(이동) 는 기존 멤버 데이터에 반영된다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
     act(() =>
       mockUpdateCb!({ new: { ...userRow("u1", "철수"), x: 42, y: 7 } })
@@ -197,26 +196,18 @@ describe("RoomParticipantsProvider", () => {
 
   it("DELETE 는 데이터를 지워 멤버여도 노출에서 빠진다", async () => {
     mockRows = { u1: userRow("u1", "철수") };
-    const { result } = renderHook(() => useRoomParticipants(), { wrapper });
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
     act(() => mockDeleteCb!({ old: { id: "u1" } }));
     expect(result.current.has("u1")).toBe(false);
   });
 
-  it("useRemoteParticipants 는 self 를 제외하고, useRoomParticipants 는 포함한다", async () => {
+  it("useRemoteParticipants 는 self 를 제외하고 원격만 노출한다", async () => {
     mockRows = { u1: userRow("u1", "철수"), me: userRow("me", "나") };
-    const { result } = renderHook(
-      () => ({
-        all: useRoomParticipants(),
-        remote: useRemoteParticipants(),
-      }),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await syncTo(presence("u1", "me"));
-    expect(result.current.all.has("me")).toBe(true);
-    expect(result.current.all.has("u1")).toBe(true);
-    expect(result.current.remote.has("me")).toBe(false);
-    expect(result.current.remote.has("u1")).toBe(true);
+    expect(result.current.has("me")).toBe(false);
+    expect(result.current.has("u1")).toBe(true);
   });
 
   // B1/R1 회귀: 데이터 없는 멤버(예: same-user 다중 탭에서 공유 row 삭제)를 무한 폴링하지 않고
@@ -224,7 +215,7 @@ describe("RoomParticipantsProvider", () => {
   it("데이터 없는 멤버는 상한까지만 재시도하고 무한 폴링하지 않는다", async () => {
     jest.useFakeTimers();
     // mockRows 에 ghost 없음 → maybeSingle 은 항상 null.
-    const { result, unmount } = renderHook(() => useRoomParticipants(), {
+    const { result, unmount } = renderHook(() => useRemoteParticipants(), {
       wrapper,
     });
     mockPresenceState = presence("ghost", "me");

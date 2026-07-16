@@ -47,9 +47,8 @@ import { useRoomContext } from "./RoomContext";
  * 소켓에 동일 이름 채널을 중복 구독하면 토픽이 겹쳐 한쪽이 이벤트를 못 받으므로, presence 구독은
  * 여기 한 곳에만 둔다.
  *
- * 노출 맵은 self 를 포함한 전체 로스터다. 소비자는 필요에 맞게 고른다:
- *  - useRoomParticipants(): self 포함 전체 로스터.
- *  - useRemoteParticipants(): self 제외 뷰(패널·배지·공간오디오가 사용).
+ * 내부 맵은 self 를 포함한 전체 로스터이고, 노출 API `useRemoteParticipants()` 는 self 를 제외한
+ * 뷰를 준다(패널·배지·공간오디오·게임 씬이 사용). self 는 각 소비자가 따로 다룬다.
  */
 const RoomParticipantsContext = createContext<Map<string, User> | null>(null);
 
@@ -239,19 +238,16 @@ export const RoomParticipantsProvider: React.FC<{
   );
 };
 
+// 내부 헬퍼: context 의 전체 로스터(self 포함) 맵. 노출 API 는 self 제외 뷰만 제공한다.
 const useRoomParticipantsMap = (): Map<string, User> => {
   const ctx = useContext(RoomParticipantsContext);
   if (!ctx) {
     throw new Error(
-      "useRoomParticipants must be used within a RoomParticipantsProvider"
+      "useRemoteParticipants must be used within a RoomParticipantsProvider"
     );
   }
   return ctx;
 };
-
-/** 방 안의 전체 로스터(self 포함). RoomParticipantsProvider 하위에서만 쓴다. */
-export const useRoomParticipants = (): Map<string, User> =>
-  useRoomParticipantsMap();
 
 /** 방 안의 원격 유저(self 제외) 스냅샷. RoomParticipantsProvider 하위에서만 쓴다. */
 export const useRemoteParticipants = (): Map<string, User> => {
