@@ -206,9 +206,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         if (!initedMeeting) throw new Error("initMeeting returned undefined");
         // initMeeting 성공 ≠ join 성공. join 이 resolve 된 뒤에만 isJoined 로 본다.
         await initedMeeting.join();
+        pushEvent(ANALYTICS_EVENTS.VOICE_JOIN_SUCCESS, { room_id: room.id });
         setIsJoined(true);
       } catch (error) {
         console.error("Error joining room:", error);
+        pushEvent(ANALYTICS_EVENTS.VOICE_JOIN_ERROR, {
+          room_id: room.id,
+          error_code: (error as { code?: string })?.code ?? "unknown",
+          error_msg: error instanceof Error ? error.message : String(error),
+        });
         toast.error("음성 연결에 실패했습니다.");
       }
     };
