@@ -17,5 +17,6 @@
 export * from "./analytics";
 export * from "./database";
 export * from "./presence";
+export * from "./reaction";
 export * from "./scene";
 export * from "./user";

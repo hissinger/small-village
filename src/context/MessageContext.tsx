@@ -30,6 +30,7 @@ export const RECEIVER_ALL = "all";
 
 export enum MessageType {
   CHAT = "chat",
+  REACTION = "reaction",
 }
 
 export interface Message {
