@@ -186,6 +186,23 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     if (roomValid !== true) return;
     const joinRoom = async () => {
       try {
+        // best-effort: 지원 브라우저에서만 마이크 권한 거부를 명시 계측한다(D8).
+        // Permissions API 미지원('microphone' 미지원 포함)이면 조용히 skip —
+        // 그 경우 거부는 아래 join 실패(voice_join_error)로만 잡힌다.
+        if (navigator.permissions?.query) {
+          try {
+            const status = await navigator.permissions.query({
+              name: "microphone" as PermissionName,
+            });
+            if (status.state === "denied") {
+              pushEvent(ANALYTICS_EVENTS.MIC_PERMISSION_DENIED, {
+                room_id: room.id,
+              });
+            }
+          } catch {
+            /* 'microphone' 미지원 브라우저 — 무시 */
+          }
+        }
         const token = await createRTKToken(room.id, userId, characterName);
         const initedMeeting = await initMeeting({
           authToken: token,
