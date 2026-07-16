@@ -21,6 +21,7 @@ import { getOrCreateUserId } from "./lib/storage";
 import { MessageProvider } from "./context/MessageContext";
 import TagManager from "react-gtm-module";
 import ReactGA from "react-ga4";
+import { pushEvent } from "./lib/analytics";
 import GithubIcon from "./components/GithubIcon";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -81,6 +82,17 @@ const App: React.FC = () => {
     // localStorage 에 신원(uuid)을 두어 재방문해도 같은 유저로 이어진다.
     setUserId(getOrCreateUserId());
   }, []);
+
+  useEffect(() => {
+    // uuid 를 GA4 User ID 로 연결하면 브라우저/디바이스 넘어 잔존을 볼 수 있다(D6).
+    // uuid 는 익명 랜덤값이라 PII 가 아니다 — 이메일·이름 등 식별정보는 절대 넣지 않는다.
+    if (!userId) return;
+    if (process.env.REACT_APP_GA_ID) {
+      ReactGA.set({ userId }); // GA4 User ID
+    }
+    // GTM 중심 원칙에 따라 User ID 는 dataLayer 로도 무조건 노출한다.
+    pushEvent("set_user_id", { user_id: userId });
+  }, [userId]);
 
   const handleEnterRoom = useCallback(
     (characterIndex: number, name: string, room: Room) => {
