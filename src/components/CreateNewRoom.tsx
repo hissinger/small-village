@@ -17,6 +17,8 @@
 import { useState } from "react";
 import { Room } from "../types";
 import { createMeeting } from "../lib/supabaseFunctions";
+import { pushEvent } from "../lib/analytics";
+import { ANALYTICS_EVENTS } from "../constants";
 
 interface CreateNewRoomProps {
   disabled: boolean;
@@ -40,6 +42,8 @@ const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
     setIsCreating(true);
     try {
       const newRoom = await createMeeting(title);
+      // 비공개 방 개념이 아직 스키마에 없다(모든 방 public). 도입 시 이 값을 확장한다.
+      pushEvent(ANALYTICS_EVENTS.ROOM_CREATED, { is_public: true });
       onEnterRoom({
         id: newRoom,
         title,
