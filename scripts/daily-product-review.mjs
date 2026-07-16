@@ -74,6 +74,20 @@ async function analyzeBiggestCanvas(page) {
   return { ...res, ...stats };
 }
 
+// 로비 캔버스가 실제로 렌더될 때까지 대기 (issue #27: Phaser 에셋 로딩/React 마운트
+// 전에 스크린샷을 찍어 검은 화면이 캡처되는 문제 방지).
+// analyzeBiggestCanvas 의 nonBlackPct 를 재활용해 5% 초과까지 폴링(최대 ~30s, 1s 간격).
+// canvas 를 아직 못 찾은(hasCanvas:false) 경우에도 계속 재시도한다.
+async function waitForLobbyRendered(page, { tries = 30, intervalMs = 1000, minNonBlackPct = 5 } = {}) {
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    last = await analyzeBiggestCanvas(page);
+    if (last.hasCanvas && last.nonBlackPct > minNonBlackPct) return last;
+    await page.waitForTimeout(intervalMs);
+  }
+  return last; // 타임아웃 — 마지막 상태 반환(검은 화면일 수 있음)
+}
+
 async function browserCheck() {
   const browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS });
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
@@ -83,10 +97,10 @@ async function browserCheck() {
 
   try {
     await page.goto(BASE, { waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForTimeout(3500);
+    // 캔버스가 실제로 렌더될 때까지 대기 후 스크린샷 (검은 화면 캡처 방지, issue #27)
+    result.lobby = await waitForLobbyRendered(page);
     await page.screenshot({ path: `${OUT_DIR}/lobby-${DATE}.png` });
     result.screenshots.push(`lobby-${DATE}.png`);
-    result.lobby = await analyzeBiggestCanvas(page);
 
     // 이름/방 입력 → Create
     await page.getByPlaceholder('e.g. Mina').fill('DailyQA');

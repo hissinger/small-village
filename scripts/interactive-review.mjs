@@ -26,6 +26,44 @@ const LAUNCH_ARGS = [
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// 가장 큰 캔버스를 찾아 비검은 픽셀 비율(nonBlackPct)을 계산한다.
+// 캔버스가 없으면 hasCanvas:false 를 반환한다.
+async function analyzeBiggestCanvas(page) {
+  const res = await page.evaluate(() => {
+    const cvs = Array.from(document.querySelectorAll('canvas'));
+    if (!cvs.length) return { hasCanvas: false };
+    let big = cvs[0];
+    for (const c of cvs) if (c.width * c.height > big.width * big.height) big = c;
+    return { hasCanvas: true, w: big.width, h: big.height, url: big.toDataURL('image/png') };
+  });
+  if (!res.hasCanvas) return res;
+  const stats = await page.evaluate(async (url) => {
+    const img = new Image();
+    await new Promise((ok, err) => { img.onload = ok; img.onerror = err; img.src = url; });
+    const off = document.createElement('canvas'); off.width = img.width; off.height = img.height;
+    const ctx = off.getContext('2d'); ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, off.width, off.height);
+    let nb = 0; const total = data.length / 4;
+    for (let i = 0; i < data.length; i += 4) { if (data[i] + data[i+1] + data[i+2] > 24) nb++; }
+    return { nonBlackPct: +(100 * nb / total).toFixed(1) };
+  }, res.url);
+  return { ...res, ...stats };
+}
+
+// 로비 캔버스가 실제로 렌더될 때까지 대기 (issue #27: Phaser 에셋 로딩/React 마운트
+// 전에 스크린샷을 찍어 검은 화면이 캡처되는 문제 방지).
+// nonBlackPct 가 5% 초과까지 폴링(최대 ~30s, 1s 간격). canvas 를 아직 못 찾은
+// (hasCanvas:false) 경우에도 계속 재시도한다.
+async function waitForLobbyRendered(page, { tries = 30, intervalMs = 1000, minNonBlackPct = 5 } = {}) {
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    last = await analyzeBiggestCanvas(page);
+    if (last.hasCanvas && last.nonBlackPct > minNonBlackPct) return last;
+    await sleep(intervalMs);
+  }
+  return last; // 타임아웃 — 마지막 상태 반환(검은 화면일 수 있음)
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS });
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
@@ -50,6 +88,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (loading === 0) break;
     await sleep(1000);
   }
+  // 로비 캔버스가 실제로 렌더될 때까지 보강 대기 (issue #27: 검은 화면 스크린샷 방지)
+  const lobbyRender = await waitForLobbyRendered(page);
+  console.log(`  로비 렌더: 비검은 ${lobbyRender && lobbyRender.hasCanvas ? lobbyRender.nonBlackPct + '%' : '캔버스 없음'}`);
   await sleep(500);
   // 이름 입력
   const nameInput = page.getByPlaceholder('e.g. Mina');
