@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Smile } from "lucide-react";
 import {
   useMessage,
@@ -23,13 +23,14 @@ import {
   RECEIVER_ALL,
 } from "../context/MessageContext";
 import { useRoomContext } from "../context/RoomContext";
-import { REACTION_EMOJIS } from "../constants";
+import { REACTION_EMOJIS, REACTION_EMOJI_LABELS } from "../constants";
 import IconButton from "./IconButton";
 
 export default function ReactionPicker() {
   const [open, setOpen] = useState(false);
   const { sendMessage } = useMessage();
   const { userId } = useRoomContext();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const sendReaction = (emoji: string) => {
     sendMessage(CHANNEL_MESSAGE, {
@@ -42,11 +43,41 @@ export default function ReactionPicker() {
     setOpen(false);
   };
 
+  // 열린 상태에서만 바깥 클릭 / ESC 로 피커를 닫는다.
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
   return (
-    <div className="relative flex items-center justify-center w-[50px]">
+    <div
+      ref={containerRef}
+      className="relative flex items-center justify-center w-[50px]"
+    >
       <IconButton
         onClick={() => setOpen(!open)}
         ariaLabel="Toggle Reactions"
+        ariaExpanded={open}
         ActiveIcon={Smile}
         activeColor="#FFB400"
         size={25}
@@ -57,7 +88,7 @@ export default function ReactionPicker() {
           {REACTION_EMOJIS.map((emoji) => (
             <button
               key={emoji}
-              aria-label={`reaction-${emoji}`}
+              aria-label={REACTION_EMOJI_LABELS[emoji] ?? `reaction-${emoji}`}
               onClick={() => sendReaction(emoji)}
               className="text-2xl hover:scale-110 transition-transform"
             >

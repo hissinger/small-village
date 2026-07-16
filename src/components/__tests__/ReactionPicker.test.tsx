@@ -60,8 +60,8 @@ describe("ReactionPicker", () => {
 
     // 리액션 패널을 연다.
     fireEvent.click(screen.getByRole("button", { name: "Toggle Reactions" }));
-    // aria-label = `reaction-${emoji}`
-    fireEvent.click(screen.getByLabelText("reaction-❤️"));
+    // aria-label 은 리더 친화적 라벨(REACTION_EMOJI_LABELS).
+    fireEvent.click(screen.getByLabelText("React with heart"));
 
     expect(mockSendMessage).toHaveBeenCalledWith(
       CHANNEL_MESSAGE,
@@ -72,5 +72,48 @@ describe("ReactionPicker", () => {
         sender_id: "me",
       })
     );
+  });
+
+  it("토글 버튼으로 패널이 열리고 닫힌다", () => {
+    render(<ReactionPicker />);
+
+    const toggle = screen.getByRole("button", { name: "Toggle Reactions" });
+    // 초기 상태: 닫힘.
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("React with heart")).not.toBeInTheDocument();
+
+    // 열기.
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("React with heart")).toBeInTheDocument();
+
+    // 다시 눌러 닫기.
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("React with heart")).not.toBeInTheDocument();
+  });
+
+  it("ESC 키를 누르면 열린 패널이 닫힌다", () => {
+    render(<ReactionPicker />);
+
+    const toggle = screen.getByRole("button", { name: "Toggle Reactions" });
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText("React with heart")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("React with heart")).not.toBeInTheDocument();
+  });
+
+  it("바깥을 클릭하면 열린 패널이 닫힌다", () => {
+    render(<ReactionPicker />);
+
+    const toggle = screen.getByRole("button", { name: "Toggle Reactions" });
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText("React with heart")).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("React with heart")).not.toBeInTheDocument();
   });
 });

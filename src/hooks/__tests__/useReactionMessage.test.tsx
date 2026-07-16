@@ -47,9 +47,9 @@ describe("useReactionMessage", () => {
     mockHandlerRef.handler = null;
   });
 
-  it("REACTION 메시지를 수신하면 emoji를 노출한다", () => {
-    const { result } = renderHook(() => useReactionMessage());
-    expect(result.current).toBeUndefined();
+  it("REACTION 메시지를 수신할 때마다 callback 을 호출한다", () => {
+    const onReaction = jest.fn();
+    renderHook(() => useReactionMessage(onReaction));
 
     act(() => {
       mockHandlerRef.handler?.({
@@ -61,13 +61,40 @@ describe("useReactionMessage", () => {
       });
     });
 
-    expect(result.current).toEqual(
-      expect.objectContaining({ emoji: "❤️", sender_id: "u2" })
-    );
+    expect(onReaction).toHaveBeenCalledTimes(1);
+    expect(onReaction).toHaveBeenCalledWith({ emoji: "❤️", sender_id: "u2" });
+  });
+
+  it("연속 도착한 REACTION 을 유실 없이 각각 callback 으로 처리한다", () => {
+    const onReaction = jest.fn();
+    renderHook(() => useReactionMessage(onReaction));
+
+    // 같은 배칭 틱에 두 개가 도착해도 각각 즉시 호출되어야 한다.
+    act(() => {
+      mockHandlerRef.handler?.({
+        type: MessageType.REACTION,
+        sender_id: "u2",
+        receiver_id: RECEIVER_ALL,
+        body: "❤️",
+        timestamp: new Date().toISOString(),
+      });
+      mockHandlerRef.handler?.({
+        type: MessageType.REACTION,
+        sender_id: "u3",
+        receiver_id: RECEIVER_ALL,
+        body: "🎉",
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    expect(onReaction).toHaveBeenCalledTimes(2);
+    expect(onReaction).toHaveBeenNthCalledWith(1, { emoji: "❤️", sender_id: "u2" });
+    expect(onReaction).toHaveBeenNthCalledWith(2, { emoji: "🎉", sender_id: "u3" });
   });
 
   it("CHAT 메시지는 무시한다", () => {
-    const { result } = renderHook(() => useReactionMessage());
+    const onReaction = jest.fn();
+    renderHook(() => useReactionMessage(onReaction));
     act(() => {
       mockHandlerRef.handler?.({
         type: MessageType.CHAT,
@@ -77,6 +104,6 @@ describe("useReactionMessage", () => {
         timestamp: new Date().toISOString(),
       });
     });
-    expect(result.current).toBeUndefined();
+    expect(onReaction).not.toHaveBeenCalled();
   });
 });

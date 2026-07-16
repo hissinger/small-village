@@ -54,6 +54,25 @@ describe("IconButton 접근성 속성", () => {
     expect(button).toHaveAttribute("data-testid", "bottombar-toggle-microphone");
   });
 
+  it("고정 높이 클래스로 아이콘을 세로 중앙 정렬한다", () => {
+    render(
+      <IconButton
+        onClick={() => {}}
+        ariaLabel="Toggle Microphone"
+        ActiveIcon={MessageCircle}
+        activeColor="#000000"
+        size={25}
+        strokeWidth={2}
+      />
+    );
+
+    // 모든 바텀바 버튼이 같은 박스(h-[50px])에 세로 중앙 정렬되어야 정렬이 맞는다.
+    const button = screen.getByRole("button", { name: "Toggle Microphone" });
+    expect(button.className).toContain("h-[50px]");
+    expect(button.className).toContain("items-center");
+    expect(button.className).toContain("justify-center");
+  });
+
   it("ariaLabel 이 없으면 data-testid 를 붙이지 않는다", () => {
     render(
       <IconButton
@@ -83,5 +102,16 @@ describe("BottomBar", () => {
     expect(
       screen.getByRole("button", { name: "Toggle Chat" })
     ).toBeInTheDocument();
+  });
+
+  it("바텀바의 주요 요소(채팅/나가기/리액션·오디오 목)가 렌더된다", () => {
+    render(<BottomBar userId="test-user" onExit={() => {}} />);
+    expect(
+      screen.getByRole("button", { name: "Toggle Chat" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument();
+    expect(screen.getByTestId("mock-reaction-picker")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-audio-mute-button")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-audio-input-select")).toBeInTheDocument();
   });
 });

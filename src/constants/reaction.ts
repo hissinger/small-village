@@ -17,6 +17,16 @@
 // 정적 이모지 목록 (이미지 에셋 최소화 — 유니코드 문자열)
 export const REACTION_EMOJIS = ["👍", "❤️", "😂", "🎉", "😮", "😢"] as const;
 
+// 스크린리더 친화적 라벨 맵. 버튼 aria-label 에 `reaction-❤️` 대신 사람이 읽는 문구를 쓴다.
+export const REACTION_EMOJI_LABELS: Record<string, string> = {
+  "👍": "React with thumbs up",
+  "❤️": "React with heart",
+  "😂": "React with laughing face",
+  "🎉": "React with party popper",
+  "😮": "React with surprised face",
+  "😢": "React with crying face",
+};
+
 // 아바타 머리 위로 떠오르는 애니메이션 설정
 export const REACTION_ANIMATION = {
   OFFSET_Y: -70, // 스프라이트 중심 기준 위로 띄우는 거리

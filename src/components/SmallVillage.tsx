@@ -27,7 +27,7 @@ import {
 import SmallVillageScene from "../scenes/SmallVillageScene";
 import { Room, User } from "../types";
 import { useChatMessage } from "../hooks/useChatMessage";
-import { useReactionMessage } from "../hooks/useReactionMessage";
+import { useReactionMessage, ReactionMessage } from "../hooks/useReactionMessage";
 import { useToast } from "../hooks/useToast";
 
 interface SmallVillageProps {
@@ -228,13 +228,14 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
     }
   }, [chatMessage, sendChatMessage]);
 
-  // reaction handling
-  const reactionMessage = useReactionMessage();
-  useEffect(() => {
-    if (reactionMessage) {
-      scene.showReaction(reactionMessage.sender_id, reactionMessage.emoji);
-    }
-  }, [reactionMessage, scene]);
+  // reaction handling — 리액션은 동시다발이라 콜백으로 각 이벤트를 즉시 씬에 전달한다.
+  const handleReaction = useCallback(
+    (r: ReactionMessage) => {
+      scene.showReaction(r.sender_id, r.emoji);
+    },
+    [scene]
+  );
+  useReactionMessage(handleReaction);
 
   return (
     <div className="relative w-full h-full">
