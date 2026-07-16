@@ -24,3 +24,7 @@ export const HEARTBEAT_INTERVAL_MS = 10_000;
 // 무한 폴링은 금지한다 — same-user 다중 탭에서 공유 row 가 지워진 경우 영영 채워지지 않으므로 상한에서 멈춘다.
 export const PARTICIPANT_FETCH_MAX_ATTEMPTS = 4;
 export const PARTICIPANT_FETCH_BACKOFF_MS = 500;
+
+// 입장 직후엔 기존 접속자들이 로스터에 한꺼번에 채워지므로, 이 워밍업 창 동안은 "입장" 토스트를
+// 띄우지 않는다. 창이 지난 뒤 새로 등장한 원격 유저만 진짜 입장으로 보고 토스트한다.
+export const JOIN_TOAST_WARMUP_MS = 2_500;

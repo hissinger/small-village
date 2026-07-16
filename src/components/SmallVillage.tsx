@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-import React, { memo, useCallback, useEffect } from "react";
+import React, { memo, useCallback, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Conference from "./Conference";
 import SpeakerIndicators from "./SpeakerIndicators";
 import {
   DATABASE_TABLES,
-  INACTIVE_TIMEOUT_MS,
   HEARTBEAT_INTERVAL_MS,
+  JOIN_TOAST_WARMUP_MS,
 } from "../constants";
 import SmallVillageScene from "../scenes/SmallVillageScene";
-import { Room, User } from "../types";
+import { Room } from "../types";
+import { useRemoteParticipants } from "../context/RoomParticipantsContext";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useReactionMessage, ReactionMessage } from "../hooks/useReactionMessage";
 import { useToast } from "../hooks/useToast";
@@ -38,12 +39,7 @@ interface SmallVillageProps {
   onExit: () => void;
 }
 
-const SmallVillage: React.FC<SmallVillageProps> = ({
-  room,
-  userId,
-  scene,
-  onExit,
-}) => {
+const SmallVillage: React.FC<SmallVillageProps> = ({ userId, scene }) => {
   const toast = useToast();
 
   const deleteUserDataFromDatebase = useCallback(async () => {
@@ -76,109 +72,33 @@ const SmallVillage: React.FC<SmallVillageProps> = ({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 방 로스터의 단일 소스(RoomParticipantsProvider)를 구독해 씬에 반영한다.
+  // 씬 자체 fetch/GC/postgres 구독은 제거됐다 — 등장/이동/퇴장 모두 이 스냅샷으로 수렴한다.
+  const remoteParticipants = useRemoteParticipants();
+
+  // 입장 토스트: 워밍업 창이 지난 뒤 새로 등장한 원격 유저만 "입장"으로 본다.
+  // (입장 직후엔 기존 접속자가 로스터에 한꺼번에 채워지므로 그때는 토스트하지 않는다.)
+  const joinToastReadyRef = useRef(false);
+  const knownIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    supabase
-      .from(DATABASE_TABLES.USERS)
-      .select("*")
-      .eq("room_id", room.id)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          return;
+    const timer = setTimeout(() => {
+      joinToastReadyRef.current = true;
+    }, JOIN_TOAST_WARMUP_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    scene.updateUsers(Array.from(remoteParticipants.values()));
+
+    if (joinToastReadyRef.current) {
+      remoteParticipants.forEach((user, id) => {
+        if (!knownIdsRef.current.has(id)) {
+          toast.show(`${user.name} has joined`);
         }
-
-        // gabage collection
-        // remove users who are inactive
-        const users = data || [];
-        const now = new Date();
-        const usersToDelete = users.filter(
-          (user: User) =>
-            new Date(user.last_active) <
-            new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
-        );
-        usersToDelete.forEach((user) => {
-          supabase
-            .from(DATABASE_TABLES.USERS)
-            .delete()
-            .match({ id: user.id })
-            .then(({ error }) => {
-              if (error) {
-                console.error(`Failed to delete user ${user.id}:`, error);
-              }
-            });
-        });
-
-        // get online users and add them to the scene
-        const onlineUsers = users.filter(
-          (user: User) =>
-            new Date(user.last_active) >
-            new Date(now.getTime() - INACTIVE_TIMEOUT_MS)
-        );
-        scene.updateUsers(onlineUsers);
       });
-
-    const usersChannelName = `realtime:public:${DATABASE_TABLES.USERS}`;
-    const usersChannel = supabase
-      .channel(usersChannelName)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: DATABASE_TABLES.USERS },
-        (payload) => {
-          if (payload.new.room_id !== room.id) return;
-          const newUser = payload.new as User;
-          // if exists, update user data, otherwise add new user
-          const existingUser = scene.users?.find(
-            (user) => user.id === newUser.id
-          );
-          if (existingUser) {
-            scene.updateUsers(
-              scene.users?.map((user) =>
-                user.id === newUser.id ? newUser : user
-              )
-            );
-          } else {
-            scene.updateUsers([...(scene.users || []), newUser]);
-          }
-
-          if (newUser) {
-            toast.show(`${newUser.name} has joined`);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
-        (payload) => {
-          if (payload.new.room_id !== room.id) return;
-          if (payload.new.id === userId) return;
-
-          const prevUsers = scene.users;
-          const updatedUsers = prevUsers.map((user) =>
-            user.id === payload.new.id ? (payload.new as User) : user
-          );
-          scene.updateUsers(updatedUsers);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: DATABASE_TABLES.USERS },
-        (payload) => {
-          if (userId === payload.old.id) {
-            return;
-          }
-
-          scene.removeUser((payload.old as User).id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      usersChannel.unsubscribe();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // presence(멤버십)/leave-정리는 RoomParticipantsProvider 가 단독으로 소유한다.
-  // 씬 스프라이트 제거는 아래 postgres DELETE 핸들러가 계속 담당한다(PR-2 에서 provider 로 이관 예정).
+    }
+    knownIdsRef.current = new Set(remoteParticipants.keys());
+  }, [remoteParticipants, scene, toast]);
 
   // chat handling
   const sendChatMessage = useCallback(

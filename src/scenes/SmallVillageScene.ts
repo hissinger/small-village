@@ -691,14 +691,23 @@ export default class SmallVillageScene extends Phaser.Scene {
     this.updateReactionEmojis();
   }
 
+  // 전체 로스터 스냅샷으로 원격 스프라이트를 동기화한다(단일 소스에서 매 변경마다 호출).
+  // 목록에 새로 들어온 유저는 스프라이트 생성, 빠진 유저는 스프라이트 제거. self 는 제외.
   updateUsers(users: User[]) {
     this.users = users;
+    const nextIds = new Set(users.map((u) => u.id));
     users.forEach((user) => {
       if (user.id === this.userId) {
         return;
       }
       if (!this.userSprites[user.id]) {
         this.addUserSprite(user);
+      }
+    });
+    // 로스터에서 빠진 원격 유저의 스프라이트 정리.
+    Object.keys(this.userSprites).forEach((id) => {
+      if (!nextIds.has(id)) {
+        this.removeUserSprite(id);
       }
     });
   }
