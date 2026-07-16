@@ -17,22 +17,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useRealtimeKitMeeting } from "@cloudflare/realtimekit-react";
 import { POLL_INTERVAL_MS } from "../lib/speakingPeers";
+import { RtkParticipantLike } from "../lib/participantList";
 
-// 마이크 상태 맵이 실제로 바뀌었는지 비교(내용 동등성). 바뀔 때만 리렌더한다.
+// 마이크 상태 목록이 실제로 바뀌었는지 비교(내용 동등성). 바뀔 때만 리렌더한다.
+// joined 순회 순서는 안정적이므로 인덱스별 (id, audioEnabled) 로 비교한다.
 function micStatesEqual(
-  a: Map<string, boolean>,
-  b: Map<string, boolean>
+  a: RtkParticipantLike[],
+  b: RtkParticipantLike[]
 ): boolean {
-  if (a.size !== b.size) return false;
-  for (const [id, on] of a) {
-    if (b.get(id) !== on) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].customParticipantId !== b[i].customParticipantId) return false;
+    if (a[i].audioEnabled !== b[i].audioEnabled) return false;
   }
   return true;
 }
 
 /**
  * "원격 참가자별 마이크 on/off(audioEnabled)" 를 customParticipantId 별로 폴링해
- * Map<customParticipantId, audioEnabled> 로 돌려준다.
+ * buildParticipantList 가 바로 받는 RtkParticipantLike[] 로 돌려준다.
  *
  *  - 왜 폴링인가: `useRealtimeKitSelector((m) => m.participants)` 는 안정 참조 객체라
  *    원격 audioUpdate 로 리렌더되지 않을 수 있다(저장소에 원격 audioEnabled 를 selector 로
@@ -41,22 +44,25 @@ function micStatesEqual(
  *  - 범위: audioEnabled(마이크 on/off)만 읽는다. 발화 볼륨 측정(AudioContext/analyser)은
  *    useSpeakingPeers 담당이며 여기선 하지 않는다.
  *  - self 는 제외한다(패널은 self 마이크를 m.self.audioEnabled 로 별도 구독). 원격만 담는다.
- *  - 맵 내용이 바뀔 때만 리렌더한다(폴링 tick 마다 setState 하지 않음).
+ *  - 목록 내용이 바뀔 때만 리렌더한다(폴링 tick 마다 setState 하지 않음).
  */
-export function useRemoteMicStates(): Map<string, boolean> {
+export function useRemoteMicStates(): RtkParticipantLike[] {
   const { meeting } = useRealtimeKitMeeting();
-  const [micStates, setMicStates] = useState<Map<string, boolean>>(new Map());
-  const micStatesRef = useRef<Map<string, boolean>>(new Map());
+  const [micStates, setMicStates] = useState<RtkParticipantLike[]>([]);
+  const micStatesRef = useRef<RtkParticipantLike[]>([]);
 
   useEffect(() => {
     if (!meeting) return;
 
     const tick = () => {
       // 원격 참가자(joined)의 customParticipantId → audioEnabled 스냅샷.
-      const next = new Map<string, boolean>();
+      const next: RtkParticipantLike[] = [];
       meeting.participants.joined.forEach((p) => {
         if (p.customParticipantId) {
-          next.set(p.customParticipantId, p.audioEnabled === true);
+          next.push({
+            customParticipantId: p.customParticipantId,
+            audioEnabled: p.audioEnabled === true,
+          });
         }
       });
 

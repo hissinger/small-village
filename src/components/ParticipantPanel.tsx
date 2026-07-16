@@ -57,14 +57,10 @@ const ParticipantPanelBody = ({ onClose, remoteMap }: ParticipantPanelBodyProps)
   // self 마이크 상태 (AudioMuteButton 과 동일 셀렉터, 원시값 → aggregator 경로로 확실히 리렌더).
   const selfAudioEnabled = useRealtimeKitSelector((m) => m.self.audioEnabled);
   // B2/R1: 원격 마이크 상태는 폴링 훅에서 읽는다 (m.participants 셀렉터 대체 — 원격 audioUpdate 리렌더 보장).
-  const remoteMic = useRemoteMicStates();
+  //        훅이 buildParticipantList 가 그대로 받는 RtkParticipantLike[] 를 반환하므로 별도 변환이 없다.
+  const rtkParticipants = useRemoteMicStates();
   // PR-3 공용 훅 그대로 구독 (별도 오디오 구독을 만들지 않는다).
   const speaking = useSpeakingPeers();
-
-  // 폴링 Map<customParticipantId, audioEnabled> 을 buildParticipantList 의 RtkParticipantLike[] 로 변환.
-  const rtkParticipants = [...remoteMic.entries()].map(
-    ([customParticipantId, audioEnabled]) => ({ customParticipantId, audioEnabled })
-  );
 
   const list = buildParticipantList(
     { id: userId, name: userName, audioEnabled: selfAudioEnabled },
@@ -89,7 +85,7 @@ const ParticipantPanelBody = ({ onClose, remoteMap }: ParticipantPanelBodyProps)
   return (
     <div
       ref={panelRef}
-      className="fixed left-0 top-0 h-full w-[320px] min-w-[320px] max-w-[320px] bg-white shadow-lg z-50 flex flex-col"
+      className="fixed left-0 top-0 h-full w-[320px] bg-white shadow-lg z-50 flex flex-col"
     >
       <div className="flex justify-between items-center py-3 px-4 bg-gray-100 border-b border-gray-200">
         <h3 className="m-0 text-lg font-semibold">

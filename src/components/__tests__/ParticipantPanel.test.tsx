@@ -40,8 +40,8 @@ jest.mock("../../context/RoomContext", () => ({
 }));
 
 // B2/R1: 원격 마이크 상태는 신규 폴링 훅(useRemoteMicStates)에서 읽는다.
-//        Map<customParticipantId, audioEnabled>. 목으로 결정적으로 전환한다.
-let mockRemoteMic: Map<string, boolean>;
+//        RtkParticipantLike[] ({ customParticipantId, audioEnabled }). 목으로 결정적으로 전환한다.
+let mockRemoteMic: { customParticipantId: string; audioEnabled: boolean }[];
 jest.mock("../../hooks/useRemoteMicStates", () => ({
   useRemoteMicStates: () => mockRemoteMic,
 }));
@@ -72,7 +72,7 @@ const remoteMap = new Map<string, User>([
 beforeEach(() => {
   // 기본: self 마이크 on, 원격 u1 마이크 off, 나(me)만 발화 중.
   mockMeeting = { self: { audioEnabled: true } };
-  mockRemoteMic = new Map([["u1", false]]);
+  mockRemoteMic = [{ customParticipantId: "u1", audioEnabled: false }];
   mockSpeakingSet = new Set(["me"]);
 });
 
@@ -95,7 +95,7 @@ describe("ParticipantPanel", () => {
   // B2/R1: 원격 음소거(AC2)를 폴링 소스 목으로 결정적으로 검증한다.
   it("원격 참가자가 음소거하면 해당 행 아이콘이 MicOff 로 바뀐다", () => {
     // 처음엔 원격 u1 마이크 on.
-    mockRemoteMic = new Map([["u1", true]]);
+    mockRemoteMic = [{ customParticipantId: "u1", audioEnabled: true }];
     const { rerender } = render(
       <ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />
     );
@@ -104,7 +104,7 @@ describe("ParticipantPanel", () => {
     expect(screen.queryByLabelText("microphone off")).not.toBeInTheDocument();
 
     // u1 이 음소거 → 폴링 훅 값 전환 → 리렌더.
-    mockRemoteMic = new Map([["u1", false]]);
+    mockRemoteMic = [{ customParticipantId: "u1", audioEnabled: false }];
     rerender(<ParticipantPanel isOpen onClose={() => {}} remoteMap={remoteMap} />);
     expect(screen.getAllByLabelText("microphone off")).toHaveLength(1);
   });

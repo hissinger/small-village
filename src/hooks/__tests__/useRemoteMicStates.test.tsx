@@ -52,18 +52,24 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
+// customParticipantId 로 audioEnabled 를 찾는 헬퍼(반환은 RtkParticipantLike[]).
+const micOf = (
+  list: { customParticipantId?: string | null; audioEnabled?: boolean }[],
+  id: string
+) => list.find((p) => p.customParticipantId === id)?.audioEnabled;
+
 describe("useRemoteMicStates", () => {
-  // (a) 초기 폴링 시점에 joined 의 audioEnabled 를 Map<customParticipantId, boolean> 으로 반환.
-  it("초기 tick 에 joined 의 audioEnabled 를 Map<customParticipantId, boolean> 으로 반환한다", () => {
+  // (a) 초기 폴링 시점에 joined 의 audioEnabled 를 RtkParticipantLike[] 로 반환.
+  it("초기 tick 에 joined 의 audioEnabled 를 RtkParticipantLike[] 로 반환한다", () => {
     const { result } = renderHook(() => useRemoteMicStates());
-    expect(result.current.get("u1")).toBe(true);
-    expect(result.current.size).toBe(1);
+    expect(micOf(result.current, "u1")).toBe(true);
+    expect(result.current).toHaveLength(1);
   });
 
   // (b) 원격 참가자 음소거 토글 시 다음 tick 에 반영.
   it("원격 참가자가 음소거하면 다음 tick 에 값이 false 로 바뀐다", () => {
     const { result } = renderHook(() => useRemoteMicStates());
-    expect(result.current.get("u1")).toBe(true);
+    expect(micOf(result.current, "u1")).toBe(true);
 
     // u1 음소거 → 다음 폴링 tick 에서 갱신.
     mockJoined = new Map([
@@ -72,7 +78,7 @@ describe("useRemoteMicStates", () => {
     act(() => {
       jest.advanceTimersByTime(POLL_INTERVAL_MS);
     });
-    expect(result.current.get("u1")).toBe(false);
+    expect(micOf(result.current, "u1")).toBe(false);
   });
 
   // (c) 언마운트 시 setInterval clears.
