@@ -34,7 +34,7 @@ jest.mock("../ChatPanel", () => () => (
 jest.mock("../ParticipantPanel", () => () => (
   <div data-testid="mock-participant-panel" />
 ));
-jest.mock("../../context/RemoteParticipantsContext", () => ({
+jest.mock("../../context/RoomParticipantsContext", () => ({
   useRemoteParticipants: () => new Map(),
 }));
 // ReactionPicker 는 Message/Room Context 에 의존하므로 목으로 대체한다.
