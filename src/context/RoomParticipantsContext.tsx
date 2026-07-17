@@ -29,6 +29,7 @@ import {
   RECONCILE_INTERVAL_MS,
   ROSTER_STALE_TIMEOUT_MS,
 } from "../constants";
+import { activeAgeMs } from "../lib/sessionActivity";
 import { useRoomContext } from "./RoomContext";
 
 /**
@@ -52,7 +53,7 @@ export const RoomParticipantsProvider: React.FC<{
 }> = ({ children }) => {
   const { roomId } = useRoomContext();
   const [participants, setParticipants] = useState<Map<string, User>>(
-    new Map()
+    () => new Map()
   );
 
   // 알려진 방 유저 전체(self 포함). 노출 맵은 여기서 stale 을 걸러 파생한다.
@@ -68,9 +69,9 @@ export const RoomParticipantsProvider: React.FC<{
       const now = Date.now();
       const next = new Map<string, User>();
       dataRef.current.forEach((u, id) => {
-        const activeAt = new Date(u.last_active).getTime();
-        // 파싱 불가(NaN) 는 방금 도착한 것으로 보고 포함(초기 write 레이스 방지).
-        if (Number.isNaN(activeAt) || now - activeAt <= ROSTER_STALE_TIMEOUT_MS) {
+        // 파싱 불가(null)는 방금 도착한 것으로 보고 포함(초기 write 레이스 방지).
+        const age = activeAgeMs(u.last_active, now);
+        if (age === null || age <= ROSTER_STALE_TIMEOUT_MS) {
           next.set(id, u);
         }
       });

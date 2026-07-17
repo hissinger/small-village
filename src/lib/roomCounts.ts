@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { activeAgeMs } from "./sessionActivity";
+
 // 방별 "지금 접속 중"인 유저 수를 집계하는 순수 함수.
 // users 는 휘발성 접속 상태라 stale/유령 row 가 남을 수 있으므로,
 // last_active 가 (nowMs - timeoutMs) 이후인 row 만 유효한 접속으로 센다.
@@ -22,7 +24,6 @@ export function countActiveUsersByRoom(
   nowMs: number,
   timeoutMs: number
 ): Record<string, number> {
-  const cutoff = nowMs - timeoutMs;
   const counts: Record<string, number> = {};
 
   for (const user of users) {
@@ -30,9 +31,9 @@ export function countActiveUsersByRoom(
     if (user.room_id == null) {
       continue;
     }
-    const activeMs = new Date(user.last_active).getTime();
-    // 경계 시각(cutoff 와 정확히 같음)은 아직 살아있는 것으로 간주한다.
-    if (Number.isNaN(activeMs) || activeMs < cutoff) {
+    // 파싱 불가(null)는 제외. 경계(age === timeout)는 아직 살아있는 것으로 간주(<=).
+    const age = activeAgeMs(user.last_active, nowMs);
+    if (age === null || age > timeoutMs) {
       continue;
     }
     counts[user.room_id] = (counts[user.room_id] ?? 0) + 1;
