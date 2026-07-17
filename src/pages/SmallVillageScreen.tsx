@@ -29,6 +29,7 @@ import { roomExists } from "../lib/roomState";
 import { useToast } from "../hooks/useToast";
 import { pushEvent } from "../lib/analytics";
 import { fetchRoomSize } from "../lib/roomSize";
+import { deleteUserRow } from "../lib/leaveRoom";
 
 import { Room } from "../types";
 import BottomBar from "../components/BottomBar";
@@ -83,6 +84,9 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
         duration_sec: Math.round((Date.now() - enteredAtRef.current) / 1000),
       });
     }
+    // Exit 버튼/언마운트 경로에선 beforeunload 가 뜨지 않으므로 여기서 직접 내 row 를 지운다.
+    // (안 지우면 다른 클라이언트는 RealtimeKit 웹훅이 지울 때까지 나를 계속 본다 → 늦게 사라짐.)
+    deleteUserRow(userId);
     return meetingRef.current?.leave();
   };
 

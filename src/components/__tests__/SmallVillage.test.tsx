@@ -50,7 +50,7 @@ jest.mock("../../hooks/useReactionMessage", () => ({
 jest.mock("../Conference", () => () => <div data-testid="conference" />);
 jest.mock("../SpeakerIndicators", () => () => <div data-testid="speakers" />);
 
-// heartbeat/beforeunload 의 supabase 접근을 스텁.
+// heartbeat 의 supabase 접근을 스텁.
 jest.mock("../../lib/supabaseClient", () => {
   const chain: Record<string, unknown> = {};
   chain.delete = () => chain;
@@ -58,6 +58,12 @@ jest.mock("../../lib/supabaseClient", () => {
   chain.match = () => Promise.resolve({ error: null });
   return { supabase: { from: () => chain } };
 });
+
+// 퇴장 시 row 삭제 헬퍼를 목킹해 배선(언로드 이벤트 → deleteUserRow)만 검증한다.
+const mockDeleteUserRow = jest.fn();
+jest.mock("../../lib/leaveRoom", () => ({
+  deleteUserRow: (id: string) => mockDeleteUserRow(id),
+}));
 
 const room: Room = { id: "room-1", title: "방" } as Room;
 
@@ -91,6 +97,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockUpdateUsers.mockClear();
   mockToastShow.mockClear();
+  mockDeleteUserRow.mockClear();
   mockParticipants = new Map();
 });
 
@@ -187,5 +194,44 @@ describe("SmallVillage — 로스터 단일 소스 브리지", () => {
     });
     expect(mockToastShow).toHaveBeenCalledTimes(1);
     expect(mockToastShow).toHaveBeenCalledWith("민수 has joined");
+  });
+});
+
+describe("SmallVillage — 퇴장 시 row 삭제 배선", () => {
+  it("beforeunload 에서 내 row 를 삭제한다", () => {
+    renderSV();
+    act(() => {
+      window.dispatchEvent(new Event("beforeunload"));
+    });
+    expect(mockDeleteUserRow).toHaveBeenCalledWith("me");
+  });
+
+  it("pagehide(실제 종료, persisted=false)에서 내 row 를 삭제한다", () => {
+    renderSV();
+    act(() => {
+      window.dispatchEvent(
+        new PageTransitionEvent("pagehide", { persisted: false })
+      );
+    });
+    expect(mockDeleteUserRow).toHaveBeenCalledWith("me");
+  });
+
+  it("pagehide(bfcache, persisted=true)에서는 삭제하지 않는다", () => {
+    renderSV();
+    act(() => {
+      window.dispatchEvent(
+        new PageTransitionEvent("pagehide", { persisted: true })
+      );
+    });
+    expect(mockDeleteUserRow).not.toHaveBeenCalled();
+  });
+
+  it("언마운트 후에는 언로드 이벤트로 삭제하지 않는다(리스너 해제)", () => {
+    const { unmount } = renderSV();
+    unmount();
+    act(() => {
+      window.dispatchEvent(new Event("beforeunload"));
+    });
+    expect(mockDeleteUserRow).not.toHaveBeenCalled();
   });
 });

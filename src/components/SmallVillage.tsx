@@ -29,6 +29,7 @@ import { useRemoteParticipants } from "../context/RoomParticipantsContext";
 import { useChatMessage } from "../hooks/useChatMessage";
 import { useReactionMessage, ReactionMessage } from "../hooks/useReactionMessage";
 import { useToast } from "../hooks/useToast";
+import { deleteUserRow } from "../lib/leaveRoom";
 
 interface SmallVillageProps {
   room: Room;
@@ -42,20 +43,24 @@ interface SmallVillageProps {
 const SmallVillage: React.FC<SmallVillageProps> = ({ userId, scene }) => {
   const toast = useToast();
 
-  const deleteUserDataFromDatebase = useCallback(async () => {
-    await supabase.from(DATABASE_TABLES.USERS).delete().match({ id: userId });
-  }, [userId]);
-
-  const handleBeforeUnload = useCallback(async () => {
-    await deleteUserDataFromDatebase();
-  }, [deleteUserDataFromDatebase]);
-
+  // 탭 닫기/새로고침/모바일 백그라운드 전환 시 내 row 를 즉시 삭제한다.
+  // async supabase-js delete 는 언로드 중 취소되므로 keepalive fetch(deleteUserRow)를 쓴다.
+  // beforeunload + pagehide 둘 다 건다(모바일 Safari 는 beforeunload 가 안 뜰 수 있다).
   useEffect(() => {
+    const handleBeforeUnload = () => deleteUserRow(userId);
+    // pagehide 는 bfcache 로 들어갈 때도 persisted=true 로 발화한다. 그 경우 페이지가
+    // 복원될 수 있는데 heartbeat 는 upsert 가 아니라 update 라 삭제된 row 를 되살리지
+    // 못한다 → 복원 후 남들 화면에서 안 보임. 그래서 실제로 사라질 때(!persisted)만 삭제한다.
+    const handlePageHide = (e: PageTransitionEvent) => {
+      if (!e.persisted) deleteUserRow(userId);
+    };
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const sendHeartbeat = async () => {
     // update last_active
