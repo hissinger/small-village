@@ -162,7 +162,7 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       readyTimer = setTimeout(() => {
         setReadyScene(true);
         setScene(game.scene.getScene("SmallVillageScene") as SmallVillageScene);
-        // room_size 는 presence 가 비동기라 0 일 수 있어 users 테이블에서 직접 센다(D4).
+        // room_size 는 로스터 구독이 비동기라 0 일 수 있어 users 테이블에서 직접 센다(D4).
         fetchRoomSize(room.id).then((room_size) => {
           pushEvent(ANALYTICS_EVENTS.ENTER_ROOM, {
             room_id: room.id,
