@@ -16,7 +16,12 @@
 
 import { User } from "../types";
 import { upsertUserState } from "../lib/userState";
-import { NUM_CHARACTERS, REACTION_ANIMATION } from "../constants";
+import {
+  NUM_CHARACTERS,
+  POSITION_BROADCAST_INTERVAL_MS,
+  REACTION_ANIMATION,
+} from "../constants";
+import { sendPosition, subscribePositions } from "../lib/positionChannel";
 import { SpeechBubble } from "./SpeechBubble";
 
 const GAME_CONFIG = {
@@ -110,6 +115,16 @@ export default class SmallVillageScene extends Phaser.Scene {
   private ready: boolean = false;
 
   users: User[] = [];
+
+  // 원격 유저의 최신 위치(broadcast 수신). updateOtherUsers 가 이 값으로 tween 하고,
+  // 아직 broadcast 를 못 받은 유저는 roster(this.users)의 seed x/y 로 폴백한다.
+  private remotePositions: Map<string, { x: number; y: number }> = new Map();
+  // 위치 broadcast 스로틀용 마지막 송신 시각(ms).
+  private lastPositionSentAt = 0;
+  // 직전 프레임 이동 여부. 이동이 막 멈춘 프레임에 최종 위치를 1회 방송하기 위함.
+  private wasMoving = false;
+  // 위치 채널 구독 해제자. SHUTDOWN 에서 호출한다(React 밖이라 자동 정리가 안 됨).
+  private unsubscribePositions?: () => void;
 
   constructor(onUserClick: (user: User) => void) {
     super({ key: "SmallVillageScene" });
@@ -282,6 +297,18 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     // rooms 보장 + 최초 등록이 끝났으니 이제 이동 write 를 허용한다.
     this.ready = true;
+
+    // 위치 broadcast 구독 — 원격 유저 이동을 저지연으로 받아 remotePositions 에 반영.
+    // 자기 위치는 자기 스프라이트(this.sprite)로 그리므로 무시한다.
+    this.unsubscribePositions = subscribePositions(this.roomId, (p) => {
+      if (p.id === this.userId) return;
+      this.remotePositions.set(p.id, { x: p.x, y: p.y });
+    });
+    // 씬은 React 밖이라 game.destroy(true) 만으로는 채널이 안 닫힌다 → SHUTDOWN 에서 명시 해제.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribePositions?.();
+      this.unsubscribePositions = undefined;
+    });
 
     this.createAnimations();
   }
@@ -501,6 +528,8 @@ export default class SmallVillageScene extends Phaser.Scene {
       this.removeReactionEmojis(userId);
 
       delete this.userSprites[userId];
+      // broadcast 로 쌓인 위치도 정리(누수 방지).
+      this.remotePositions.delete(userId);
     }
   }
 
@@ -565,16 +594,23 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     Object.entries(this.userSprites).forEach(([userId, userSprite]) => {
       let isMoving = false;
+      // 캐릭터 정체성(character_index)은 roster 에서, 위치는 broadcast(remotePositions)에서.
+      // 아직 broadcast 를 못 받은 유저는 roster 의 seed x/y 로 폴백한다 — tween target 과
+      // walk 애니메이션 방향을 모두 이 단일 target 에서 파생해 seed/live 가 갈리지 않게 한다.
       const userData = this.users.find((u) => u.id === userId);
       if (userData) {
         const sprite = userSprite.sprite;
-        const distanceX = Math.abs(userData.x - sprite.x);
-        const distanceY = Math.abs(userData.y - sprite.y);
+        const target = this.remotePositions.get(userId) ?? {
+          x: userData.x,
+          y: userData.y,
+        };
+        const distanceX = Math.abs(target.x - sprite.x);
+        const distanceY = Math.abs(target.y - sprite.y);
         const characterIndex = userData.character_index;
         const currentAnimKey = sprite.anims.currentAnim?.key;
 
         if (distanceX > MIN_DISTANCE) {
-          if (userData.x < sprite.x) {
+          if (target.x < sprite.x) {
             isMoving = true;
             sprite.play(`walk_left_${characterIndex}`, true);
           } else {
@@ -586,7 +622,7 @@ export default class SmallVillageScene extends Phaser.Scene {
         }
 
         if (distanceY > MIN_DISTANCE) {
-          if (userData.y < sprite.y) {
+          if (target.y < sprite.y) {
             isMoving = true;
             sprite.play(`walk_up_${characterIndex}`, true);
           } else {
@@ -601,8 +637,8 @@ export default class SmallVillageScene extends Phaser.Scene {
 
         this.tweens.add({
           targets: sprite,
-          x: userData.x,
-          y: userData.y,
+          x: target.x,
+          y: target.y,
           duration: 100,
           ease: "Linear",
           onUpdate: () => {
@@ -668,15 +704,38 @@ export default class SmallVillageScene extends Phaser.Scene {
     try {
       // 최초 등록(create)이 끝나기 전에는 이동 write 를 보내지 않는다. 초기화 중
       // 움직이면 write 가 create 보다 앞서 나가 레이스로 409 를 낼 수 있다.
-      if (isMoving && this.ready) {
-        await upsertUserState({
-          id: this.userId,
-          name: this.characterName,
-          character_index: this.characterIndex,
-          room_id: this.roomId,
-          x: Math.floor(this.sprite.x),
-          y: Math.floor(this.sprite.y),
-        });
+      if (this.ready) {
+        const now = Date.now();
+        const x = Math.floor(this.sprite.x);
+        const y = Math.floor(this.sprite.y);
+
+        if (isMoving) {
+          // 위치 broadcast(스로틀, fire-and-forget). 원격 클라이언트가 저지연으로 받는다.
+          // DB 를 거치지 않으므로 upsert 실패와 무관하게 먼저 내보낸다.
+          if (now - this.lastPositionSentAt >= POSITION_BROADCAST_INTERVAL_MS) {
+            this.lastPositionSentAt = now;
+            sendPosition(this.roomId, { id: this.userId, x, y });
+          }
+
+          // PR-1: DB upsert 경로는 아직 유지한다 — 공간오디오·늦은 입장자 seed 가
+          // 아직 users 테이블에 의존하기 때문. PR-3 에서 매 프레임 upsert 를 제거한다.
+          await upsertUserState({
+            id: this.userId,
+            name: this.characterName,
+            character_index: this.characterIndex,
+            room_id: this.roomId,
+            x,
+            y,
+          });
+        } else if (this.wasMoving) {
+          // 이동이 막 멈춘 프레임: 정확한 최종 위치를 1회 방송한다(스로틀 무시).
+          // updateOtherUsers 가 broadcast 위치를 tween 소스로 쓰므로, 마지막 위치를
+          // 안 보내면 원격 스프라이트가 최대 한 스로틀 창만큼 어긋난 곳에 안착한다.
+          this.lastPositionSentAt = now;
+          sendPosition(this.roomId, { id: this.userId, x, y });
+        }
+
+        this.wasMoving = isMoving;
       }
     } catch (error) {
       console.error(error);
@@ -722,5 +781,6 @@ export default class SmallVillageScene extends Phaser.Scene {
       userSprite.nameText.destroy();
     });
     this.userSprites = {};
+    this.remotePositions.clear();
   }
 }
