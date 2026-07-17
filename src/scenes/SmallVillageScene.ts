@@ -710,15 +710,19 @@ export default class SmallVillageScene extends Phaser.Scene {
         const y = Math.floor(this.sprite.y);
 
         if (isMoving) {
-          // 위치 broadcast(스로틀, fire-and-forget). 원격 클라이언트가 저지연으로 받는다.
-          // DB 를 거치지 않으므로 upsert 실패와 무관하게 먼저 내보낸다.
+          // 이동은 broadcast(스로틀, fire-and-forget)로만 흘린다 — DB 왕복 없음.
+          // PR-3: 매 프레임 upsert 를 제거했다(이동 중 초당 ~60회 write → 0).
           if (now - this.lastPositionSentAt >= POSITION_BROADCAST_INTERVAL_MS) {
             this.lastPositionSentAt = now;
             sendPosition(this.roomId, { id: this.userId, x, y });
           }
-
-          // PR-1: DB upsert 경로는 아직 유지한다 — 공간오디오·늦은 입장자 seed 가
-          // 아직 users 테이블에 의존하기 때문. PR-3 에서 매 프레임 upsert 를 제거한다.
+        } else if (this.wasMoving) {
+          // 이동이 막 멈춘 프레임: (1) 정확한 최종 위치를 broadcast(스로틀 무시) —
+          // updateOtherUsers 가 broadcast 를 tween 소스로 쓰므로 마지막 위치를 안 보내면
+          // 원격 스프라이트가 어긋난 곳에 안착한다. (2) 늦은 입장자 seed 용으로 users 에
+          // 최종 위치 스냅샷 1회. (이동 중이 아니라 멈출 때만 write → 부하 최소.)
+          this.lastPositionSentAt = now;
+          sendPosition(this.roomId, { id: this.userId, x, y });
           await upsertUserState({
             id: this.userId,
             name: this.characterName,
@@ -727,12 +731,6 @@ export default class SmallVillageScene extends Phaser.Scene {
             x,
             y,
           });
-        } else if (this.wasMoving) {
-          // 이동이 막 멈춘 프레임: 정확한 최종 위치를 1회 방송한다(스로틀 무시).
-          // updateOtherUsers 가 broadcast 위치를 tween 소스로 쓰므로, 마지막 위치를
-          // 안 보내면 원격 스프라이트가 최대 한 스로틀 창만큼 어긋난 곳에 안착한다.
-          this.lastPositionSentAt = now;
-          sendPosition(this.roomId, { id: this.userId, x, y });
         }
 
         this.wasMoving = isMoving;
