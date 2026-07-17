@@ -17,7 +17,7 @@
 import { RTKParticipants } from "@cloudflare/realtimekit-react";
 import { useEffect, useMemo, useRef } from "react";
 import { SpatialAudioRenderer } from "./SpatialAudioRenderer";
-import { useRemoteParticipants } from "../context/RoomParticipantsContext";
+import { useRemotePositions } from "../hooks/useRemotePositions";
 import { useRoomContext } from "../context/RoomContext";
 import { pushEvent } from "../lib/analytics";
 import { ANALYTICS_EVENTS } from "../constants";
@@ -27,6 +27,7 @@ const PROXIMITY_THROTTLE_MS = 30_000;
 
 interface SpatialAudioControllerProps {
   participants: RTKParticipants;
+  // 내 위치의 seed(첫 broadcast 이전 폴백). live 값은 위치 stream 의 내 id 로 덮어쓴다.
   myPosition: { x: number; y: number };
 }
 
@@ -35,9 +36,13 @@ export function SpatialAudioController({
   myPosition,
 }: SpatialAudioControllerProps) {
   const audioContext = useMemo(() => new AudioContext(), []);
-  const users = useRemoteParticipants();
-  const { roomId } = useRoomContext();
+  // 위치는 broadcast stream 에서(로스터 아님). self 포함이라 내 위치도 여기서 얻는다.
+  const positions = useRemotePositions();
+  const { roomId, userId } = useRoomContext();
   const lastSentRef = useRef(0);
+
+  // 첫 broadcast 이전엔 stream 에 내 id 가 없으므로 seed(myPosition)로 폴백한다.
+  const myPos = positions.get(userId) ?? myPosition;
 
   // audioTrack 이 있고 위치를 아는 원격 참가자 = "근접 발화 후보". D5 참조.
   const peerCount = useMemo(
@@ -46,9 +51,9 @@ export function SpatialAudioController({
         (p) =>
           p.audioTrack &&
           p.customParticipantId &&
-          users.get(p.customParticipantId)
+          positions.get(p.customParticipantId)
       ).length,
-    [participants, users]
+    [participants, positions]
   );
 
   useEffect(() => {
@@ -67,15 +72,15 @@ export function SpatialAudioController({
       {[...participants.joined.values()].map((p) => {
         if (!p.audioTrack || !p.customParticipantId) return null;
 
-        const u = users.get(p.customParticipantId);
-        if (!u) return null;
+        const pos = positions.get(p.customParticipantId);
+        if (!pos) return null;
 
         return (
           <SpatialAudioRenderer
             key={p.audioTrack.id}
             participant={p}
-            position={{ x: u.x, y: u.y }}
-            myPosition={myPosition}
+            position={{ x: pos.x, y: pos.y }}
+            myPosition={myPos}
             audioContext={audioContext}
           />
         );

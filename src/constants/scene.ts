@@ -20,6 +20,10 @@ export const NUM_CHARACTERS = 40;
 // 위치는 이 주기(~10Hz)로만 내보내 전송 예산(supabaseClient eventsPerSecond)을 아낀다.
 export const POSITION_BROADCAST_INTERVAL_MS = 100;
 
+// useRemotePositions 훅이 broadcast 수신을 React state 로 flush 하는 최소 간격(ms).
+// 공간오디오만 이 state 를 쓰며, 오디오는 60fps 가 필요 없어 이 주기로 리렌더를 묶는다.
+export const POSITION_STREAM_THROTTLE_MS = 100;
+
 // 게임 화면 하단 바(BottomBar)의 높이(px).
 // 게임 캔버스가 하단 바를 침범하지 않도록 이 값만큼 아래를 비워둔다.
 export const BOTTOM_BAR_HEIGHT = 48;

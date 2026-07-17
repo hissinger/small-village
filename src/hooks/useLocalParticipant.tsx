@@ -19,8 +19,14 @@ import { supabase } from "../lib/supabaseClient";
 import { DATABASE_TABLES } from "../constants";
 import { useEffect, useState } from "react";
 import { useRoomContext } from "../context/RoomContext";
-import { produce } from "immer";
 
+/**
+ * 내 users row(초기 위치 seed + 존재 여부)를 준다. 공간오디오의 myPosition **초기값**과
+ * 렌더 게이팅에 쓴다.
+ *
+ * 위치의 live 갱신은 broadcast(useRemotePositions)로 옮겼으므로(#51), 여기서는 이동마다의
+ * postgres UPDATE 를 구독하지 않는다 — 초기 1회 fetch(seed) + INSERT(늦은 등록) + DELETE(퇴장)만.
+ */
 export const useLocalParticipant = (): User | undefined => {
   const { roomId, userId } = useRoomContext();
   const [participant, setParticipant] = useState<User>();
@@ -54,24 +60,6 @@ export const useLocalParticipant = (): User | undefined => {
           if (payload.new.id !== userId) return;
           const newUser = payload.new as User;
           setParticipant(newUser);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: DATABASE_TABLES.USERS },
-        (payload) => {
-          if (payload.new.id !== userId) return;
-          setParticipant((prev) => {
-            return produce(prev, (draft) => {
-              if (draft) {
-                draft.x = payload.new.x;
-                draft.y = payload.new.y;
-              } else {
-                draft = payload.new as User;
-              }
-              return draft;
-            });
-          });
         }
       )
       .on(
