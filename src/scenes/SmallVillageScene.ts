@@ -352,6 +352,20 @@ export default class SmallVillageScene extends Phaser.Scene {
         this.sprite
           ? { x: Math.round(this.sprite.x), y: Math.round(this.sprite.y) }
           : null,
+      // proximity ring(#29) 중심 좌표 + 반경. ring 이 self 발밑에 정렬·추종하는지
+      // e2e 좌표 assert 로 검증하기 위함이다. 반경은 렌더와 동일한 proximityRingRadii()
+      // 헬퍼로 파생해 재선언 drift 를 막는다(B1). 좌표 외 정보는 노출하지 않는다.
+      proximityRing: () => {
+        if (!this.proximityRing) return null; // ring 미생성 방어(게터 null)
+        const { FILL, EDGE } = proximityRingRadii(); // 렌더와 동일 헬퍼(재선언 금지)
+        return {
+          x: this.proximityRing.x, // raw float 스프라이트 좌표
+          y: this.proximityRing.y,
+          fillRadius: FILL,
+          edgeRadius: EDGE,
+          offsetY: GAME_CONFIG.PROXIMITY_RING.OFFSET_Y,
+        };
+      },
     };
   }
 
