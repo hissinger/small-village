@@ -34,5 +34,5 @@ export const BOTTOM_BAR_HEIGHT = 48;
 // 오디오도 ring 도 이 값을 매직 넘버로 재선언하지 않는다.
 export const SPATIAL_AUDIO = {
   REF_DISTANCE: 100, // 풀볼륨 반경. ring FILL 은 여기 +20px.
-  MAX_DISTANCE: 500, // PannerNode maxDistance. ring EDGE 가 이 값에 결속(= 같은 값 참조).
+  MAX_DISTANCE: 300, // PannerNode maxDistance. ring EDGE 가 이 값에 결속(= 같은 값 참조).
 } as const;

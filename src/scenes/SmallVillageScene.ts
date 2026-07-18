@@ -69,19 +69,27 @@ const GAME_CONFIG = {
     PULSE_DURATION: 600,
   },
   // 공간 오디오 전송 범위 링(#29): 내 캐릭터 발밑의 정적 가이드. self-only, pulse 없음.
-  //  - 채움 원 = 풀볼륨 근처 체감 여유 구간(refDistance +20px).
-  //  - 경계선 원 = 디자인상 선택한 경계선 반경(= 오디오 maxDistance 와 같은 값 참조).
-  //  - 반경 숫자는 여기 두지 않는다. proximityRingRadii() 헬퍼가 SPATIAL_AUDIO 에서 파생한다.
-  //    이 블록은 색/알파/오프셋/선두께 등 시각 속성만 담는다.
+  // 모던 리디자인: 플랫 원판 대신 (1) 중심→바깥으로 사라지는 radial gradient glow,
+  // (2) 풀볼륨 존을 표시하는 은은한 안쪽 링, (3) dashed + soft halo 로 그린 바깥 경계선.
+  //  - 반경 숫자는 여기 두지 않는다. proximityRingRadii() 헬퍼가 SPATIAL_AUDIO 에서 파생.
+  //    이 블록은 색/알파/스텝 등 시각 속성만 담는다.
   PROXIMITY_RING: {
     OFFSET_Y: 30, // RING 과 동일하게 발밑 정렬
-    // 이슈 권장 0.1~0.15 였으나, 초록 맵 위 파란 채움이 0.1 에선 사실상 보이지 않아
-    // 가시성 확보를 위해 0.18 로 상향(경계선은 더 선명하게).
-    FILL_COLOR: 0x38bdf8, // sky-400 계열 — 잔디 대비 선명
-    FILL_ALPHA: 0.18,
-    EDGE_COLOR: 0x38bdf8,
-    EDGE_ALPHA: 0.6,
-    EDGE_WIDTH: 3, // stroke 두께(px)
+    COLOR: 0x38bdf8, // sky-400 — 잔디 대비 선명한 단일 액센트(전체 톤 통일)
+    // radial gradient glow: EDGE→중심으로 동심원을 겹쳐 그려 누적 알파로 중심을 밝힌다.
+    // Phaser Graphics 는 radial gradient 미지원 → 동심원 누적이 표준 근사법.
+    GLOW_STEPS: 24, // 동심원 개수(많을수록 부드러움, 성능 비용 ↑)
+    GLOW_STEP_ALPHA: 0.012, // 스텝당 알파. 중심 누적 ≈ 1-(1-a)^steps ≈ 0.25
+    // 안쪽 풀볼륨 존(FILL) 표시 링 — 얇고 은은하게.
+    INNER_ALPHA: 0.35,
+    INNER_WIDTH: 1.5,
+    // 바깥 경계(EDGE): 넓고 흐린 halo + 그 위 dashed 크리스프 라인.
+    EDGE_ALPHA: 0.9, // dashed 본선 알파
+    EDGE_WIDTH: 2, // dashed 본선 두께
+    EDGE_HALO_ALPHA: 0.15, // 뒤에 깔리는 soft halo 알파
+    EDGE_HALO_WIDTH: 8, // halo 두께(번짐 느낌)
+    EDGE_DASH: 14, // dash 길이(px, 호 기준 근사)
+    EDGE_GAP: 12, // dash 간격(px)
   },
 } as const;
 
@@ -463,16 +471,56 @@ export default class SmallVillageScene extends Phaser.Scene {
     const c = GAME_CONFIG.PROXIMITY_RING;
     const { FILL, EDGE } = proximityRingRadii(); // 반경 단일 계산처(헬퍼)
     const g = this.add.graphics();
-    g.fillStyle(c.FILL_COLOR, c.FILL_ALPHA);
-    g.fillCircle(0, 0, FILL);
-    g.lineStyle(c.EDGE_WIDTH, c.EDGE_COLOR, c.EDGE_ALPHA);
+
+    // (1) radial gradient glow — EDGE→중심으로 동심 원판을 겹쳐 그린다.
+    // 바깥부터 그려야 안쪽 원이 위에 겹쳐 중심이 가장 밝아진다(누적 알파).
+    for (let i = c.GLOW_STEPS; i >= 1; i--) {
+      const r = (EDGE * i) / c.GLOW_STEPS;
+      g.fillStyle(c.COLOR, c.GLOW_STEP_ALPHA);
+      g.fillCircle(0, 0, r);
+    }
+
+    // (2) 안쪽 풀볼륨 존(FILL) 마커 — 얇고 은은한 실선 링.
+    g.lineStyle(c.INNER_WIDTH, c.COLOR, c.INNER_ALPHA);
+    g.strokeCircle(0, 0, FILL);
+
+    // (3) 바깥 경계(EDGE): soft halo(넓고 흐린 실선) 위에 dashed 크리스프 라인.
+    g.lineStyle(c.EDGE_HALO_WIDTH, c.COLOR, c.EDGE_HALO_ALPHA);
     g.strokeCircle(0, 0, EDGE);
+    this.strokeDashedCircle(g, EDGE, c.EDGE_WIDTH, c.COLOR, c.EDGE_ALPHA, c.EDGE_DASH, c.EDGE_GAP);
+
     g.setPosition(this.sprite.x, this.sprite.y + c.OFFSET_Y);
     // 스프라이트와 같은 depth 로 두되 표시목록에서 스프라이트 바로 뒤로 보낸다.
     // decoration 타일 위·캐릭터 아래에 overlay 되게 한다(발화 링과 동일 패턴).
     g.setDepth(this.sprite.depth);
     this.children.moveBelow(g, this.sprite);
     this.proximityRing = g;
+  }
+
+  /**
+   * 원점(0,0) 기준 dashed 원을 그린다. dash/gap 은 px 단위지만 호 길이로 환산해
+   * 반경과 무관하게 일정한 대시 밀도를 유지한다(모던 range 인디케이터 느낌).
+   */
+  private strokeDashedCircle(
+    g: Phaser.GameObjects.Graphics,
+    radius: number,
+    width: number,
+    color: number,
+    alpha: number,
+    dash: number,
+    gap: number,
+  ): void {
+    g.lineStyle(width, color, alpha);
+    const circumference = 2 * Math.PI * radius;
+    const segAngle = (dash + gap) / radius; // 한 dash+gap 이 차지하는 각도(rad)
+    const dashAngle = dash / radius;
+    const count = Math.max(1, Math.floor(circumference / (dash + gap)));
+    for (let i = 0; i < count; i++) {
+      const start = i * segAngle;
+      g.beginPath();
+      g.arc(0, 0, radius, start, start + dashAngle, false);
+      g.strokePath();
+    }
   }
 
   private syncProximityRing(): void {
