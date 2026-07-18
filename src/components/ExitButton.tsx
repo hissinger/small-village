@@ -14,23 +14,38 @@
  * limitations under the License.
  */
 
+import { useState } from "react";
 import { LogOut } from "lucide-react";
 import IconButton from "./IconButton";
+import ConfirmModal from "./ConfirmModal";
 
 interface ExitButtonProps {
   onClick: () => void;
 }
 
 export default function ExitButton(props: ExitButtonProps) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   return (
-    <IconButton
-      onClick={props.onClick}
-      ariaLabel="Exit"
-      ActiveIcon={LogOut}
-      activeColor="#888888"
-      size={23}
-      strokeWidth={2}
-      className="ml-2.5"
-    />
+    <>
+      <IconButton
+        onClick={() => setIsConfirmOpen(true)}
+        ariaLabel="Exit"
+        ActiveIcon={LogOut}
+        activeColor="#888888"
+        size={23}
+        strokeWidth={2}
+        className="ml-2.5"
+      />
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        message="You are about to leave the room."
+        onCancel={() => setIsConfirmOpen(false)}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          props.onClick();
+        }}
+      />
+    </>
   );
 }
