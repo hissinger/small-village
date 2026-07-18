@@ -310,7 +310,37 @@ export default class SmallVillageScene extends Phaser.Scene {
       this.unsubscribePositions = undefined;
     });
 
+    this.exposeE2EHooks();
+
     this.createAnimations();
+  }
+
+  // e2e 테스트 훅: URL 에 ?e2e 가 있을 때만 원격 스프라이트/내 위치를 읽기 전용으로 노출한다.
+  // 위치 broadcast 가 원격 화면에 반영되는지(#51)를 headless 브라우저에서 assert 하기 위함이며,
+  // 프로덕션 사용 흐름에는 파라미터가 없어 노출되지 않는다(좌표 외의 정보는 노출하지 않는다).
+  private exposeE2EHooks() {
+    if (
+      typeof window === "undefined" ||
+      !new URLSearchParams(window.location.search).has("e2e")
+    ) {
+      return;
+    }
+    (window as unknown as { __smallVillage?: unknown }).__smallVillage = {
+      remoteSprites: () => this.getRemoteSpritePositions(),
+      myPosition: () =>
+        this.sprite
+          ? { x: Math.round(this.sprite.x), y: Math.round(this.sprite.y) }
+          : null,
+    };
+  }
+
+  // 원격 스프라이트(self 제외)의 현재 렌더 위치. e2e 훅 전용.
+  getRemoteSpritePositions(): Record<string, { x: number; y: number }> {
+    const out: Record<string, { x: number; y: number }> = {};
+    Object.entries(this.userSprites).forEach(([id, us]) => {
+      out[id] = { x: Math.round(us.sprite.x), y: Math.round(us.sprite.y) };
+    });
+    return out;
   }
 
   // userId 로 스프라이트를 찾는다(로컬은 this.sprite, 원격은 userSprites). 없으면 undefined.

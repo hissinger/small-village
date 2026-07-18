@@ -47,6 +47,7 @@
 | --- | --- | --- | --- |
 | `room-flow.mjs` | 방 생성→입장→이동 스모크. `POST /users` 409(FK 위반) 회귀 감시. | 1 | `npm run test:e2e` |
 | `presence-3clients.mjs` | **presence 단일 소스 회귀**: 먼저 입장해 가만히 있는 유저가 나중 입장자의 참여자 패널/씬에서 누락되지 않는지(S1/S2/S3). | 3 | `node e2e/presence-3clients.mjs` |
+| `position-broadcast.mjs` | **위치 broadcast 반영(issue #51)**: A 가 움직이면 B 화면의 A 스프라이트가 따라오는지. 씬 좌표는 `?e2e` URL 파라미터로 켜지는 `window.__smallVillage` 훅으로 읽는다. | 2 | `node e2e/position-broadcast.mjs` |
 | `issue37-reaction.mjs` | 이모지 리액션(issue #37): 피커 노출 + broadcast 송신 + 캔버스 변화. | 1 | `node e2e/issue37-reaction.mjs` |
 | `issue37-reaction-timed.mjs` | 리액션 애니메이션 타이밍 캡처(육안 검사용 PNG). | 1 | `node e2e/issue37-reaction-timed.mjs` |
 | `issue37-bottombar-final.mjs` | 바텀바 아이콘 정렬 육안 검사 크롭 캡처. | 1 | `node e2e/issue37-bottombar-final.mjs` |
