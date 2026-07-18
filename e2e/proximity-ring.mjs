@@ -135,6 +135,37 @@ try {
     console.log("✅ 입장 직후: ring 이 self 발밑에 정렬됨");
   }
 
+  // [판정] 가시성 픽셀 검증 — 좌표 assert 만으로는 "안 보임"을 못 잡는다(과거 회귀).
+  // 캔버스 중앙(카메라가 캐릭터 추종) 기준 FILL(120px) 영역에 링 색(0x38bdf8 파랑계열)
+  // 픽셀이 최소 threshold 개수 있어야 렌더됐다고 본다.
+  const visible = await page.evaluate(() => {
+    const c = document.querySelector("canvas");
+    if (!c || c.width < 10) return -1;
+    const tmp = document.createElement("canvas");
+    tmp.width = c.width; tmp.height = c.height;
+    const ctx = tmp.getContext("2d");
+    ctx.drawImage(c, 0, 0);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    const cx = c.width / 2, cy = c.height / 2, R = 120;
+    let cnt = 0;
+    for (let y = Math.max(0, cy - R); y < Math.min(c.height, cy + R); y++) {
+      for (let x = Math.max(0, cx - R); x < Math.min(c.width, cx + R); x++) {
+        if ((x - cx) ** 2 + (y - cy) ** 2 > R * R) continue;
+        const i = (y * c.width + x) * 4;
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        if (b > g + 30 && g > r + 20) cnt++; // 파랑계열(링 색)
+      }
+    }
+    return cnt;
+  });
+  // FILL(120px) 원 면적 ~ π*120² ≈ 45k px 중 링 색이 차지하는 최소 기대치.
+  // alpha 0.18 채움 + 3px stroke 가 섞이면 수백~수천 px 는 나와야 정상. 50 미만이면 미렌더.
+  if (visible < 50) {
+    fail(`ring 이 캔버스에 렌더되지 않음(중심 120px 내 파랑픽셀 ${visible}개 < 50)`);
+  } else {
+    console.log(`✅ 가시성: 캐릭터 중심 120px 내 링 색 픽셀 ${visible}개`);
+  }
+
   // 스크린샷 A 앞 인게임 진입 확정 대기 — "Strolling into…" 오버레이가 사라지고
   // 바텀바(Exit)가 떠 있어야 실제 게임 화면을 찍는다(로딩 화면 오탐 방지).
   for (let i = 0; i < 30; i++) {

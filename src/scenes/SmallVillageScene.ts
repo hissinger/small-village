@@ -75,11 +75,13 @@ const GAME_CONFIG = {
   //    이 블록은 색/알파/오프셋/선두께 등 시각 속성만 담는다.
   PROXIMITY_RING: {
     OFFSET_Y: 30, // RING 과 동일하게 발밑 정렬
-    FILL_COLOR: 0x60a5fa,
-    FILL_ALPHA: 0.1, // 이슈 권장 0.1~0.15
-    EDGE_COLOR: 0x60a5fa,
-    EDGE_ALPHA: 0.35,
-    EDGE_WIDTH: 2, // stroke 두께(px)
+    // 이슈 권장 0.1~0.15 였으나, 초록 맵 위 파란 채움이 0.1 에선 사실상 보이지 않아
+    // 가시성 확보를 위해 0.18 로 상향(경계선은 더 선명하게).
+    FILL_COLOR: 0x38bdf8, // sky-400 계열 — 잔디 대비 선명
+    FILL_ALPHA: 0.18,
+    EDGE_COLOR: 0x38bdf8,
+    EDGE_ALPHA: 0.6,
+    EDGE_WIDTH: 3, // stroke 두께(px)
   },
 } as const;
 
