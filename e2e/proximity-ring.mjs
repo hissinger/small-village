@@ -80,20 +80,53 @@ async function ringAlignsWithSelf(page) {
   });
 }
 
-const browser = await chromium.launch();
-const page = await (await browser.newContext()).newPage();
+// headless WebGL 은 GPU 드라이버 부재로 캔버스가 검게 나온다 → SwiftShader 소프트웨어
+// 렌더링 플래그 강제(issue37-verify-final.mjs 와 동일 레시피).
+const LAUNCH_ARGS = [
+  "--no-sandbox", "--disable-dev-shm-usage",
+  "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader",
+  "--ignore-gpu-blocklist", "--enable-webgl",
+  "--autoplay-policy=no-user-gesture-required",
+  "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
+];
+const browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS });
+const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// 게터가 준비될 때까지 폴링(로딩 오버레이/씬 create 타이밍에 따라 undefined 가 될 수 있어 방어).
+async function waitForHook(timeoutMs = 40000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const ok = await page.evaluate(
+      () =>
+        !!(window.__smallVillage && window.__smallVillage.proximityRing && window.__smallVillage.proximityRing())
+    );
+    if (ok) return true;
+    await sleep(1000);
+  }
+  return false;
+}
 
 try {
   console.log(`로비 로드: ${BASE}/?e2e`);
   // ?e2e 쿼리로 e2e 훅(window.__smallVillage) 활성화.
   await page.goto(`${BASE}/?e2e`, { waitUntil: "networkidle" });
 
+  // 로딩 오버레이("Loading assets…")가 사라질 때까지 대기 — 입력 타이밍보다 앞서야
+  // placeholder 채움이 오버레이에 가려 무시되는 회귀를 막는다(issue37 패턴).
+  for (let i = 0; i < 12; i++) {
+    if ((await page.getByText(/Loading assets/i).count()) === 0) break;
+    await sleep(1000);
+  }
+  await sleep(1000);
+
   await page.getByPlaceholder("e.g. Mina").fill("E2EBot");
   await page.getByPlaceholder("Room title").fill(ROOM_TITLE);
   await page.getByRole("button", { name: "Create" }).click();
 
-  await page.waitForSelector("canvas", { timeout: 20000 });
-  await page.waitForTimeout(3000); // 씬 create() + 최초 등록 + ring draw
+  // 씬 create() + 최초 등록 + ring draw — 게터 노출까지 폴링 대기(고정 sleep 대신).
+  const ready = await waitForHook();
+  if (!ready) fail("씬/게터 준비 타임아웃 — ring 이 생성되지 않음");
 
   // [판정] 입장 직후 좌표 assert
   if (!(await ringAlignsWithSelf(page))) {
@@ -101,6 +134,18 @@ try {
   } else {
     console.log("✅ 입장 직후: ring 이 self 발밑에 정렬됨");
   }
+
+  // 스크린샷 A 앞 인게임 진입 확정 대기 — "Strolling into…" 오버레이가 사라지고
+  // 바텀바(Exit)가 떠 있어야 실제 게임 화면을 찍는다(로딩 화면 오탐 방지).
+  for (let i = 0; i < 30; i++) {
+    const strolling = (await page.getByText(/Strolling into/i).count()) > 0;
+    const exitVisible =
+      (await page.getByLabel("Exit").count()) > 0 &&
+      (await page.getByLabel("Exit").first().isVisible().catch(() => false));
+    if (!strolling && exitVisible) break;
+    await sleep(1000);
+  }
+  await sleep(800);
 
   // [보조 증거] 스크린샷 A — self 발밑에 fill+edge 원 1개(self-only),
   // 500px 경계선 원이 decoration 위에 overlay 되는지 육안 확인.
