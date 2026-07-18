@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useId, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -31,6 +31,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
 
   // 1) 훅은 전부 여기 — 조기 반환보다 위 (Rules of Hooks)
   const titleId = useId();
+  const descId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
 
@@ -92,6 +93,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={descId}
         data-testid="confirm-modal"
         onKeyDown={handleKeyDown}
         className="bg-white shadow-lg rounded-lg w-[320px] max-w-[90vw] p-6 flex flex-col gap-4"
@@ -99,7 +101,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
         <h2 id={titleId} className="m-0 text-lg font-semibold">
           {title ?? "정말 나가시겠어요?"}
         </h2>
-        <p className="m-0 text-sm text-gray-700">{message}</p>
+        <p id={descId} className="m-0 text-sm text-gray-700">{message}</p>
         <div className="flex justify-end gap-2">
           <button
             data-testid="confirm-cancel-btn"
