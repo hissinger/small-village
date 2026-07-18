@@ -5,6 +5,11 @@
 
 > 이 스크립트들은 삭제하지 말 것 — 회귀 재현/재검증용이다. 새 회귀를 잡으면 여기에 스크립트를 추가한다.
 
+> **네이밍 노트**: `presence-3clients.mjs` 의 "presence" 는 역사적 이름일 뿐, 이 앱은 Supabase
+> **Presence 를 쓰지 않는다**(supabase/realtime#1807). 방 로스터("누가 있나")는 `users` 테이블 +
+> heartbeat 로, 위치(x/y)는 broadcast 채널 `position-<roomId>` 로 다룬다(issue #51,
+> `docs/roster-position-split-plan.md`). 파일명은 회귀 추적을 위해 유지한다.
+
 ## 공통 전제
 
 1. **Playwright 브라우저 설치**(최초 1회):
@@ -42,6 +47,7 @@
 | --- | --- | --- | --- |
 | `room-flow.mjs` | 방 생성→입장→이동 스모크. `POST /users` 409(FK 위반) 회귀 감시. | 1 | `npm run test:e2e` |
 | `presence-3clients.mjs` | **presence 단일 소스 회귀**: 먼저 입장해 가만히 있는 유저가 나중 입장자의 참여자 패널/씬에서 누락되지 않는지(S1/S2/S3). | 3 | `node e2e/presence-3clients.mjs` |
+| `position-broadcast.mjs` | **위치 broadcast 반영(issue #51)**: A 가 움직이면 B 화면의 A 스프라이트가 따라오는지. 씬 좌표는 `?e2e` URL 파라미터로 켜지는 `window.__smallVillage` 훅으로 읽는다. | 2 | `node e2e/position-broadcast.mjs` |
 | `issue37-reaction.mjs` | 이모지 리액션(issue #37): 피커 노출 + broadcast 송신 + 캔버스 변화. | 1 | `node e2e/issue37-reaction.mjs` |
 | `issue37-reaction-timed.mjs` | 리액션 애니메이션 타이밍 캡처(육안 검사용 PNG). | 1 | `node e2e/issue37-reaction-timed.mjs` |
 | `issue37-bottombar-final.mjs` | 바텀바 아이콘 정렬 육안 검사 크롭 캡처. | 1 | `node e2e/issue37-bottombar-final.mjs` |

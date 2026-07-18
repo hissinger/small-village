@@ -20,7 +20,11 @@ import {
   RoomParticipantsProvider,
   useRemoteParticipants,
 } from "./RoomParticipantsContext";
-import { RECONCILE_INTERVAL_MS } from "../constants";
+import {
+  RECONCILE_INTERVAL_MS,
+  ROSTER_STALE_SWEEP_INTERVAL_MS,
+  ROSTER_STALE_TIMEOUT_MS,
+} from "../constants";
 
 // jest.mock 팩토리는 hoist 되므로 참조 변수는 `mock` 접두사 필수.
 let mockChannelCount: number;
@@ -127,13 +131,47 @@ describe("RoomParticipantsProvider (users 테이블 단일 소스)", () => {
     expect(result.current.has("me")).toBe(false);
   });
 
-  it("INSERT/UPDATE 로 등장·이동이 반영된다", async () => {
+  it("INSERT 로 등장이 반영된다", async () => {
     const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
     await flush();
     act(() => mockInsertCb!({ new: userRow("u2", "영희") }));
     expect(result.current.get("u2")?.name).toBe("영희");
-    act(() => mockUpdateCb!({ new: { ...userRow("u2", "영희"), x: 42 } }));
-    expect(result.current.get("u2")?.x).toBe(42);
+  });
+
+  // PR-3: 위치(x/y)만 바뀐 UPDATE(=이동)는 노출 맵을 리렌더하지 않는다 — 참조 불변.
+  // 위치는 broadcast 로 소비되고, 로스터 뷰는 멤버십/식별 필드만 본다(P1).
+  it("위치만 바뀐 UPDATE 로는 노출 맵 참조가 바뀌지 않는다", async () => {
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
+    await flush();
+    act(() => mockInsertCb!({ new: userRow("u2", "영희") }));
+    const afterInsert = result.current;
+    act(() => mockUpdateCb!({ new: { ...userRow("u2", "영희"), x: 42, y: 7 } }));
+    expect(result.current).toBe(afterInsert);
+  });
+
+  // PR-3: 하트비트(last_active 만 변경)로도 참조가 바뀌지 않는다(무의미 리렌더 제거, P4).
+  it("last_active 만 바뀐 UPDATE 로는 노출 맵 참조가 바뀌지 않는다", async () => {
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
+    await flush();
+    act(() => mockInsertCb!({ new: userRow("u2", "영희") }));
+    const afterInsert = result.current;
+    act(() =>
+      mockUpdateCb!({
+        new: { ...userRow("u2", "영희", new Date(NOW + 1000).toISOString()) },
+      })
+    );
+    expect(result.current).toBe(afterInsert);
+  });
+
+  // PR-3: 이름/캐릭터(멤버십·식별) 변경은 새 맵으로 반영된다.
+  it("이름 변경 UPDATE 는 새 맵으로 반영된다", async () => {
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
+    await flush();
+    act(() => mockInsertCb!({ new: userRow("u2", "영희") }));
+    const afterInsert = result.current;
+    act(() => mockUpdateCb!({ new: userRow("u2", "영희2") }));
+    expect(result.current).not.toBe(afterInsert);
+    expect(result.current.get("u2")?.name).toBe("영희2");
   });
 
   it("DELETE 로 제거된다", async () => {
@@ -175,5 +213,25 @@ describe("RoomParticipantsProvider (users 테이블 단일 소스)", () => {
     await flush();
     expect(result.current.has("u1")).toBe(true);
     expect(result.current.has("ghost")).toBe(false);
+  });
+
+  // PR-3(B2): 위치가 broadcast 로 빠지고 last_active UPDATE 가 diff 로 억제돼도,
+  // stale-sweep(로컬 재필터)이 시간이 흐른 뒤 고아를 뷰에서 제외한다. 크래시로 row 가
+  // DB 에 남아 reconcile 이 계속 돌려줘도(비파괴), stale 필터가 뷰에서 감춘다.
+  it("stale 해진 고아는 reconcile 이 계속 돌려줘도 뷰에서 제외된다", async () => {
+    mockRoomRows = [userRow("u1", "철수")];
+    const { result } = renderHook(() => useRemoteParticipants(), { wrapper });
+    await flush();
+    expect(result.current.has("u1")).toBe(true);
+
+    // u1 하트비트 끊김: 시간이 stale 임계 너머로 흐른다(row 는 DB 에 그대로 남아 있다).
+    await act(async () => {
+      jest.advanceTimersByTime(
+        ROSTER_STALE_TIMEOUT_MS + ROSTER_STALE_SWEEP_INTERVAL_MS
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.has("u1")).toBe(false);
   });
 });

@@ -18,7 +18,7 @@ import { supabase } from "./supabaseClient";
 import { DATABASE_TABLES } from "../constants";
 
 // users row 에 쓰는 휘발성 접속 상태.
-// room_id 는 반드시 포함해야 한다: GC/heartbeat/presence 로 row 가 사라진 상태에서
+// room_id 는 반드시 포함해야 한다: GC/heartbeat/webhook 정리로 row 가 사라진 상태에서
 // 움직이면 이 upsert 가 INSERT 로 동작하는데, room_id 를 빠뜨리면 스키마 기본값
 // gen_random_uuid() 가 채워져 rooms FK(users_room_id_fkey)를 위반하고 409(23503)가
 // 난다. (실측: room_id 생략 시 409 foreign_key_violation, 포함 시 201.)

@@ -27,6 +27,7 @@ import { supabase } from "../lib/supabaseClient";
 import {
   DATABASE_TABLES,
   RECONCILE_INTERVAL_MS,
+  ROSTER_STALE_SWEEP_INTERVAL_MS,
   ROSTER_STALE_TIMEOUT_MS,
 } from "../constants";
 import { activeAgeMs } from "../lib/sessionActivity";
@@ -47,6 +48,27 @@ import { useRoomContext } from "./RoomContext";
  * 내부 맵은 self 포함 전체 로스터이며, self 는 각 소비자가 따로 다룬다.
  */
 const RoomParticipantsContext = createContext<Map<string, User> | null>(null);
+
+/**
+ * 멤버십/식별 관점의 동등성: 같은 id 집합 + 각 id 의 name·character_index 가 동일한가.
+ * 위치(x/y)·last_active 차이는 무시한다 — 로스터 소비자(패널·배지·씬 스프라이트 생성)는
+ * 그 필드를 안 쓰므로, 이동/하트비트로 노출 Map 참조가 바뀌어 리렌더되는 것을 막는다.
+ */
+function sameRoster(a: Map<string, User>, b: Map<string, User>): boolean {
+  if (a.size !== b.size) return false;
+  let equal = true;
+  a.forEach((ua, id) => {
+    const ub = b.get(id);
+    if (
+      !ub ||
+      ua.name !== ub.name ||
+      ua.character_index !== ub.character_index
+    ) {
+      equal = false;
+    }
+  });
+  return equal;
+}
 
 export const RoomParticipantsProvider: React.FC<{
   children: React.ReactNode;
@@ -75,7 +97,10 @@ export const RoomParticipantsProvider: React.FC<{
           next.set(id, u);
         }
       });
-      setParticipants(next);
+      // 멤버십/식별(id 집합·name·character_index)이 안 바뀌면 참조를 유지한다.
+      // 위치(x/y)·last_active 만 바뀐 UPDATE(이동·하트비트)로는 소비자를 리렌더하지
+      // 않는다 → 패널/배지 이동 리렌더 제거(P1) + 하트비트 무의미 리렌더 제거(P4).
+      setParticipants((prev) => (sameRoster(prev, next) ? prev : next));
     };
 
     const upsertRow = (payload: { new: Record<string, unknown> }) => {
@@ -123,14 +148,19 @@ export const RoomParticipantsProvider: React.FC<{
       )
       .subscribe();
 
-    // 초기 스냅샷 + 주기 reconcile. reconcile 이 매번 recompute 로 stale 필터를 재적용하므로
-    // (RECONCILE_INTERVAL_MS < ROSTER_STALE_TIMEOUT_MS) 별도 stale sweep 은 불필요하다.
+    // 초기 스냅샷 + 주기 reconcile(DB 재조회로 놓친 이벤트·재연결 수렴).
     reconcile();
     const interval = setInterval(reconcile, RECONCILE_INTERVAL_MS);
+
+    // 고아 row 은닉용 로컬 stale-sweep. 위치가 broadcast 로 빠지고 last_active UPDATE 가
+    // diff 로 억제되면서 recompute 의 잦은 트리거(이동·하트비트)가 사라졌으므로, DB fetch 없이
+    // dataRef 에 stale 필터만 재적용하는 값싼 sweep 으로 고아를 제때 감춘다(reconcile 과 분리).
+    const staleSweep = setInterval(recompute, ROSTER_STALE_SWEEP_INTERVAL_MS);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
+      clearInterval(staleSweep);
       channel.unsubscribe();
     };
   }, [roomId]);

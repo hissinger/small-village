@@ -20,4 +20,8 @@ import { createClient } from "@supabase/supabase-js";
 export const supabaseUrl = process.env.REACT_APP_SUPABASE_URL as string;
 export const supabaseKey = process.env.REACT_APP_SUPABASE_KEY as string;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// eventsPerSecond: 클라이언트 realtime 전송 rate limit(연결 단위 공유). 기본값(통상 10/s)이면
+// 위치 broadcast(~10Hz)가 채팅/리액션 broadcast 전송 예산을 잠식할 수 있어 여유를 둔다.
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  realtime: { params: { eventsPerSecond: 24 } },
+});

@@ -20,7 +20,7 @@ import { countActiveUsersByRoom } from "./roomCounts";
 
 /**
  * 방 입장 시점의 인원 수(나 포함)를 users 테이블에서 직접 센다.
- * presence 는 비동기라 READY 직후 0 일 수 있어, 신뢰값을 위해 DB 를 조회한다.
+ * 로스터 구독은 비동기라 READY 직후 0 일 수 있어, 신뢰값을 위해 DB 를 조회한다.
  * 계측 보조용이므로 실패해도 흐름을 깨지 않고 0 을 돌려준다.
  */
 export async function fetchRoomSize(roomId: string): Promise<number> {
