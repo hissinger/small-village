@@ -18,10 +18,10 @@ import React, { useEffect, useId, useRef } from "react";
 
 interface ConfirmModalProps {
   isOpen: boolean;
-  title?: string; // 기본값 "정말 나가시겠어요?"
+  title?: string; // default "Are you sure you want to leave?"
   message: string;
-  confirmLabel?: string; // 기본값 "나가기"
-  cancelLabel?: string; // 기본값 "취소"
+  confirmLabel?: string; // default "Leave"
+  cancelLabel?: string; // default "Cancel"
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -99,7 +99,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
         className="bg-white shadow-lg rounded-lg w-[320px] max-w-[90vw] p-6 flex flex-col gap-4"
       >
         <h2 id={titleId} className="m-0 text-lg font-semibold">
-          {title ?? "정말 나가시겠어요?"}
+          {title ?? "Are you sure you want to leave?"}
         </h2>
         <p id={descId} className="m-0 text-sm text-gray-700">{message}</p>
         <div className="flex justify-end gap-2">
@@ -108,7 +108,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
             onClick={onCancel}
             className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200"
           >
-            {cancelLabel ?? "취소"}
+            {cancelLabel ?? "Cancel"}
           </button>
           <button
             ref={confirmRef}
@@ -116,7 +116,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
             onClick={onConfirm}
             className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
           >
-            {confirmLabel ?? "나가기"}
+            {confirmLabel ?? "Leave"}
           </button>
         </div>
       </div>

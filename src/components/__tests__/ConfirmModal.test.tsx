@@ -48,7 +48,7 @@ describe("ConfirmModal", () => {
     expect(dialog).toHaveAttribute("aria-labelledby");
     expect(dialog).toHaveAttribute("aria-describedby");
     // 기본 제목/메시지 노출
-    expect(screen.getByText("정말 나가시겠어요?")).toBeInTheDocument();
+    expect(screen.getByText("Are you sure you want to leave?")).toBeInTheDocument();
     expect(screen.getByText("지금 방에서 나갑니다.")).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe("ConfirmModal", () => {
         onCancel={onCancel}
       />
     );
-    fireEvent.mouseDown(screen.getByText("정말 나가시겠어요?"));
+    fireEvent.mouseDown(screen.getByText("Are you sure you want to leave?"));
     expect(onCancel).not.toHaveBeenCalled();
   });
 

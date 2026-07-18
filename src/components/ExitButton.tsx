@@ -39,7 +39,7 @@ export default function ExitButton(props: ExitButtonProps) {
       />
       <ConfirmModal
         isOpen={isConfirmOpen}
-        message="지금 방에서 나갑니다."
+        message="You are about to leave the room."
         onCancel={() => setIsConfirmOpen(false)}
         onConfirm={() => {
           setIsConfirmOpen(false);
