@@ -22,6 +22,7 @@ import {
   REACTION_ANIMATION,
 } from "../constants";
 import { sendPosition, subscribePositions } from "../lib/positionChannel";
+import { proximityRingRadii } from "../lib/proximityRing";
 import { SpeechBubble } from "./SpeechBubble";
 
 const GAME_CONFIG = {
@@ -67,6 +68,21 @@ const GAME_CONFIG = {
     PULSE_SCALE: 1.15,
     PULSE_DURATION: 600,
   },
+  // 공간 오디오 전송 범위 링(#29): 내 캐릭터 발밑의 정적 가이드. self-only, pulse 없음.
+  //  - 채움 원 = 풀볼륨 근처 체감 여유 구간(refDistance +20px).
+  //  - 경계선 원 = 디자인상 선택한 경계선 반경(= 오디오 maxDistance 와 같은 값 참조).
+  //  - 반경 숫자는 여기 두지 않는다. proximityRingRadii() 헬퍼가 SPATIAL_AUDIO 에서 파생한다.
+  //    이 블록은 색/알파/오프셋/선두께 등 시각 속성만 담는다.
+  PROXIMITY_RING: {
+    OFFSET_Y: 30, // RING 과 동일하게 발밑 정렬
+    // 이슈 권장 0.1~0.15 였으나, 초록 맵 위 파란 채움이 0.1 에선 사실상 보이지 않아
+    // 가시성 확보를 위해 0.18 로 상향(경계선은 더 선명하게).
+    FILL_COLOR: 0x38bdf8, // sky-400 계열 — 잔디 대비 선명
+    FILL_ALPHA: 0.18,
+    EDGE_COLOR: 0x38bdf8,
+    EDGE_ALPHA: 0.6,
+    EDGE_WIDTH: 3, // stroke 두께(px)
+  },
 } as const;
 
 interface GameSceneConfig {
@@ -99,6 +115,10 @@ export default class SmallVillageScene extends Phaser.Scene {
     string,
     { ring: Phaser.GameObjects.Ellipse; tween?: Phaser.Tweens.Tween }
   > = {};
+
+  // 공간 오디오 전송 범위 링(#29): 내 캐릭터에만 그리는 Graphics 1개(self-only).
+  // create() 에서 1회 생성하고 update() 에서 스프라이트를 따라 이동시킨다.
+  private proximityRing: Phaser.GameObjects.Graphics | null = null;
 
   // 떠오르는 리액션 이모지. 여러 개가 동시에 뜰 수 있어 배열로 관리한다.
   // 각 Text 는 소속 userId(`reactionUserId`)와 시작 시각(`reactionStart`)을 data 로 갖고,
@@ -237,6 +257,9 @@ export default class SmallVillageScene extends Phaser.Scene {
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
 
+    // 공간 오디오 전송 범위 링(#29): 스프라이트 생성 직후 1회 그린다(발밑, self-only).
+    this.drawProximityRing();
+
     // 카메라는 startFollow/ setBounds 대신 update() 의 positionCamera() 에서
     // 축별로 수동 제어한다. (setBounds + follow 는 맵보다 뷰포트가 넓은 축에서
     // 스크롤이 0 으로 클램프돼 맵이 한쪽에 붙는 문제가 있다.)
@@ -331,6 +354,20 @@ export default class SmallVillageScene extends Phaser.Scene {
         this.sprite
           ? { x: Math.round(this.sprite.x), y: Math.round(this.sprite.y) }
           : null,
+      // proximity ring(#29) 중심 좌표 + 반경. ring 이 self 발밑에 정렬·추종하는지
+      // e2e 좌표 assert 로 검증하기 위함이다. 반경은 렌더와 동일한 proximityRingRadii()
+      // 헬퍼로 파생해 재선언 drift 를 막는다(B1). 좌표 외 정보는 노출하지 않는다.
+      proximityRing: () => {
+        if (!this.proximityRing) return null; // ring 미생성 방어(게터 null)
+        const { FILL, EDGE } = proximityRingRadii(); // 렌더와 동일 헬퍼(재선언 금지)
+        return {
+          x: this.proximityRing.x, // raw float 스프라이트 좌표
+          y: this.proximityRing.y,
+          fillRadius: FILL,
+          edgeRadius: EDGE,
+          offsetY: GAME_CONFIG.PROXIMITY_RING.OFFSET_Y,
+        };
+      },
     };
   }
 
@@ -412,6 +449,38 @@ export default class SmallVillageScene extends Phaser.Scene {
         ring.setPosition(sprite.x, sprite.y + GAME_CONFIG.RING.OFFSET_Y);
       }
     });
+  }
+
+  /**
+   * 공간 오디오 전송 범위 링(#29)을 내 캐릭터 발밑에 1회 그린다(self-only, pulse 없음).
+   *  - 반경은 proximityRingRadii() 헬퍼가 SPATIAL_AUDIO 에서 파생(단일 계산처).
+   *  - 시각 속성(색/알파/선두께/오프셋)은 GAME_CONFIG.PROXIMITY_RING 에서 읽는다.
+   *  - (0,0) 원점 기준으로 두 원을 그려두고 이후 setPosition 으로 통째로 옮긴다.
+   * this.sprite 존재 가정(create 에서 sprite 생성 직후 호출).
+   */
+  private drawProximityRing(): void {
+    if (!this.sprite) return;
+    const c = GAME_CONFIG.PROXIMITY_RING;
+    const { FILL, EDGE } = proximityRingRadii(); // 반경 단일 계산처(헬퍼)
+    const g = this.add.graphics();
+    g.fillStyle(c.FILL_COLOR, c.FILL_ALPHA);
+    g.fillCircle(0, 0, FILL);
+    g.lineStyle(c.EDGE_WIDTH, c.EDGE_COLOR, c.EDGE_ALPHA);
+    g.strokeCircle(0, 0, EDGE);
+    g.setPosition(this.sprite.x, this.sprite.y + c.OFFSET_Y);
+    // 스프라이트와 같은 depth 로 두되 표시목록에서 스프라이트 바로 뒤로 보낸다.
+    // decoration 타일 위·캐릭터 아래에 overlay 되게 한다(발화 링과 동일 패턴).
+    g.setDepth(this.sprite.depth);
+    this.children.moveBelow(g, this.sprite);
+    this.proximityRing = g;
+  }
+
+  private syncProximityRing(): void {
+    if (!this.proximityRing || !this.sprite) return;
+    this.proximityRing.setPosition(
+      this.sprite.x,
+      this.sprite.y + GAME_CONFIG.PROXIMITY_RING.OFFSET_Y,
+    );
   }
 
   private removeSpeakerRing(userId: string) {
@@ -773,6 +842,9 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     // 발화 링을 각 스프라이트 발밑에 동기화(이름표 패턴과 동일).
     this.syncSpeakerRings();
+
+    // 공간 오디오 전송 범위 링(#29)을 내 스프라이트 발밑에 동기화.
+    this.syncProximityRing();
 
     // 떠오르는 리액션 이모지를 스프라이트 머리 위에 동기화(이동 추적).
     this.updateReactionEmojis();

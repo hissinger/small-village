@@ -16,6 +16,7 @@
 
 import { RTKParticipant } from "@cloudflare/realtimekit-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SPATIAL_AUDIO } from "../constants";
 
 type SpatialAudioRendererProps = {
   participant: RTKParticipant;
@@ -88,8 +89,8 @@ export function SpatialAudioRenderer({
     panner.current.positionZ.setValueAtTime(0, 0);
     panner.current.distanceModel = "exponential";
     panner.current.coneOuterGain = 1;
-    panner.current.refDistance = 100;
-    panner.current.maxDistance = 500;
+    panner.current.refDistance = SPATIAL_AUDIO.REF_DISTANCE; // was 100
+    panner.current.maxDistance = SPATIAL_AUDIO.MAX_DISTANCE; // was 500
     panner.current.rolloffFactor = 2;
 
     // Connect the nodes to each other
