@@ -27,3 +27,12 @@ export const POSITION_STREAM_THROTTLE_MS = 100;
 // 게임 화면 하단 바(BottomBar)의 높이(px).
 // 게임 캔버스가 하단 바를 침범하지 않도록 이 값만큼 아래를 비워둔다.
 export const BOTTOM_BAR_HEIGHT = 48;
+
+// 공간 오디오 거리 경계(단위: world px = users.x/y 스프라이트 좌표계).
+// SpatialAudioRenderer 의 PannerNode refDistance/maxDistance 와
+// Proximity ring(#29) 반경(→ proximityRingRadii() 헬퍼)이 함께 참조하는 공유 출처다.
+// 오디오도 ring 도 이 값을 매직 넘버로 재선언하지 않는다.
+export const SPATIAL_AUDIO = {
+  REF_DISTANCE: 100, // 풀볼륨 반경. ring FILL 은 여기 +20px.
+  MAX_DISTANCE: 500, // PannerNode maxDistance. ring EDGE 가 이 값에 결속(= 같은 값 참조).
+} as const;
