@@ -39,3 +39,8 @@ export const ROSTER_STALE_SWEEP_INTERVAL_MS = 5_000;
 // 입장 직후엔 기존 접속자들이 로스터에 한꺼번에 채워지므로, 이 워밍업 창 동안은 "입장" 토스트를
 // 띄우지 않는다. 창이 지난 뒤 새로 등장한 원격 유저만 진짜 입장으로 보고 토스트한다.
 export const JOIN_TOAST_WARMUP_MS = 2_500;
+
+// 로비(CharacterSelectScreen) 방 목록/인원수 자동 갱신 주기. 수동 새로고침 버튼과 별개로,
+// 이 주기마다 조용히(로딩 스피너 없이) 다시 조회해 새 방/인원 변화를 반영한다.
+// 탭이 백그라운드면 폴링을 멈춰 불필요한 조회를 막는다.
+export const LOBBY_ROOMS_POLL_INTERVAL_MS = 10_000;
