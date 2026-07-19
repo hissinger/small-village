@@ -53,6 +53,8 @@
 | `issue37-reaction-timed.mjs` | 리액션 애니메이션 타이밍 캡처(육안 검사용 PNG). | 1 | `node e2e/issue37-reaction-timed.mjs` |
 | `issue37-bottombar-final.mjs` | 바텀바 아이콘 정렬 육안 검사 크롭 캡처. | 1 | `node e2e/issue37-bottombar-final.mjs` |
 | `issue37-verify-final.mjs` | 리액션 최종 재검증(정렬+broadcast+애니메이션+이동추적). | 1 | `node e2e/issue37-verify-final.mjs` |
+| `village-bg-world.mjs` | **게임 월드=village-bg 이미지 전환**: 건물 충돌이 실제로 막는지(스폰 아래 충돌체로 밀어붙여 top 을 못 넘는지) 프로그램적 assert + `?debugWorld` 로 충돌 박스/above 오버레이 정렬 스크린샷(`/tmp/sv-review/village/`). | 1 | `node e2e/village-bg-world.mjs` |
+| `map-select.mjs` | **방별 맵 선택(village\|tilemap)**: `?e2e&map=<m>` 오버라이드로 각 맵을 강제 로드해 씬 map·월드 크기가 맞는지 assert + 스크린샷. | 1 | `node e2e/map-select.mjs` |
 
 `issue37-*` 캡처물은 `/tmp/sv-review/issue37/` 에 저장된다.
 

@@ -15,7 +15,9 @@
  */
 
 import { useEffect, useState } from "react";
-import villageBg from "../assets/village-bg.png";
+
+// 게임 씬(Phaser)과 동일한 애셋을 쓰므로 public/assets 에서 경로로 참조한다.
+const villageBg = "/assets/village-bg.png";
 
 const BG_WIDTH = 704;
 const BG_HEIGHT = 576;

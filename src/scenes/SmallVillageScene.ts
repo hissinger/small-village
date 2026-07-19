@@ -24,6 +24,8 @@ import {
 import { sendPosition, subscribePositions } from "../lib/positionChannel";
 import { proximityRingRadii } from "../lib/proximityRing";
 import { SpeechBubble } from "./SpeechBubble";
+import { Rect, VILLAGE_SCALE, scaleRect } from "../lib/villageWorld";
+import { DEFAULT_MAP, MAPS, MapKind, resolveMap } from "../lib/mapKind";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -36,6 +38,8 @@ const GAME_CONFIG = {
     TILE_HEIGHT: 32,
     SCALE: 2,
   },
+  // village 월드 치수·배율은 villageWorld.VILLAGE_BG 가 단일 출처다(콜라이더/스폰 좌표계와
+  // 공유하므로 여기 재선언하지 않는다). LAYER.SCALE 은 타일맵 전용으로 별개.
   MOVEMENT: {
     SPEED: 160,
   },
@@ -99,6 +103,8 @@ interface GameSceneConfig {
   roomId: string;
   userId: string;
   users: User[];
+  // 방의 게임 월드 맵. 누락/무효면 resolveMap 이 기본 맵으로 폴백한다.
+  map?: string;
 }
 
 export default class SmallVillageScene extends Phaser.Scene {
@@ -137,6 +143,14 @@ export default class SmallVillageScene extends Phaser.Scene {
   private userId: string = "";
   private characterIndex: number = 0;
   private characterName: string = "";
+  // 이 방의 월드 맵 종류(방별 고정). init 에서 resolveMap 으로 확정한다.
+  private mapKind: MapKind = DEFAULT_MAP;
+  // 타일맵 모드에서 충돌을 걸 decoration 레이어들(applyWorldCollisions 가 사용).
+  private decorationLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  // village 맵: village.json 오브젝트 레이어에서 읽은 충돌·가림 사각형(원본 px).
+  // buildVillageWorld 에서 채우고 createWorldColliders/Overlays·e2e 훅이 쓴다.
+  private villageColliders: Rect[] = [];
+  private villageAbove: Rect[] = [];
   private onUserClick: (user: User) => void;
   // rooms row 보장 + 최초 users 등록이 끝나기 전에는 이동 write 를 막는 플래그.
   // 초기화 중 움직이면 users write 가 rooms 보장보다 앞서 FK 위반(409)을 낼 수 있다.
@@ -165,6 +179,14 @@ export default class SmallVillageScene extends Phaser.Scene {
     this.roomId = data.roomId;
     this.userId = data.userId;
     this.users = data.users || [];
+    this.mapKind = resolveMap(data.map);
+    // e2e/개발 검증용: ?e2e 가 있을 때만 ?map= 으로 맵을 강제할 수 있다. 프로덕션
+    // 사용 흐름(?e2e 없음)에는 영향이 없어 방별 맵 정합성을 깨지 않는다.
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search);
+      const override = q.get("map");
+      if (q.has("e2e") && override) this.mapKind = resolveMap(override);
+    }
   }
 
   preload() {
@@ -188,82 +210,44 @@ export default class SmallVillageScene extends Phaser.Scene {
     });
     this.load.image("bubble-tail", "/assets/bubble/bubble-tail.png");
 
-    // map
-    this.load.image("map", "/assets/tilesets/Serene_Village_32x32.png");
-    this.load.tilemapTiledJSON("map", "/assets/tilemaps/default.json");
+    // 게임 월드 배경 — 방의 map 에 따라 필요한 애셋만 로드한다.
+    if (this.mapKind === MAPS.TILEMAP) {
+      // 기존 Serene Village 타일맵(레이어드).
+      this.load.image("map", "/assets/tilesets/Serene_Village_32x32.png");
+      this.load.tilemapTiledJSON("map", "/assets/tilemaps/default.json");
+    } else {
+      // 로비 첫 화면과 동일한 마을 픽셀아트 이미지(다른 게임 애셋과 같이 public/assets 에서 로드).
+      this.load.image("village-bg", "/assets/village-bg.png");
+      // 월드 데이터(충돌·가림·스폰)는 default.json 과 같은 Tiled 형식 파일에서 읽는다.
+      this.load.tilemapTiledJSON("village-map", "/assets/tilemaps/village.json");
+    }
   }
 
   async create() {
     this.cursors = this.input.keyboard?.createCursorKeys() || null;
 
-    // map
-    const map = this.make.tilemap({
-      key: "map",
-      tileWidth: GAME_CONFIG.LAYER.TILE_WIDTH,
-      tileHeight: GAME_CONFIG.LAYER.TILE_HEIGHT,
-    });
-    const tileset = map.addTilesetImage("Serene_Village_32x32", "map");
-    if (!tileset) {
-      console.error("Tileset is null");
-      return;
-    }
+    // 방의 map 에 따라 월드 배경을 만든다(village 이미지 / tilemap 레이어).
+    // 각 빌더가 배경을 그리고 월드 크기 + 스폰 좌표를 돌려준다.
+    const world =
+      this.mapKind === MAPS.TILEMAP
+        ? this.buildTilemapWorld()
+        : this.buildVillageWorld();
+    if (!world) return; // 맵 데이터 로드 실패(타일셋/레이어 null, village.json 빈 맵) 방어
 
-    const groundLayer = map.createLayer("ground", tileset, 0, 0);
-    if (!groundLayer) {
-      console.error("Ground layer is null");
-      return;
-    }
-    groundLayer.setScale(GAME_CONFIG.LAYER.SCALE);
+    const { width, height, spawn } = world;
 
-    const decoration0Layer = map.createLayer("decoration_0", tileset, 0, 0);
-    if (!decoration0Layer) {
-      console.error("Decoration layer is null");
-      return;
-    }
-    decoration0Layer.setScale(GAME_CONFIG.LAYER.SCALE);
-
-    const decoration1Layer = map.createLayer("decoration_1", tileset, 0, 0);
-    if (!decoration1Layer) {
-      console.error("Decoration layer is null");
-      return;
-    }
-    decoration1Layer.setScale(GAME_CONFIG.LAYER.SCALE);
-
-    const decoration2Layer = map.createLayer("decoration_2", tileset, 0, 0);
-    if (!decoration2Layer) {
-      console.error("Decoration layer is null");
-      return;
-    }
-    decoration2Layer.setScale(GAME_CONFIG.LAYER.SCALE);
-
-    const above0Layer = map.createLayer("above_0", tileset, 0, 0);
-    if (!above0Layer) {
-      console.error("Above layer is null");
-      return;
-    }
-    above0Layer.setScale(GAME_CONFIG.LAYER.SCALE);
-    above0Layer.setDepth(10);
-
-    const above1Layer = map.createLayer("above_1", tileset, 0, 0);
-    if (!above1Layer) {
-      console.error("Above layer is null");
-      return;
-    }
-    above1Layer.setScale(GAME_CONFIG.LAYER.SCALE);
-    above1Layer.setDepth(11);
-
-    const width = GAME_CONFIG.LAYER.TILE_WIDTH * map.width * GAME_CONFIG.LAYER.SCALE;
-    const height = GAME_CONFIG.LAYER.TILE_HEIGHT * map.height * GAME_CONFIG.LAYER.SCALE;
-    // 물리/충돌은 맵 크기 기준으로 유지해 캐릭터가 맵 밖으로 나가지 못하게 한다.
     this.physics.world.setBounds(0, 0, width, height);
     const cam = this.cameras.main;
     cam.setBackgroundColor("#3a5a40");
 
     this.sprite = this.physics.add
-      .sprite(width / 2, height / 2, `character_${this.characterIndex}`, 0)
+      .sprite(spawn.x, spawn.y, `character_${this.characterIndex}`, 0)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
+
+    // 충돌: 맵 종류에 맞게 적용(타일맵=decoration 레이어 충돌 / village=static 존).
+    this.applyWorldCollisions(this.sprite);
 
     // 공간 오디오 전송 범위 링(#29): 스프라이트 생성 직후 1회 그린다(발밑, self-only).
     this.drawProximityRing();
@@ -289,14 +273,6 @@ export default class SmallVillageScene extends Phaser.Scene {
         }
       )
       .setOrigin(0.5, 0.5);
-
-    decoration0Layer.setCollisionByProperty({ collides: true });
-    decoration1Layer.setCollisionByProperty({ collides: true });
-    decoration2Layer.setCollisionByProperty({ collides: true });
-
-    this.physics.add.collider(this.sprite, decoration0Layer);
-    this.physics.add.collider(this.sprite, decoration1Layer);
-    this.physics.add.collider(this.sprite, decoration2Layer);
 
     this.speechBubble = new SpeechBubble(
       this,
@@ -346,6 +322,185 @@ export default class SmallVillageScene extends Phaser.Scene {
     this.createAnimations();
   }
 
+  // URL 에 ?debugWorld 가 있으면 충돌 영역을 반투명 빨강으로 그려 좌표 튜닝을 돕는다.
+  private isWorldDebug(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("debugWorld")
+    );
+  }
+
+  /**
+   * village 맵: 로비 첫 화면과 동일한 village-bg 픽셀아트를 통짜 이미지로 깔고,
+   * above 가림 오버레이를 얹는다. 월드 크기 + 스폰을 돌려준다.
+   * 치수·충돌·가림·스폰은 모두 village.json(Tiled 형식)에서 읽는다
+   * (스폰은 spawn 레이어의 point — 월드 중앙은 INN 위라 개방된 길에 찍어 뒀다).
+   * village.json 로드 실패 시 빈 맵(width 0)이 되므로 buildTilemapWorld 와 대칭으로 null 을 돌려준다.
+   */
+  private buildVillageWorld(): {
+    width: number;
+    height: number;
+    spawn: { x: number; y: number };
+  } | null {
+    const scale = VILLAGE_SCALE;
+    // 맵 데이터(치수·충돌·가림·스폰)는 village.json(Tiled 형식)에서 읽는다.
+    const map = this.make.tilemap({ key: "village-map" });
+    if (!map.widthInPixels || !map.heightInPixels) {
+      console.error("village-map is empty (village.json 로드 실패?)");
+      return null;
+    }
+    const width = map.widthInPixels * scale;
+    const height = map.heightInPixels * scale;
+
+    this.add.image(0, 0, "village-bg").setOrigin(0, 0).setScale(scale);
+
+    // 오브젝트 레이어 → 원본 px 사각형. 충돌/가림에서 각각 소비한다.
+    this.villageColliders = this.readObjectRects(map, "colliders");
+    this.villageAbove = this.readObjectRects(map, "above");
+    this.createWorldOverlays();
+
+    // 스폰 point(원본 px) → 월드 좌표. 없으면 월드 중앙 폴백.
+    const spawnObj = map.getObjectLayer("spawn")?.objects?.[0];
+    const spawn = spawnObj
+      ? { x: (spawnObj.x ?? 0) * scale, y: (spawnObj.y ?? 0) * scale }
+      : { x: width / 2, y: height / 2 };
+    return { width, height, spawn };
+  }
+
+  // Tiled objectgroup 의 사각형 오브젝트를 원본 px Rect 배열로 읽는다.
+  private readObjectRects(map: Phaser.Tilemaps.Tilemap, name: string): Rect[] {
+    return (map.getObjectLayer(name)?.objects ?? []).map((o) => ({
+      x: o.x ?? 0,
+      y: o.y ?? 0,
+      w: o.width ?? 0,
+      h: o.height ?? 0,
+    }));
+  }
+
+  /**
+   * tilemap 맵: 기존 Serene Village 타일맵을 레이어별로 렌더한다.
+   *  - ground/decoration_0..2/above_0..1 을 SCALE 배로 그린다.
+   *  - decoration 레이어는 collides 속성으로 충돌을 켜 두고(this.decorationLayers 에 저장),
+   *    실제 collider 결선은 applyWorldCollisions 에서 스프라이트 생성 후에 한다.
+   *  - above_0/1 은 depth 10/11 로 캐릭터 위에 그려 가림 입체감을 낸다.
+   * tileset/필수 레이어가 null 이면 null 을 돌려주고 create() 가 안전하게 중단한다.
+   */
+  private buildTilemapWorld(): {
+    width: number;
+    height: number;
+    spawn: { x: number; y: number };
+  } | null {
+    const L = GAME_CONFIG.LAYER;
+    const map = this.make.tilemap({
+      key: "map",
+      tileWidth: L.TILE_WIDTH,
+      tileHeight: L.TILE_HEIGHT,
+    });
+    const tileset = map.addTilesetImage("Serene_Village_32x32", "map");
+    if (!tileset) {
+      console.error("Tileset is null");
+      return null;
+    }
+
+    const layer = (name: string, depth?: number) => {
+      const l = map.createLayer(name, tileset, 0, 0);
+      if (!l) {
+        console.error(`Layer '${name}' is null`);
+        return null;
+      }
+      l.setScale(L.SCALE);
+      if (depth !== undefined) l.setDepth(depth);
+      return l;
+    };
+
+    const ground = layer("ground");
+    const decoration0 = layer("decoration_0");
+    const decoration1 = layer("decoration_1");
+    const decoration2 = layer("decoration_2");
+    const above0 = layer("above_0", 10);
+    const above1 = layer("above_1", 11);
+    if (
+      !ground ||
+      !decoration0 ||
+      !decoration1 ||
+      !decoration2 ||
+      !above0 ||
+      !above1
+    ) {
+      return null;
+    }
+
+    // decoration 레이어에 충돌 속성을 켜 두고(결선은 applyWorldCollisions), 참조를 저장한다.
+    this.decorationLayers = [decoration0, decoration1, decoration2];
+    this.decorationLayers.forEach((l) =>
+      l.setCollisionByProperty({ collides: true })
+    );
+
+    const width = L.TILE_WIDTH * map.width * L.SCALE;
+    const height = L.TILE_HEIGHT * map.height * L.SCALE;
+    // 타일맵은 중앙 스폰(기존 동작 유지).
+    return { width, height, spawn: { x: width / 2, y: height / 2 } };
+  }
+
+  /**
+   * 맵 종류에 맞게 충돌을 스프라이트에 결선한다.
+   *  - tilemap: decoration 레이어들과 collider.
+   *  - village: VILLAGE_COLLIDERS 기반 static 존과 collider(createWorldColliders).
+   */
+  private applyWorldCollisions(sprite: Phaser.Physics.Arcade.Sprite): void {
+    if (this.mapKind === MAPS.TILEMAP) {
+      this.decorationLayers.forEach((l) =>
+        this.physics.add.collider(sprite, l)
+      );
+    } else {
+      this.createWorldColliders(sprite);
+    }
+  }
+
+  /**
+   * above(가림) 오버레이 생성. 같은 village-bg 텍스처를 VILLAGE_ABOVE_REGIONS 각 영역만
+   * setCrop 으로 잘라 캐릭터 위(depth 10)에 다시 얹는다. 원본과 동일 위치·배율이라 정확히
+   * 겹친다. 캐릭터가 밑동으로 들어가면 이 조각이 위를 덮어 가림 입체감을 만든다.
+   */
+  private createWorldOverlays(): void {
+    const scale = VILLAGE_SCALE;
+    this.villageAbove.forEach((region) => {
+      // setCrop 은 텍스처 원본 px 좌표계라 미확대 region 을 그대로 쓴다.
+      this.add
+        .image(0, 0, "village-bg")
+        .setOrigin(0, 0)
+        .setScale(scale)
+        .setCrop(region.x, region.y, region.w, region.h)
+        .setDepth(10);
+    });
+  }
+
+  /**
+   * 충돌 static 바디 생성. VILLAGE_COLLIDERS 각 영역(원본 px)을 배율 환산해 보이지 않는
+   * 사각형 존으로 만들고 내 스프라이트와 collider 로 묶는다. ?debugWorld 시 존을 빨강으로 표시.
+   */
+  private createWorldColliders(sprite: Phaser.Physics.Arcade.Sprite): void {
+    const scale = VILLAGE_SCALE;
+    const debug = this.isWorldDebug();
+    const zones = this.villageColliders.map((region) => {
+      const s = scaleRect(region, scale);
+      // rectangle 은 origin 0.5 → 중심 좌표로 배치한다.
+      const zone = this.add.rectangle(
+        s.x + s.w / 2,
+        s.y + s.h / 2,
+        s.w,
+        s.h,
+        0xff0000,
+        debug ? 0.35 : 0
+      );
+      zone.setVisible(debug);
+      if (debug) zone.setDepth(30);
+      this.physics.add.existing(zone, true); // static body
+      return zone;
+    });
+    this.physics.add.collider(sprite, zones);
+  }
+
   // e2e 테스트 훅: URL 에 ?e2e 가 있을 때만 원격 스프라이트/내 위치를 읽기 전용으로 노출한다.
   // 위치 broadcast 가 원격 화면에 반영되는지(#51)를 headless 브라우저에서 assert 하기 위함이며,
   // 프로덕션 사용 흐름에는 파라미터가 없어 노출되지 않는다(좌표 외의 정보는 노출하지 않는다).
@@ -376,6 +531,16 @@ export default class SmallVillageScene extends Phaser.Scene {
           offsetY: GAME_CONFIG.PROXIMITY_RING.OFFSET_Y,
         };
       },
+      // 현재 방의 맵 종류. e2e 가 올바른 맵이 로드됐는지 assert 할 때 쓴다.
+      map: () => this.mapKind,
+      // 충돌 영역(월드 좌표 사각형). village 맵에서만 사각형 기반이라 그때만 노출한다
+      // (타일맵은 타일 기반 충돌이라 사각형 목록이 없다 → 빈 배열).
+      worldColliders: () =>
+        this.mapKind === MAPS.VILLAGE
+          ? this.villageColliders.map((r) => scaleRect(r, VILLAGE_SCALE))
+          : [],
+      // 월드 크기(경계 검증/이동 계획용). 실제 로드된 맵 크기를 돌려준다.
+      worldSize: () => ({ width: this.mapWidth, height: this.mapHeight }),
     };
   }
 

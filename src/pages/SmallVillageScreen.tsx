@@ -151,6 +151,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       characterName,
       roomId: room.id,
       userId,
+      // 방에 저장된 맵으로 월드를 그린다(누락/무효면 씬의 resolveMap 이 기본 맵으로 폴백).
+      map: room.map,
     });
 
     // READY 이후 3초 대기(씬 준비)와 무관하게 체류시간 측정 기준점은 READY

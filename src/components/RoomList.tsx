@@ -18,6 +18,7 @@ import { RefreshCw, Users } from "lucide-react";
 import { Room } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
 import PixelHouse from "./PixelHouse";
+import { MAP_LABELS, resolveMap } from "../lib/mapKind";
 
 interface RoomListProps {
   disabled: boolean;
@@ -74,6 +75,9 @@ const RoomList: React.FC<RoomListProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold text-stone-800">
                       {room.title}
+                    </span>
+                    <span className="inline-flex shrink-0 items-center rounded-md bg-sky-500/15 px-1.5 py-0.5 text-xs font-medium text-sky-700">
+                      {MAP_LABELS[resolveMap(room.map)]}
                     </span>
                     {count > 0 ? (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-700">

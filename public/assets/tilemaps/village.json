@@ -1,0 +1,78 @@
+{
+  "compressionlevel": -1,
+  "width": 22,
+  "height": 18,
+  "tilewidth": 32,
+  "tileheight": 32,
+  "infinite": false,
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.10.2",
+  "nextlayerid": 5,
+  "nextobjectid": 16,
+  "tilesets": [],
+  "layers": [
+    {
+      "type": "imagelayer",
+      "id": 1,
+      "name": "background",
+      "image": "../village-bg.png",
+      "imagewidth": 704,
+      "imageheight": 576,
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "type": "objectgroup",
+      "id": 2,
+      "name": "colliders",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        { "id": 1, "name": "waterfall-pond", "type": "", "x": 0, "y": 0, "width": 150, "height": 200, "rotation": 0, "visible": true },
+        { "id": 2, "name": "pines-top-center", "type": "", "x": 175, "y": 0, "width": 300, "height": 140, "rotation": 0, "visible": true },
+        { "id": 3, "name": "pines-top-right", "type": "", "x": 590, "y": 0, "width": 114, "height": 145, "rotation": 0, "visible": true },
+        { "id": 4, "name": "inn-base", "type": "", "x": 235, "y": 285, "width": 210, "height": 70, "rotation": 0, "visible": true },
+        { "id": 5, "name": "lower-center-building", "type": "", "x": 325, "y": 420, "width": 120, "height": 105, "rotation": 0, "visible": true },
+        { "id": 6, "name": "bottom-left-building", "type": "", "x": 30, "y": 505, "width": 295, "height": 71, "rotation": 0, "visible": true },
+        { "id": 7, "name": "right-hut-field", "type": "", "x": 585, "y": 255, "width": 119, "height": 105, "rotation": 0, "visible": true },
+        { "id": 8, "name": "bottom-right-rocks", "type": "", "x": 585, "y": 515, "width": 119, "height": 61, "rotation": 0, "visible": true }
+      ]
+    },
+    {
+      "type": "objectgroup",
+      "id": 3,
+      "name": "above",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        { "id": 9, "name": "rocks-top", "type": "", "x": 0, "y": 0, "width": 150, "height": 130, "rotation": 0, "visible": true },
+        { "id": 10, "name": "pines-canopy-center", "type": "", "x": 175, "y": 0, "width": 300, "height": 120, "rotation": 0, "visible": true },
+        { "id": 11, "name": "pines-canopy-right", "type": "", "x": 590, "y": 0, "width": 114, "height": 120, "rotation": 0, "visible": true },
+        { "id": 12, "name": "inn-roof", "type": "", "x": 235, "y": 150, "width": 210, "height": 150, "rotation": 0, "visible": true },
+        { "id": 13, "name": "lower-center-roof", "type": "", "x": 325, "y": 355, "width": 120, "height": 75, "rotation": 0, "visible": true },
+        { "id": 14, "name": "bottom-left-roof", "type": "", "x": 30, "y": 450, "width": 295, "height": 65, "rotation": 0, "visible": true }
+      ]
+    },
+    {
+      "type": "objectgroup",
+      "id": 4,
+      "name": "spawn",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        { "id": 15, "name": "spawn", "type": "", "x": 110, "y": 415, "width": 0, "height": 0, "point": true, "rotation": 0, "visible": true }
+      ]
+    }
+  ]
+}
