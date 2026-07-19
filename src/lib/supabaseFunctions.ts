@@ -1,10 +1,15 @@
 import { supabase } from "./supabaseClient";
+import { DEFAULT_MAP, MapKind } from "./mapKind";
 
-export const  createMeeting = async (title: string): Promise<string> => {
+export const  createMeeting = async (
+  title: string,
+  map: MapKind = DEFAULT_MAP
+): Promise<string> => {
   try {
     const { data } = await supabase.functions.invoke("create-meeting", {
       body: {
-        title
+        title,
+        map,
       },
     });
     return data.meeting_id;
