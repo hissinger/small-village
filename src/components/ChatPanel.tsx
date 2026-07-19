@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { Send, X } from "lucide-react";
+import { ChevronDown, Send, X } from "lucide-react";
 import {
   CHANNEL_MESSAGE,
   Message,
@@ -28,6 +28,7 @@ import { useRoomContext } from "../context/RoomContext";
 import { pushEvent } from "../lib/analytics";
 import { ANALYTICS_EVENTS } from "../constants";
 import Linkify from "linkify-react";
+import { isScrolledToBottom } from "../lib/chatScroll";
 
 const CHAT_CONSTANTS = {
   INPUT: {
@@ -56,8 +57,12 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isComposing, setIsComposing] = useState(false);
+  const [showJumpButton, setShowJumpButton] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { sendMessage } = useMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const { userId, userName, roomId } = useRoomContext();
@@ -83,12 +88,44 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
     }
   };
 
-  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+  // 맨 아래에 붙었다고 표시하고 점프 버튼/안 읽은 배지를 초기화한다.
+  const markAtBottom = () => {
+    isAtBottomRef.current = true;
+    setShowJumpButton(false);
+    setUnreadCount(0);
   };
 
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+    markAtBottom();
+  };
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    if (isScrolledToBottom(container)) {
+      markAtBottom();
+    } else {
+      // 위로 스크롤해 있는 동안은 항상 "최근 메시지로 이동" 버튼을 노출한다.
+      isAtBottomRef.current = false;
+      setShowJumpButton(true);
+    }
+  };
+
+  // 맨 아래에 붙어 있을 때만 새 메시지를 따라 내려간다.
+  // 위로 스크롤해 과거 메시지를 보는 중이면 위치를 유지하고 안 읽은 수만 센다.
+  // 패널이 닫혀 있으면 아무 것도 하지 않는다(재오픈 시 아래 isOpen 효과가 맨 아래로 보냄).
   useEffect(() => {
-    scrollToBottom();
+    if (!isOpen || messages.length === 0) return;
+    if (isAtBottomRef.current) {
+      // 즉시 스크롤 — smooth 애니메이션 중 onScroll 이 "맨 아래 아님"으로 오판해
+      // 점프 버튼이 깜빡이는 걸 막는다.
+      scrollToBottom("auto");
+    } else {
+      // 위로 스크롤 중이면 handleScroll 이 이미 버튼을 켜둔 상태 — 배지 수만 올린다.
+      setUnreadCount((count) => count + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   useEffect(() => {
@@ -96,9 +133,10 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
       textAreaRef.current.style.height = `${CHAT_CONSTANTS.INPUT.MIN_HEIGHT}px`;
     }
 
-    if (isOpen && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView();
+    if (isOpen) {
+      scrollToBottom("auto");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
@@ -131,6 +169,8 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
       timestamp: new Date().toISOString(),
     };
     sendMessage(CHANNEL_MESSAGE, payload);
+    // 내가 보낸 메시지는 위치와 무관하게 항상 맨 아래로 따라 내려간다.
+    isAtBottomRef.current = true;
     // 본문(개인정보)은 절대 보내지 않는다 — 길이만 계측한다.
     pushEvent(ANALYTICS_EVENTS.CHAT_MESSAGE_SENT, {
       room_id: roomId,
@@ -215,8 +255,14 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((msg, index) => {
+      <div className="flex-1 relative overflow-hidden">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto p-4"
+          data-testid="chat-scroll"
+        >
+          {messages.map((msg, index) => {
           const isMine = msg.senderId === userId;
           return (
             <div
@@ -252,7 +298,20 @@ const ChatPanel = ({ isOpen, onClose }: ChatPanelProps) => {
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
+
+        {showJumpButton && (
+          <button
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500 text-white text-sm font-medium shadow-md hover:bg-blue-600 transition-colors"
+            aria-label="최근 메시지로 이동"
+            data-testid="chat-jump-button"
+          >
+            {unreadCount > 0 && <span>새 메시지 {unreadCount}개</span>}
+            <ChevronDown size={16} />
+          </button>
+        )}
       </div>
 
       <div className="p-4 border-t border-gray-200 bg-white">
