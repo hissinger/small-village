@@ -26,7 +26,13 @@ type TileLayer = {
 type ObjectLayer = {
   name: string;
   type: "objectgroup";
-  objects: Array<{ name?: string; type?: string; x?: number; y?: number }>;
+  objects: Array<{
+    name?: string;
+    type?: string;
+    x?: number;
+    y?: number;
+    properties?: Array<{ name: string; value: unknown }>;
+  }>;
 };
 
 const map = JSON.parse(
@@ -144,5 +150,73 @@ describe("office Tiled map", () => {
         .flatMap((layer: ObjectLayer) => layer.objects)
         .some((object: { type?: string }) => object.type === "character")
     ).toBe(false);
+  });
+
+  it("예시의 다섯 워크스테이션을 사람·동물 없이 가구 메타데이터로 정의한다", () => {
+    const furniture = map.layers.find(
+      (layer: ObjectLayer) => layer.name === "furniture"
+    ) as ObjectLayer;
+
+    expect(furniture.objects.map(({ name }) => name)).toEqual([
+      "workstation_pod_1",
+      "workstation_pod_2",
+      "workstation_pod_3",
+      "workstation_pod_4",
+      "workstation_pod_5",
+    ]);
+    expect(
+      furniture.objects.some(({ type }) =>
+        ["character", "animal"].includes(type ?? "")
+      )
+    ).toBe(false);
+    furniture.objects.forEach(({ properties }) => {
+      expect(properties).toContainEqual({
+        name: "frontPartition",
+        type: "bool",
+        value: true,
+      });
+      expect(properties).toContainEqual({
+        name: "frontPlant",
+        type: "bool",
+        value: true,
+      });
+      expect(properties).toContainEqual({
+        name: "centralWallStartPx",
+        type: "int",
+        value: 0,
+      });
+      expect(properties).toContainEqual({
+        name: "centralWallEndPx",
+        type: "int",
+        value: 60,
+      });
+    });
+
+    const openWorkspace = furniture.objects.filter(
+      ({ x, y }) =>
+        (x ?? 0) >= 16 * map.tilewidth && (y ?? 0) < 11 * map.tileheight
+    );
+    const focusRoom = furniture.objects.filter(
+      ({ x, y }) =>
+        (x ?? 0) < 16 * map.tilewidth && (y ?? 0) >= 11 * map.tileheight
+    );
+    expect(openWorkspace).toHaveLength(4);
+    expect(focusRoom).toHaveLength(1);
+    expect(Math.min(...openWorkspace.map(({ x }) => x ?? 0))).toBe(
+      20.5 * map.tilewidth
+    );
+    expect(focusRoom[0]).toMatchObject({
+      x: 7.5 * map.tilewidth,
+      y: 16.5 * map.tileheight + 55,
+    });
+    expect(
+      furniture.objects
+        .find(({ name }) => name === "workstation_pod_5")
+        ?.properties
+    ).toContainEqual({
+      name: "wallDecor",
+      type: "string",
+      value: "example-note-and-green-display",
+    });
   });
 });

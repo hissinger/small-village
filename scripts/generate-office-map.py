@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +23,7 @@ TINY_COLUMNS = 10
 TINY_FIRST_GID = 1
 OFFICE_FIRST_GID = 101
 ATLAS_COLUMNS = 16
+WORKSTATION_FRONT_EXTENSION = 30 / TILE_SIZE
 
 
 SPRITES = {
@@ -49,11 +50,25 @@ SPRITES = {
 
 PREFAB_PIECES = {
     "partition": (171, 44, 250, 61),
-    "desk": (85, 47, 111, 63),
+    "orange_desk": (85, 47, 111, 63),
+    "yellow_desk": (188, 63, 205, 82),
     "chair": (71, 41, 82, 63),
-    "computer": (233, 106, 248, 125),
+    "computer_wide": (233, 106, 248, 125),
+    "computer_thin": (233, 128, 250, 158),
     "terminal": (169, 95, 177, 102),
     "tower": (159, 91, 166, 102),
+    "india_flag": (179, 94, 191, 103),
+    "uk_flag": (193, 94, 205, 103),
+    "us_flag": (207, 94, 219, 103),
+    "paper": (183, 105, 191, 116),
+    "notes": (217, 106, 224, 116),
+    "blue_display": (221, 94, 230, 103),
+    "pod5_display_base": (222, 94, 228, 102),
+    "outlet": (211, 151, 222, 158),
+    "red_drawer": (211, 119, 222, 127),
+    "blue_drawer": (211, 129, 222, 138),
+    "green_drawer": (211, 140, 222, 149),
+    "red_bin": (126, 143, 135, 157),
 }
 
 
@@ -91,30 +106,150 @@ class OfficeAtlas:
         if name in SPRITES:
             return scaled(SPRITES[name])
 
-        if name in {"workstation_left", "workstation_right"}:
-            # Pixel Office is a scene-asset pack, not a directional tileset.
-            # Preserve the source perspective and reproduce its demonstrated
-            # cubicle composition instead of rotating individual pieces.
+        if name.startswith("workstation_pod_"):
+            # Rebuild the five cubicle pods demonstrated in the pack example.
+            # Human and animal sprites are deliberately excluded from map
+            # furniture; only the source furniture/decor pieces are composed.
             partition = scaled(PREFAB_PIECES["partition"])
-            desk = scaled(PREFAB_PIECES["desk"])
+            desk = scaled(PREFAB_PIECES["yellow_desk"])
             chair = scaled(PREFAB_PIECES["chair"])
-            computer = scaled(PREFAB_PIECES["computer"])
-            workstation = Image.new("RGBA", (158, 60))
-            workstation.alpha_composite(partition, (0, 0))
-            if name == "workstation_left":
-                chair_x, desk_x, computer_x = 14, 44, 44
+            computer_wide = scaled(PREFAB_PIECES["computer_wide"])
+            computer_thin = scaled(PREFAB_PIECES["computer_thin"])
+            terminal = scaled(PREFAB_PIECES["terminal"])
+            outlet = scaled(PREFAB_PIECES["outlet"])
+            plant = scaled(SPRITES["plant"])
+
+            pod5_note = Image.new("RGBA", (4, 6))
+            pod5_note.putdata(
+                [
+                    (177, 62, 83, 255),
+                    (177, 62, 83, 255),
+                    (51, 60, 87, 255),
+                    (177, 62, 83, 255),
+                    *((255, 205, 117, 255),) * 4,
+                    (255, 205, 117, 255),
+                    (239, 125, 87, 255),
+                    (239, 125, 87, 255),
+                    (255, 205, 117, 255),
+                    *((255, 205, 117, 255),) * 8,
+                    *((148, 176, 194, 255),) * 4,
+                ]
+            )
+            pod5_note = pod5_note.resize((8, 12), Image.Resampling.NEAREST)
+
+            pod5_display = scaled(PREFAB_PIECES["pod5_display_base"])
+            display_palette = {
+                (115, 239, 247, 255): (167, 240, 112, 255),
+                (65, 166, 246, 255): (56, 183, 100, 255),
+                (59, 93, 201, 255): (37, 113, 121, 255),
+            }
+            pod5_display.putdata(
+                [display_palette.get(pixel, pixel) for pixel in pod5_display.getdata()]
+            )
+
+            pod = Image.new("RGBA", (158, 110))
+            pod.alpha_composite(partition, (0, 0))
+
+            # Match the example's shared wall: it starts at the rear
+            # partition cap and runs between both desks until it meets the
+            # foreground partition. Colors come from the pack's wall tiles.
+            central_wall = Image.new("RGBA", (8, 60))
+            wall_pixels = central_wall.load()
+            for wall_y in range(60):
+                for wall_x in range(8):
+                    if wall_y < 2:
+                        color = (148, 176, 194, 255)
+                    elif wall_y < 6 or 2 <= wall_x < 6:
+                        color = (244, 244, 244, 255)
+                    else:
+                        color = (86, 108, 134, 255)
+                    wall_pixels[wall_x, wall_y] = color
+
+            def left_wide():
+                pod.alpha_composite(chair, (14, 14))
+                pod.alpha_composite(desk, (38, 22))
+                pod.alpha_composite(computer_wide, (40, 12))
+
+            def left_thin(with_terminal=True):
+                pod.alpha_composite(chair, (14, 14))
+                pod.alpha_composite(desk, (38, 22))
+                pod.alpha_composite(computer_thin, (38, 12))
+                if with_terminal:
+                    pod.alpha_composite(terminal, (54, 44))
+
+            def right_wide(drawer_name=None):
+                pod.alpha_composite(desk, (80, 22))
+                pod.alpha_composite(
+                    ImageOps.mirror(computer_wide),
+                    (82, 12),
+                )
+                if drawer_name:
+                    pod.alpha_composite(
+                        scaled(PREFAB_PIECES[drawer_name]),
+                        (84, 50),
+                    )
+                pod.alpha_composite(ImageOps.mirror(chair), (116, 14))
+
+            def cabinet(drawer_name):
+                pod.alpha_composite(desk, (80, 22))
+                pod.alpha_composite(outlet, (84, 28))
+                pod.alpha_composite(
+                    scaled(PREFAB_PIECES[drawer_name]),
+                    (84, 42),
+                )
+
+            if name == "workstation_pod_1":
+                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
+                pod.alpha_composite(scaled(PREFAB_PIECES["us_flag"]), (128, 10))
+                left_wide()
+                cabinet("red_drawer")
+            elif name == "workstation_pod_2":
+                pod.alpha_composite(scaled(PREFAB_PIECES["india_flag"]), (8, 10))
+                pod.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
+                left_thin()
+                right_wide("green_drawer")
+            elif name == "workstation_pod_3":
+                pod.alpha_composite(scaled(PREFAB_PIECES["blue_display"]), (8, 10))
+                pod.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
+                left_thin(with_terminal=False)
+                right_wide("green_drawer")
+            elif name == "workstation_pod_4":
+                pod.alpha_composite(scaled(PREFAB_PIECES["uk_flag"]), (8, 10))
+                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (134, 10))
+                left_thin(with_terminal=False)
+                pod.alpha_composite(desk, (80, 22))
+                pod.alpha_composite(
+                    scaled(PREFAB_PIECES["blue_drawer"]),
+                    (84, 42),
+                )
+                pod.alpha_composite(
+                    scaled(PREFAB_PIECES["red_bin"]),
+                    (126, 38),
+                )
+            elif name == "workstation_pod_5":
+                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
+                pod.alpha_composite(pod5_note, (126, 10))
+                pod.alpha_composite(pod5_display, (138, 10))
+                left_wide()
+                cabinet("red_drawer")
             else:
-                # Keep the same chair-to-desk direction and shift the complete
-                # arrangement right within the partition. The source pack has
-                # no opposite-facing chair, so mirroring it would be invalid.
-                chair_x, desk_x, computer_x = 76, 104, 104
-            workstation.alpha_composite(chair, (chair_x, 14))
-            workstation.alpha_composite(desk, (desk_x, 28))
-            workstation.alpha_composite(computer, (computer_x, 8))
-            return workstation
+                raise ValueError(f"unknown workstation pod: {name}")
+
+            pod.alpha_composite(central_wall, (72, 0))
+            # In the pack example the following cubicle row masks the desks'
+            # unsupported lower edge. Standalone map pods need their own
+            # foreground partition to preserve the same depth cue.
+            pod.alpha_composite(partition, (0, 60))
+            plant_x = 122 if name in {
+                "workstation_pod_1",
+                "workstation_pod_3",
+                "workstation_pod_5",
+            } else 8
+            pod.alpha_composite(plant, (plant_x, 72))
+            return pod
 
         if name == "service_counter":
-            desk = scaled(PREFAB_PIECES["desk"])
+            desk = scaled(PREFAB_PIECES["orange_desk"])
             terminal = scaled(PREFAB_PIECES["terminal"])
             tower = scaled(PREFAB_PIECES["tower"])
             counter = Image.new("RGBA", (52, 42))
@@ -324,6 +459,14 @@ def build_map(atlas: OfficeAtlas) -> dict:
             **kwargs,
         )
 
+    workstation_pods = (
+        ("workstation_pod_1", 20.5, 5.0 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_2", 28.5, 5.0 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_3", 20.5, 9.0 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_4", 28.5, 9.0 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_5", 7.5, 16.5 + 55 / TILE_SIZE),
+    )
+
     # Reception and waiting area. All front-facing furniture backs onto a
     # wall; the entrance axis at x=7..8 remains open to the internal passage.
     place_at("couch_peach", 3.8, 4.1)
@@ -335,22 +478,16 @@ def build_map(atlas: OfficeAtlas) -> dict:
     place_at("water_cooler", 1.5, 8.8)
     place_at("bin_green", 10.3, 5.0, decorative=True)
 
-    # Open workspace: validated left/right cubicle modules repeat in two
-    # perimeter banks. Their source perspective is never rotated, and a
-    # four-tile center aisle connects the exterior and internal doors.
+    # Open workspace: four source-example pods form a balanced 2x2 bank while
+    # keeping the room's west passage and center aisle clear.
     place_at("clock", 27.8, 1.7, collides=False)
-    for y in (5.0, 9.0):
-        place_at("workstation_left", 19.5, y)
-        place_at("workstation_right", 28.5, y)
-    place_at("bin_blue", 22.0, 9.1, decorative=True)
-    place_at("plant", 25.5, 9.1, decorative=True)
+    for name, x, y in workstation_pods[:4]:
+        place_at(name, x, y)
 
-    # Focus room. The pack has no perspective-correct conference set, so this
-    # room uses two quiet cubicles instead of fabricated rotated chairs.
-    place_at("calendar", 3.8, 11.85, collides=False)
-    place_at("clock", 12.2, 11.7, collides=False)
-    place_at("workstation_left", 4.0, 14.8)
-    place_at("workstation_right", 11.5, 14.8)
+    # Focus room: the final pod stands alone, without the person or animal
+    # sprites visible in the pack's sample scene.
+    for name, x, y in workstation_pods[4:]:
+        place_at(name, x, y)
     place_at("bookshelf", 1.5, 20.5)
     place_at("plant", 13.8, 20.3, decorative=True)
     place_at("bin_red", 11.8, 20.5, decorative=True)
@@ -364,7 +501,6 @@ def build_map(atlas: OfficeAtlas) -> dict:
     place_at("bin_green", 21.8, 14.2, decorative=True)
     place_at("couch_gray", 27.5, 14.0)
     place_at("plant", 30.1, 14.0, decorative=True)
-    place_at("cat", 27.5, 18.5, decorative=True, collides=False)
 
     office_tile_count, atlas_size = atlas.save()
     atlas_width, atlas_height = atlas_size
@@ -432,9 +568,65 @@ def build_map(atlas: OfficeAtlas) -> dict:
                 "x": 0,
                 "y": 0,
             },
+            {
+                "id": 9,
+                "name": "furniture",
+                "type": "objectgroup",
+                "draworder": "topdown",
+                "opacity": 1,
+                "visible": True,
+                "objects": [
+                    {
+                        "id": index + 6,
+                        "name": name,
+                        "point": True,
+                        "rotation": 0,
+                        "type": "furniture",
+                        "visible": True,
+                        "x": x * TILE_SIZE,
+                        "y": y * TILE_SIZE,
+                        "properties": [
+                            {
+                                "name": "frontPartition",
+                                "type": "bool",
+                                "value": True,
+                            },
+                            {
+                                "name": "frontPlant",
+                                "type": "bool",
+                                "value": True,
+                            },
+                            {
+                                "name": "centralWallStartPx",
+                                "type": "int",
+                                "value": 0,
+                            },
+                            {
+                                "name": "centralWallEndPx",
+                                "type": "int",
+                                "value": 60,
+                            },
+                            *(
+                                [
+                                    {
+                                        "name": "wallDecor",
+                                        "type": "string",
+                                        "value": "example-note-and-green-display",
+                                    }
+                                ]
+                                if name == "workstation_pod_5"
+                                else []
+                            ),
+                        ],
+                    }
+                    for index, (name, x, y) in enumerate(workstation_pods)
+                ],
+                "x": 0,
+                "y": 0,
+            },
         ],
-        "nextlayerid": 9,
-        "nextobjectid": 6,
+        "nextlayerid": 10,
+        "nextobjectid": 11,
         "orientation": "orthogonal",
         "renderorder": "right-down",
         "tiledversion": "1.11.0",

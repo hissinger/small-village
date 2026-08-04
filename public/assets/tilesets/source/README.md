@@ -30,7 +30,9 @@ The names below were verified against the pack's included
 | `clock` | `159,108,178,114` | Digital wall clock |
 | `water_cooler` | `147,140,156,157` | Water cooler |
 | `bin_green/red/blue` | `116..145,143..157` | Recycling/waste bins |
-| `computer` | `233,106,248,125` | Computer and keyboard unit |
+| `computer_wide` | `233,106,248,125` | Wide computer and keyboard unit |
+| `computer_thin` | `233,128,250,158` | Thin computer and keyboard unit |
+| `yellow_desk` | `188,63,205,82` | Yellow cubicle desk panel |
 | `cat` | `59,146,83,157` | Resting cat |
 
 The blue strip at `3,68,76,92` is part of the example scene's floor/platform,
@@ -40,17 +42,23 @@ construction pieces are intentionally not placed as freestanding furniture.
 
 ## Composition rules
 
-Pixel Office is a scene-asset pack rather than a directional tileset. The map
-therefore does not rotate chairs, desks, computers, or sofas to invent missing
-views. `scripts/generate-office-map.py` builds only these source-compatible
-prefabs before placing furniture:
+Pixel Office is a scene-asset pack rather than a directional tileset.
+`scripts/generate-office-map.py` rebuilds the five cubicle pods demonstrated
+in `LargePixelOffice.png` from the individual source pieces. The pods preserve
+the example's yellow desks, central walls, paired computer types, chairs,
+storage, and wall decorations. Mirroring is used only where the example itself
+shows the opposite-facing chair/computer arrangement.
 
-- `workstation_left` — source-facing chair and adjacent desk/computer aligned
-  to the left side of a partition.
-- `workstation_right` — the same unrotated composition shifted to the right
-  side of a partition. It is not mirrored because no opposite-facing chair is
-  provided by the source pack.
-- `service_counter` — horizontal desk, small terminal, and tower.
+Each shared center wall uses the pack's wall palette and runs from the rear
+partition cap to the foreground partition, matching the example's divider.
+
+Human sprites and the animal beside the fifth pod are intentionally excluded
+from the generated map. `service_counter` remains a separate composition of
+the orange desk, small terminal, and tower.
+
+The fifth pod's right-side wall decor follows the example: a small memo pad
+and a green status display. The display reuses the source blue display's exact
+geometry with the green palette shown in `LargePixelOffice.png`.
 
 Wall decorations are anchored to wall faces. Front-facing sofas, bookcases,
 vending machines, water coolers, and plants are placed along perimeter walls
