@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { getPlayerCollisionBody } from "./playerCollisionBody";
+import {
+  getPlayerCollisionBody,
+  getPlayerCollisionFootprint,
+  getPlayerSortY,
+} from "./playerCollisionBody";
 
 describe("getPlayerCollisionBody", () => {
   it("20x32 캐릭터의 발밑 10x8만 충돌 영역으로 사용한다", () => {
@@ -34,5 +38,22 @@ describe("getPlayerCollisionBody", () => {
     expect(body.offsetX * 2 + body.width).toBe(frameWidth);
     expect(body.offsetY + body.height).toBe(frameHeight);
     expect(body.offsetY).toBeGreaterThan(frameHeight / 2);
+  });
+});
+
+describe("getPlayerCollisionFootprint", () => {
+  it("Office 맵 감사에 실제 Phaser 배율과 발 바디 오프셋을 반영한다", () => {
+    expect(getPlayerCollisionFootprint(20, 32, 2.5, 2)).toEqual({
+      x: -6.25,
+      y: 10,
+      width: 12.5,
+      height: 10,
+    });
+  });
+});
+
+describe("getPlayerSortY", () => {
+  it("캐릭터 중심이 아니라 화면에 표시된 발끝을 깊이 기준으로 사용한다", () => {
+    expect(getPlayerSortY(280, 64)).toBe(312);
   });
 });

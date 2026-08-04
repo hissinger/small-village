@@ -25,6 +25,22 @@ OFFICE_FIRST_GID = 101
 ATLAS_COLUMNS = 16
 WORKSTATION_FRONT_EXTENSION = 30 / TILE_SIZE
 
+# Object-layer collision footprints measured at each sprite's floor contact.
+# Values are map-source pixels (the rendered map is scaled later by Phaser).
+# Full tile collision is deliberately avoided because it over-blocks up to
+# 32 px of empty floor around small furniture.
+FURNITURE_FOOTPRINTS = {
+    "couch_gray": (58, 6),
+    "couch_peach": (58, 6),
+    "plant": (14, 8),
+    "service_counter": (48, 8),
+    "bookshelf": (44, 8),
+    "water_cooler": (14, 8),
+    "bin_green": (14, 8),
+    "bin_red": (14, 8),
+    "vending_machine": (42, 8),
+}
+
 
 SPRITES = {
     "vending_machine": (159, 123, 183, 157),
@@ -107,6 +123,11 @@ class OfficeAtlas:
             return scaled(SPRITES[name])
 
         if name.startswith("workstation_pod_"):
+            pod_name = (
+                name.removesuffix("_back")
+                .removesuffix("_furniture")
+                .removesuffix("_front")
+            )
             # Rebuild the five cubicle pods demonstrated in the pack example.
             # Human and animal sprites are deliberately excluded from map
             # furniture; only the source furniture/decor pieces are composed.
@@ -147,8 +168,9 @@ class OfficeAtlas:
                 [display_palette.get(pixel, pixel) for pixel in pod5_display.getdata()]
             )
 
-            pod = Image.new("RGBA", (158, 110))
-            pod.alpha_composite(partition, (0, 0))
+            back = Image.new("RGBA", (158, 60))
+            furniture = Image.new("RGBA", (158, 60))
+            back.alpha_composite(partition, (0, 0))
 
             # Match the example's shared wall: it starts at the rear
             # partition cap and runs between both desks until it meets the
@@ -166,85 +188,94 @@ class OfficeAtlas:
                     wall_pixels[wall_x, wall_y] = color
 
             def left_wide():
-                pod.alpha_composite(chair, (14, 14))
-                pod.alpha_composite(desk, (38, 22))
-                pod.alpha_composite(computer_wide, (40, 12))
+                furniture.alpha_composite(chair, (14, 14))
+                furniture.alpha_composite(desk, (38, 22))
+                furniture.alpha_composite(computer_wide, (40, 12))
 
             def left_thin(with_terminal=True):
-                pod.alpha_composite(chair, (14, 14))
-                pod.alpha_composite(desk, (38, 22))
-                pod.alpha_composite(computer_thin, (38, 12))
+                furniture.alpha_composite(chair, (14, 14))
+                furniture.alpha_composite(desk, (38, 22))
+                furniture.alpha_composite(computer_thin, (38, 12))
                 if with_terminal:
-                    pod.alpha_composite(terminal, (54, 44))
+                    furniture.alpha_composite(terminal, (54, 44))
 
             def right_wide(drawer_name=None):
-                pod.alpha_composite(desk, (80, 22))
-                pod.alpha_composite(
+                furniture.alpha_composite(desk, (80, 22))
+                furniture.alpha_composite(
                     ImageOps.mirror(computer_wide),
                     (82, 12),
                 )
                 if drawer_name:
-                    pod.alpha_composite(
+                    furniture.alpha_composite(
                         scaled(PREFAB_PIECES[drawer_name]),
                         (84, 50),
                     )
-                pod.alpha_composite(ImageOps.mirror(chair), (116, 14))
+                furniture.alpha_composite(ImageOps.mirror(chair), (116, 14))
 
             def cabinet(drawer_name):
-                pod.alpha_composite(desk, (80, 22))
-                pod.alpha_composite(outlet, (84, 28))
-                pod.alpha_composite(
+                furniture.alpha_composite(desk, (80, 22))
+                furniture.alpha_composite(outlet, (84, 28))
+                furniture.alpha_composite(
                     scaled(PREFAB_PIECES[drawer_name]),
                     (84, 42),
                 )
 
-            if name == "workstation_pod_1":
-                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
-                pod.alpha_composite(scaled(PREFAB_PIECES["us_flag"]), (128, 10))
+            if pod_name == "workstation_pod_1":
+                back.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
+                back.alpha_composite(scaled(PREFAB_PIECES["us_flag"]), (128, 10))
                 left_wide()
                 cabinet("red_drawer")
-            elif name == "workstation_pod_2":
-                pod.alpha_composite(scaled(PREFAB_PIECES["india_flag"]), (8, 10))
-                pod.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
+            elif pod_name == "workstation_pod_2":
+                back.alpha_composite(scaled(PREFAB_PIECES["india_flag"]), (8, 10))
+                back.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
                 left_thin()
                 right_wide("green_drawer")
-            elif name == "workstation_pod_3":
-                pod.alpha_composite(scaled(PREFAB_PIECES["blue_display"]), (8, 10))
-                pod.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
+            elif pod_name == "workstation_pod_3":
+                back.alpha_composite(scaled(PREFAB_PIECES["blue_display"]), (8, 10))
+                back.alpha_composite(scaled(PREFAB_PIECES["paper"]), (134, 10))
                 left_thin(with_terminal=False)
                 right_wide("green_drawer")
-            elif name == "workstation_pod_4":
-                pod.alpha_composite(scaled(PREFAB_PIECES["uk_flag"]), (8, 10))
-                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (134, 10))
+            elif pod_name == "workstation_pod_4":
+                back.alpha_composite(scaled(PREFAB_PIECES["uk_flag"]), (8, 10))
+                back.alpha_composite(scaled(PREFAB_PIECES["notes"]), (134, 10))
                 left_thin(with_terminal=False)
-                pod.alpha_composite(desk, (80, 22))
-                pod.alpha_composite(
+                furniture.alpha_composite(desk, (80, 22))
+                furniture.alpha_composite(
                     scaled(PREFAB_PIECES["blue_drawer"]),
                     (84, 42),
                 )
-                pod.alpha_composite(
+                furniture.alpha_composite(
                     scaled(PREFAB_PIECES["red_bin"]),
                     (126, 38),
                 )
-            elif name == "workstation_pod_5":
-                pod.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
-                pod.alpha_composite(pod5_note, (126, 10))
-                pod.alpha_composite(pod5_display, (138, 10))
+            elif pod_name == "workstation_pod_5":
+                back.alpha_composite(scaled(PREFAB_PIECES["notes"]), (14, 10))
+                back.alpha_composite(pod5_note, (126, 10))
+                back.alpha_composite(pod5_display, (138, 10))
                 left_wide()
                 cabinet("red_drawer")
             else:
                 raise ValueError(f"unknown workstation pod: {name}")
 
-            pod.alpha_composite(central_wall, (72, 0))
+            furniture.alpha_composite(central_wall, (72, 0))
             # In the pack example the following cubicle row masks the desks'
             # unsupported lower edge. Standalone map pods need their own
             # foreground partition to preserve the same depth cue.
+            pod = Image.new("RGBA", (158, 110))
+            pod.alpha_composite(back, (0, 0))
+            pod.alpha_composite(furniture, (0, 0))
             pod.alpha_composite(partition, (0, 60))
-            plant_x = 122 if name in {
+            plant_x = 122 if pod_name in {
                 "workstation_pod_1",
                 "workstation_pod_3",
                 "workstation_pod_5",
             } else 8
+            if name.endswith("_back"):
+                return back
+            if name.endswith("_furniture"):
+                return furniture
+            if name.endswith("_front"):
+                return pod.crop((0, 60, 158, 110))
             pod.alpha_composite(plant, (plant_x, 72))
             return pod
 
@@ -300,7 +331,11 @@ class OfficeAtlas:
                 tile_ids.append(tile_row)
 
             if name.startswith("workstation_"):
-                collision_row = grid_height - 1
+                # The plant extends into the prefab's final tile row, but it
+                # must not turn the visible aisle in front of the partition
+                # into a full-width collision wall. Keep the blocking edge on
+                # the partition's inner row so players can walk past its face.
+                collision_row = grid_height - 2
                 collision_cells = [
                     (collision_row, column)
                     for column in range(grid_width)
@@ -318,6 +353,10 @@ class OfficeAtlas:
                 "tile_ids": tile_ids,
                 # The chair is visual overlap; only the desk edge blocks feet.
                 "collision_cells": collision_cells,
+                # A workstation is one connected object. Splitting its upper
+                # chunks onto the fixed above-player layer makes the partition
+                # cover a player who is standing in the aisle in front.
+                "render_below_player": name.startswith("workstation_"),
             }
 
         return self.definitions[key], grid_x, grid_y
@@ -352,6 +391,7 @@ def place_sprite(
     *,
     decorative: bool = False,
     collides: bool = True,
+    visual_layer=None,
 ) -> None:
     height = definition["height"]
     visual_bottom_layer = decoration_2 if decorative else decoration_1
@@ -361,7 +401,14 @@ def place_sprite(
             if tile_id is None:
                 continue
             gid = OFFICE_FIRST_GID + tile_id
-            target = visual_bottom_layer if row == height - 1 else above_0
+            if visual_layer is not None:
+                target = visual_layer
+            else:
+                target = (
+                    visual_bottom_layer
+                    if definition["render_below_player"] or row == height - 1
+                    else above_0
+                )
             set_tile(target, x + column, y + row, gid)
 
     if collides:
@@ -374,7 +421,13 @@ def place_sprite(
             )
 
 
-def make_tile_layer(layer_id: int, name: str, data: list[int], depth=None):
+def make_tile_layer(
+    layer_id: int,
+    name: str,
+    data: list[int],
+    depth=None,
+    depth_y=None,
+):
     layer = {
         "id": layer_id,
         "name": name,
@@ -391,6 +444,10 @@ def make_tile_layer(layer_id: int, name: str, data: list[int], depth=None):
         layer["properties"] = [
             {"name": "depth", "type": "int", "value": depth}
         ]
+    if depth_y is not None:
+        layer["properties"] = [
+            {"name": "depthY", "type": "int", "value": depth_y}
+        ]
     return layer
 
 
@@ -401,6 +458,8 @@ def build_map(atlas: OfficeAtlas) -> dict:
     decoration_2 = empty_layer()
     above_0 = empty_layer()
     above_1 = empty_layer()
+    dynamic_depth_layers: list[tuple[str, list[int], int]] = []
+    furniture_colliders = []
 
     floor_columns = {
         (0, 0): 9,
@@ -410,7 +469,7 @@ def build_map(atlas: OfficeAtlas) -> dict:
     }
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
-            quadrant = (0 if x < 16 else 1, 0 if y < 11 else 1)
+            quadrant = (0 if x < 16 else 1, 0 if y < 12 else 1)
             set_tile(ground, x, y, tiny_gid(floor_columns[quadrant], 5))
 
     wall_top = tiny_gid(9, 0)
@@ -428,26 +487,43 @@ def build_map(atlas: OfficeAtlas) -> dict:
 
     # Horizontal partition; two 2-tile passages connect north and south.
     north_south_passages = {7, 8, 23, 24}
+    horizontal_partition = empty_layer()
     for x in range(MAP_WIDTH):
         if x in north_south_passages:
             continue
-        set_tile(above_0, x, 10, wall_top)
-        set_tile(decoration_0, x, 10, collision_mask)
-        set_tile(decoration_0, x, 11, wall_face)
+        set_tile(horizontal_partition, x, 11, wall_top)
+        set_tile(decoration_0, x, 11, collision_mask)
+        set_tile(decoration_0, x, 12, wall_face)
+    dynamic_depth_layers.append(
+        ("partition_horizontal", horizontal_partition, 12 * TILE_SIZE)
+    )
 
     # Vertical partition; two 2-tile passages connect east and west.
     east_west_passages = {6, 7, 16, 17}
     for y in range(2, MAP_HEIGHT):
         if y in east_west_passages:
             continue
-        set_tile(above_0, 15, y, wall_top)
+        vertical_partition = empty_layer()
+        set_tile(vertical_partition, 15, y, wall_top)
         set_tile(decoration_0, 15, y, collision_mask)
         set_tile(decoration_0, 16, y, wall_face)
+        dynamic_depth_layers.append(
+            (
+                f"partition_vertical_{y}",
+                vertical_partition,
+                (y + 1) * TILE_SIZE,
+            )
+        )
 
-    def place_at(name, tile_x, tile_y, **kwargs):
+    def place_at(name, tile_x, tile_y, visual_layer=None, **kwargs):
         # Build tile chunks with transparent in-tile offsets so the approved
         # sample's bottom-center anchor survives the Tiled grid exactly.
         definition, x, y = atlas.definition_at(name, tile_x, tile_y)
+        collides = kwargs.pop("collides", True)
+        instance_name = None
+        if collides and visual_layer is None:
+            instance_name = f"{name}_{len(furniture_colliders) + 1}"
+            visual_layer = empty_layer()
         place_sprite(
             definition,
             x,
@@ -456,16 +532,115 @@ def build_map(atlas: OfficeAtlas) -> dict:
             decoration_1,
             decoration_2,
             above_0,
+            visual_layer=visual_layer,
+            # Furniture uses precise object rectangles below. Tile collision
+            # is retained only for architectural walls.
+            collides=False,
             **kwargs,
         )
+        if collides:
+            width, height = FURNITURE_FOOTPRINTS[name]
+            center_x = tile_x * TILE_SIZE
+            bottom_y = tile_y * TILE_SIZE
+            if instance_name is None:
+                raise ValueError(f"missing depth-sorted instance name: {name}")
+            furniture_colliders.append(
+                (
+                    instance_name,
+                    round(center_x - width / 2),
+                    round(bottom_y - height),
+                    width,
+                    height,
+                )
+            )
+            dynamic_depth_layers.append(
+                (f"floor_{instance_name}", visual_layer, round(bottom_y))
+            )
 
     workstation_pods = (
-        ("workstation_pod_1", 20.5, 5.0 + WORKSTATION_FRONT_EXTENSION),
-        ("workstation_pod_2", 28.5, 5.0 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_1", 20.5, 4.5 + WORKSTATION_FRONT_EXTENSION),
+        ("workstation_pod_2", 28.5, 4.5 + WORKSTATION_FRONT_EXTENSION),
         ("workstation_pod_3", 20.5, 9.0 + WORKSTATION_FRONT_EXTENSION),
         ("workstation_pod_4", 28.5, 9.0 + WORKSTATION_FRONT_EXTENSION),
         ("workstation_pod_5", 7.5, 16.5 + 55 / TILE_SIZE),
     )
+
+    def place_workstation(name: str, tile_x: float, tile_y: float) -> None:
+        # A pod needs independent Y-sorted planes for the back partition,
+        # furniture, front partition, and plant. This keeps the back wall from
+        # covering a player whose feet have already passed its lower edge.
+        pod_top = round(tile_y * TILE_SIZE - 110)
+        back_layer = empty_layer()
+        furniture_layer = empty_layer()
+        front_layer = empty_layer()
+        plant_layer = empty_layer()
+        back_sort_y = pod_top + 34
+        furniture_sort_y = pod_top + 60
+        front_sort_y = pod_top + 94
+        place_at(
+            f"{name}_back",
+            tile_x,
+            (pod_top + 60) / TILE_SIZE,
+            visual_layer=back_layer,
+            collides=False,
+        )
+        place_at(
+            f"{name}_furniture",
+            tile_x,
+            (pod_top + 60) / TILE_SIZE,
+            visual_layer=furniture_layer,
+            collides=False,
+        )
+        place_at(
+            f"{name}_front",
+            tile_x,
+            tile_y,
+            visual_layer=front_layer,
+            collides=False,
+        )
+        plant_x = 122 if name in {
+            "workstation_pod_1",
+            "workstation_pod_3",
+            "workstation_pod_5",
+        } else 8
+        pod_left = round(tile_x * TILE_SIZE - 158 / 2)
+        place_at(
+            "plant",
+            (pod_left + plant_x + 14) / TILE_SIZE,
+            (pod_top + 110) / TILE_SIZE,
+            visual_layer=plant_layer,
+            collides=False,
+        )
+        dynamic_depth_layers.extend(
+            (
+                (f"{name}_back", back_layer, back_sort_y),
+                (f"{name}_furniture", furniture_layer, furniture_sort_y),
+                (f"{name}_front", front_layer, front_sort_y),
+                (f"{name}_plant", plant_layer, pod_top + 110),
+            )
+        )
+
+        # The desks, chairs, center divider, and both horizontal partitions
+        # form one inaccessible workstation island. Separate thin rectangles
+        # left side entrances between them, so a player's foot body could
+        # enter the pod and visually walk through chairs/partitions. Block the
+        # complete occupied footprint while keeping every surrounding aisle
+        # available.
+        furniture_colliders.append(
+            (f"{name}_footprint", pod_left, pod_top, 158, 94)
+        )
+        plant_width, plant_height = FURNITURE_FOOTPRINTS["plant"]
+        plant_center_x = pod_left + plant_x + 14
+        plant_bottom_y = pod_top + 110
+        furniture_colliders.append(
+            (
+                f"{name}_front_plant",
+                round(plant_center_x - plant_width / 2),
+                plant_bottom_y - plant_height,
+                plant_width,
+                plant_height,
+            )
+        )
 
     # Reception and waiting area. All front-facing furniture backs onto a
     # wall; the entrance axis at x=7..8 remains open to the internal passage.
@@ -482,12 +657,12 @@ def build_map(atlas: OfficeAtlas) -> dict:
     # keeping the room's west passage and center aisle clear.
     place_at("clock", 27.8, 1.7, collides=False)
     for name, x, y in workstation_pods[:4]:
-        place_at(name, x, y)
+        place_workstation(name, x, y)
 
     # Focus room: the final pod stands alone, without the person or animal
     # sprites visible in the pack's sample scene.
     for name, x, y in workstation_pods[4:]:
-        place_at(name, x, y)
+        place_workstation(name, x, y)
     place_at("bookshelf", 1.5, 20.5)
     place_at("plant", 13.8, 20.3, decorative=True)
     place_at("bin_red", 11.8, 20.5, decorative=True)
@@ -502,6 +677,32 @@ def build_map(atlas: OfficeAtlas) -> dict:
     place_at("couch_gray", 27.5, 14.0)
     place_at("plant", 30.1, 14.0, decorative=True)
 
+    # Navigation audit anchors cover every room, doorway, and tight office
+    # aisle. Tests inflate all collision geometry by the player's foot body
+    # and require every point to remain connected to spawn.
+    navigation_checks = (
+        ("spawn", 240, 240),
+        ("reception", 160, 240),
+        ("upper-west-door", 512, 224),
+        ("open-row-aisle-left", 620, 184),
+        ("open-row-aisle-right", 900, 184),
+        ("open-column-aisle", 784, 240),
+        ("north-south-west", 240, 384),
+        ("focus-room", 96, 512),
+        ("lower-west-door", 512, 528),
+        ("north-south-east", 752, 384),
+        ("lounge", 800, 544),
+    )
+    navigation_corridors = (
+        ("open-between-rows", 577, 174, 414, 34, "horizontal", 32),
+        ("open-below-desks", 577, 318, 414, 34, "horizontal", 32),
+        ("open-between-columns", 735, 64, 98, 288, "vertical", 48),
+        ("open-west-side", 544, 64, 33, 288, "vertical", 32),
+        ("focus-front", 161, 583, 158, 64, "horizontal", 48),
+        # Visible floor gap between the reception counter and bookshelf.
+        ("reception-counter-bookshelf-gap", 398, 64, 31, 160, "vertical", 24),
+    )
+
     office_tile_count, atlas_size = atlas.save()
     atlas_width, atlas_height = atlas_size
     return {
@@ -513,6 +714,17 @@ def build_map(atlas: OfficeAtlas) -> dict:
             make_tile_layer(2, "decoration_0", decoration_0),
             make_tile_layer(3, "decoration_1", decoration_1),
             make_tile_layer(4, "decoration_2", decoration_2),
+            *[
+                make_tile_layer(
+                    10 + index,
+                    name,
+                    data,
+                    depth_y=depth_y,
+                )
+                for index, (name, data, depth_y) in enumerate(
+                    dynamic_depth_layers
+                )
+            ],
             make_tile_layer(5, "above_0", above_0, 10),
             make_tile_layer(6, "above_1", above_1, 11),
             {
@@ -553,15 +765,15 @@ def build_map(atlas: OfficeAtlas) -> dict:
                         "visible": True,
                         "x": x * TILE_SIZE,
                         "y": y * TILE_SIZE,
-                        "width": 16 * TILE_SIZE,
-                        "height": 11 * TILE_SIZE,
+                        "width": width * TILE_SIZE,
+                        "height": height * TILE_SIZE,
                     }
-                    for index, (name, x, y) in enumerate(
+                    for index, (name, x, y, width, height) in enumerate(
                         (
-                            ("Reception", 0, 0),
-                            ("Open Workspace", 16, 0),
-                            ("Focus Room", 0, 11),
-                            ("Lounge", 16, 11),
+                            ("Reception", 0, 0, 16, 12),
+                            ("Open Workspace", 16, 0, 16, 12),
+                            ("Focus Room", 0, 12, 16, 10),
+                            ("Lounge", 16, 12, 16, 10),
                         )
                     )
                 ],
@@ -624,9 +836,102 @@ def build_map(atlas: OfficeAtlas) -> dict:
                 "x": 0,
                 "y": 0,
             },
+            {
+                "id": 30,
+                "name": "furniture_colliders",
+                "type": "objectgroup",
+                "draworder": "topdown",
+                "opacity": 1,
+                "visible": True,
+                "objects": [
+                    {
+                        "id": index + 11,
+                        "name": name,
+                        "rotation": 0,
+                        "type": "furniture-collider",
+                        "visible": True,
+                        "x": x,
+                        "y": y,
+                        "width": width,
+                        "height": height,
+                    }
+                    for index, (name, x, y, width, height) in enumerate(
+                        furniture_colliders
+                    )
+                ],
+                "x": 0,
+                "y": 0,
+            },
+            {
+                "id": 31,
+                "name": "navigation_checks",
+                "type": "objectgroup",
+                "draworder": "topdown",
+                "opacity": 1,
+                "visible": False,
+                "objects": [
+                    {
+                        "id": index + 43,
+                        "name": name,
+                        "point": True,
+                        "rotation": 0,
+                        "type": "navigation-check",
+                        "visible": True,
+                        "x": x,
+                        "y": y,
+                    }
+                    for index, (name, x, y) in enumerate(navigation_checks)
+                ],
+                "x": 0,
+                "y": 0,
+            },
+            {
+                "id": 32,
+                "name": "navigation_corridors",
+                "type": "objectgroup",
+                "draworder": "topdown",
+                "opacity": 1,
+                "visible": False,
+                "objects": [
+                    {
+                        "id": index + 54,
+                        "name": name,
+                        "rotation": 0,
+                        "type": "navigation-corridor",
+                        "visible": True,
+                        "x": x,
+                        "y": y,
+                        "width": width,
+                        "height": height,
+                        "properties": [
+                            {
+                                "name": "axis",
+                                "type": "string",
+                                "value": axis,
+                            },
+                            {
+                                "name": "minClearance",
+                                "type": "int",
+                                "value": min_clearance,
+                            },
+                        ],
+                    }
+                    for index, (
+                        name,
+                        x,
+                        y,
+                        width,
+                        height,
+                        axis,
+                        min_clearance,
+                    ) in enumerate(navigation_corridors)
+                ],
+                "x": 0,
+                "y": 0,
+            },
         ],
-        "nextlayerid": 10,
-        "nextobjectid": 11,
+        "nextlayerid": 33,
+        "nextobjectid": 60,
         "orientation": "orthogonal",
         "renderorder": "right-down",
         "tiledversion": "1.11.0",

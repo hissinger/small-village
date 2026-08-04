@@ -51,6 +51,14 @@ shows the opposite-facing chair/computer arrangement.
 
 Each shared center wall uses the pack's wall palette and runs from the rear
 partition cap to the foreground partition, matching the example's divider.
+Workstation collision uses one Tiled object rectangle for the occupied desk,
+chair, and partition footprint, plus a small pot-base rectangle for the front
+plant. This blocks side entry without turning the surrounding aisle into an
+impassable tile row.
+Each workstation is split into back-partition, furniture, front-partition, and
+plant depth layers. Their `depthY` values place a player behind the back wall,
+between the furniture and front partition, or in front of the whole set; the
+plant keeps its own lower sorting point.
 
 Human sprites and the animal beside the fifth pod are intentionally excluded
 from the generated map. `service_counter` remains a separate composition of
@@ -60,6 +68,15 @@ The fifth pod's right-side wall decor follows the example: a small memo pad
 and a green status display. The display reuses the source blue display's exact
 geometry with the green palette shown in `LargePixelOffice.png`.
 
-Wall decorations are anchored to wall faces. Front-facing sofas, bookcases,
-vending machines, water coolers, and plants are placed along perimeter walls
-with usable floor space left clear in front of them.
+Wall decorations are anchored to wall faces. Floor furniture uses precise
+object-layer footprints at its base and an individual `depthY` layer, so a
+player is hidden behind it but rendered above it when standing in front.
+Interior partition tops are depth-sorted at each floor boundary for the same
+reason. Usable floor space remains clear around the furniture.
+
+## Whole-map audit
+
+Run `npm run audit:office` after changing the generator. It regenerates the
+Tiled map, checks player-body reachability across every room and doorway,
+checks named corridor clearance and workstation depth order, and writes a
+collision/navigation overlay to `/tmp/office-map-audit.png`.
