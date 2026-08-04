@@ -26,6 +26,10 @@ import { proximityRingRadii } from "../lib/proximityRing";
 import { SpeechBubble } from "./SpeechBubble";
 import { Rect, VILLAGE_SCALE, scaleRect } from "../lib/villageWorld";
 import { DEFAULT_MAP, MAPS, MapKind, resolveMap } from "../lib/mapKind";
+import {
+  getPlayerCollisionBody,
+  getPlayerSortY,
+} from "../lib/playerCollisionBody";
 
 const GAME_CONFIG = {
   SPRITE: {
@@ -97,6 +101,51 @@ const GAME_CONFIG = {
   },
 } as const;
 
+type LayeredMapKind = typeof MAPS.TILEMAP | typeof MAPS.OFFICE;
+
+type LayeredMapConfig = {
+  mapKey: string;
+  json: string;
+  tilesets: Array<{ name: string; key: string; image: string }>;
+};
+
+const LAYERED_MAPS: Record<LayeredMapKind, LayeredMapConfig> = {
+  [MAPS.TILEMAP]: {
+    mapKey: "classic-map",
+    json: "/assets/tilemaps/default.json",
+    tilesets: [
+      {
+        name: "Serene_Village_32x32",
+        key: "classic-tiles",
+        image: "/assets/tilesets/Serene_Village_32x32.png",
+      },
+    ],
+  },
+  [MAPS.OFFICE]: {
+    mapKey: "office-map",
+    json: "/assets/tilemaps/office.json",
+    tilesets: [
+      {
+        name: "Tiny_Top_Down_32x32",
+        key: "office-floor-tiles",
+        image: "/assets/tilesets/source/Tiny_Top_Down_32x32.png",
+      },
+      {
+        name: "Office_Furniture_32x32",
+        key: "office-furniture-tiles",
+        image: "/assets/tilesets/Office_Furniture_32x32.png",
+      },
+    ],
+  },
+};
+
+function getLayeredMapConfig(mapKind: MapKind): LayeredMapConfig | null {
+  if (mapKind === MAPS.TILEMAP || mapKind === MAPS.OFFICE) {
+    return LAYERED_MAPS[mapKind];
+  }
+  return null;
+}
+
 interface GameSceneConfig {
   characterIndex: number;
   characterName: string;
@@ -147,6 +196,7 @@ export default class SmallVillageScene extends Phaser.Scene {
   private mapKind: MapKind = DEFAULT_MAP;
   // 타일맵 모드에서 충돌을 걸 decoration 레이어들(applyWorldCollisions 가 사용).
   private decorationLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  private officeFurnitureColliders: Rect[] = [];
   // village 맵: village.json 오브젝트 레이어에서 읽은 충돌·가림 사각형(원본 px).
   // buildVillageWorld 에서 채우고 createWorldColliders/Overlays·e2e 훅이 쓴다.
   private villageColliders: Rect[] = [];
@@ -211,10 +261,12 @@ export default class SmallVillageScene extends Phaser.Scene {
     this.load.image("bubble-tail", "/assets/bubble/bubble-tail.png");
 
     // 게임 월드 배경 — 방의 map 에 따라 필요한 애셋만 로드한다.
-    if (this.mapKind === MAPS.TILEMAP) {
-      // 기존 Serene Village 타일맵(레이어드).
-      this.load.image("map", "/assets/tilesets/Serene_Village_32x32.png");
-      this.load.tilemapTiledJSON("map", "/assets/tilemaps/default.json");
+    const layeredMap = getLayeredMapConfig(this.mapKind);
+    if (layeredMap) {
+      layeredMap.tilesets.forEach((tileset) =>
+        this.load.image(tileset.key, tileset.image)
+      );
+      this.load.tilemapTiledJSON(layeredMap.mapKey, layeredMap.json);
     } else {
       // 로비 첫 화면과 동일한 마을 픽셀아트 이미지(다른 게임 애셋과 같이 public/assets 에서 로드).
       this.load.image("village-bg", "/assets/village-bg.png");
@@ -228,10 +280,9 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     // 방의 map 에 따라 월드 배경을 만든다(village 이미지 / tilemap 레이어).
     // 각 빌더가 배경을 그리고 월드 크기 + 스폰 좌표를 돌려준다.
-    const world =
-      this.mapKind === MAPS.TILEMAP
-        ? this.buildTilemapWorld()
-        : this.buildVillageWorld();
+    const world = getLayeredMapConfig(this.mapKind)
+      ? this.buildTilemapWorld()
+      : this.buildVillageWorld();
     if (!world) return; // 맵 데이터 로드 실패(타일셋/레이어 null, village.json 빈 맵) 방어
 
     const { width, height, spawn } = world;
@@ -240,9 +291,15 @@ export default class SmallVillageScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBackgroundColor("#3a5a40");
 
+    const playerBody = getPlayerCollisionBody(
+      GAME_CONFIG.SPRITE.FRAME_WIDTH,
+      GAME_CONFIG.SPRITE.FRAME_HEIGHT
+    );
     this.sprite = this.physics.add
       .sprite(spawn.x, spawn.y, `character_${this.characterIndex}`, 0)
       .setScale(GAME_CONFIG.SPRITE.SCALE)
+      .setBodySize(playerBody.width, playerBody.height, false)
+      .setOffset(playerBody.offsetX, playerBody.offsetY)
       .setCollideWorldBounds(true)
       .setOrigin(0.5, 0.5);
 
@@ -257,6 +314,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     // 스크롤이 0 으로 클램프돼 맵이 한쪽에 붙는 문제가 있다.)
     this.mapWidth = width;
     this.mapHeight = height;
+    this.syncOfficeSpriteDepth(this.sprite);
     this.positionCamera();
 
     this.nameText = this.add
@@ -273,6 +331,9 @@ export default class SmallVillageScene extends Phaser.Scene {
         }
       )
       .setOrigin(0.5, 0.5);
+    if (this.mapKind === MAPS.OFFICE) {
+      this.nameText.setDepth(this.sprite.depth + 0.01);
+    }
 
     this.speechBubble = new SpeechBubble(
       this,
@@ -378,8 +439,9 @@ export default class SmallVillageScene extends Phaser.Scene {
   }
 
   /**
-   * tilemap 맵: 기존 Serene Village 타일맵을 레이어별로 렌더한다.
+   * 레이어드 타일맵(Classic/Office)을 Tiled 레이어별로 렌더한다.
    *  - ground/decoration_0..2/above_0..1 을 SCALE 배로 그린다.
+   *  - Office의 depthY 레이어는 바닥 접점을 기준으로 캐릭터와 Y 정렬한다.
    *  - decoration 레이어는 collides 속성으로 충돌을 켜 두고(this.decorationLayers 에 저장),
    *    실제 collider 결선은 applyWorldCollisions 에서 스프라이트 생성 후에 한다.
    *  - above_0/1 은 depth 10/11 로 캐릭터 위에 그려 가림 입체감을 낸다.
@@ -391,19 +453,26 @@ export default class SmallVillageScene extends Phaser.Scene {
     spawn: { x: number; y: number };
   } | null {
     const L = GAME_CONFIG.LAYER;
+    const config = getLayeredMapConfig(this.mapKind);
+    if (!config) {
+      console.error(`Layered map config is missing: ${this.mapKind}`);
+      return null;
+    }
     const map = this.make.tilemap({
-      key: "map",
+      key: config.mapKey,
       tileWidth: L.TILE_WIDTH,
       tileHeight: L.TILE_HEIGHT,
     });
-    const tileset = map.addTilesetImage("Serene_Village_32x32", "map");
-    if (!tileset) {
+    const tilesets = config.tilesets
+      .map((tileset) => map.addTilesetImage(tileset.name, tileset.key))
+      .filter((tileset): tileset is Phaser.Tilemaps.Tileset => !!tileset);
+    if (tilesets.length !== config.tilesets.length) {
       console.error("Tileset is null");
       return null;
     }
 
     const layer = (name: string, depth?: number) => {
-      const l = map.createLayer(name, tileset, 0, 0);
+      const l = map.createLayer(name, tilesets, 0, 0);
       if (!l) {
         console.error(`Layer '${name}' is null`);
         return null;
@@ -430,6 +499,27 @@ export default class SmallVillageScene extends Phaser.Scene {
       return null;
     }
 
+    if (this.mapKind === MAPS.OFFICE) {
+      this.officeFurnitureColliders = this.readObjectRects(
+        map,
+        "furniture_colliders"
+      );
+      const worldHeight = map.heightInPixels * L.SCALE;
+      for (const layerData of map.layers) {
+        const depthProperty = (
+          layerData.properties as Array<{ name?: string; value?: unknown }>
+        ).find(({ name }) => name === "depthY");
+        if (!depthProperty) continue;
+        const depthY = Number(depthProperty?.value);
+        const workstationLayer = layer(layerData.name);
+        if (!workstationLayer || !Number.isFinite(depthY)) {
+          console.error(`Invalid Office depth layer: ${layerData.name}`);
+          return null;
+        }
+        workstationLayer.setDepth(1 + (depthY * L.SCALE) / worldHeight);
+      }
+    }
+
     // decoration 레이어에 충돌 속성을 켜 두고(결선은 applyWorldCollisions), 참조를 저장한다.
     this.decorationLayers = [decoration0, decoration1, decoration2];
     this.decorationLayers.forEach((l) =>
@@ -438,8 +528,15 @@ export default class SmallVillageScene extends Phaser.Scene {
 
     const width = L.TILE_WIDTH * map.width * L.SCALE;
     const height = L.TILE_HEIGHT * map.height * L.SCALE;
-    // 타일맵은 중앙 스폰(기존 동작 유지).
-    return { width, height, spawn: { x: width / 2, y: height / 2 } };
+    // Office는 Tiled point를 사용하고, 기존 Classic은 레이어가 없으므로 중앙 폴백.
+    const spawnObj = map.getObjectLayer("spawn")?.objects?.[0];
+    const spawn = spawnObj
+      ? {
+          x: (spawnObj.x ?? map.widthInPixels / 2) * L.SCALE,
+          y: (spawnObj.y ?? map.heightInPixels / 2) * L.SCALE,
+        }
+      : { x: width / 2, y: height / 2 };
+    return { width, height, spawn };
   }
 
   /**
@@ -448,13 +545,26 @@ export default class SmallVillageScene extends Phaser.Scene {
    *  - village: VILLAGE_COLLIDERS 기반 static 존과 collider(createWorldColliders).
    */
   private applyWorldCollisions(sprite: Phaser.Physics.Arcade.Sprite): void {
-    if (this.mapKind === MAPS.TILEMAP) {
+    if (getLayeredMapConfig(this.mapKind)) {
       this.decorationLayers.forEach((l) =>
         this.physics.add.collider(sprite, l)
       );
+      if (this.mapKind === MAPS.OFFICE) {
+        this.createRectColliders(
+          sprite,
+          this.officeFurnitureColliders,
+          GAME_CONFIG.LAYER.SCALE
+        );
+      }
     } else {
       this.createWorldColliders(sprite);
     }
+  }
+
+  private syncOfficeSpriteDepth(sprite: Phaser.GameObjects.Sprite): void {
+    if (this.mapKind !== MAPS.OFFICE || this.mapHeight <= 0) return;
+    const footY = getPlayerSortY(sprite.y, sprite.displayHeight);
+    sprite.setDepth(1 + footY / this.mapHeight);
   }
 
   /**
@@ -480,9 +590,16 @@ export default class SmallVillageScene extends Phaser.Scene {
    * 사각형 존으로 만들고 내 스프라이트와 collider 로 묶는다. ?debugWorld 시 존을 빨강으로 표시.
    */
   private createWorldColliders(sprite: Phaser.Physics.Arcade.Sprite): void {
-    const scale = VILLAGE_SCALE;
+    this.createRectColliders(sprite, this.villageColliders, VILLAGE_SCALE);
+  }
+
+  private createRectColliders(
+    sprite: Phaser.Physics.Arcade.Sprite,
+    regions: Rect[],
+    scale: number
+  ): void {
     const debug = this.isWorldDebug();
-    const zones = this.villageColliders.map((region) => {
+    const zones = regions.map((region) => {
       const s = scaleRect(region, scale);
       // rectangle 은 origin 0.5 → 중심 좌표로 배치한다.
       const zone = this.add.rectangle(
@@ -538,6 +655,10 @@ export default class SmallVillageScene extends Phaser.Scene {
       worldColliders: () =>
         this.mapKind === MAPS.VILLAGE
           ? this.villageColliders.map((r) => scaleRect(r, VILLAGE_SCALE))
+          : this.mapKind === MAPS.OFFICE
+          ? this.officeFurnitureColliders.map((r) =>
+              scaleRect(r, GAME_CONFIG.LAYER.SCALE)
+            )
           : [],
       // 월드 크기(경계 검증/이동 계획용). 실제 로드된 맵 크기를 돌려준다.
       worldSize: () => ({ width: this.mapWidth, height: this.mapHeight }),
@@ -798,6 +919,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     );
     userSprite.setScale(GAME_CONFIG.SPRITE.SCALE);
     userSprite.setOrigin(0.5, 0.5);
+    this.syncOfficeSpriteDepth(userSprite);
 
     // 클릭 이벤트 추가
     userSprite.setInteractive().on("pointerdown", () => {
@@ -813,6 +935,9 @@ export default class SmallVillageScene extends Phaser.Scene {
         strokeThickness: GAME_CONFIG.NAME.STROKE_THICKNESS,
       })
       .setOrigin(0.5, 0.5);
+    if (this.mapKind === MAPS.OFFICE) {
+      nameText.setDepth(userSprite.depth + 0.01);
+    }
 
     this.userSprites[user.id] = {
       sprite: userSprite,
@@ -912,6 +1037,10 @@ export default class SmallVillageScene extends Phaser.Scene {
       const userData = this.users.find((u) => u.id === userId);
       if (userData) {
         const sprite = userSprite.sprite;
+        this.syncOfficeSpriteDepth(sprite);
+        if (this.mapKind === MAPS.OFFICE) {
+          userSprite.nameText.setDepth(sprite.depth + 0.01);
+        }
         const target = this.remotePositions.get(userId) ?? {
           x: userData.x,
           y: userData.y,
@@ -999,6 +1128,10 @@ export default class SmallVillageScene extends Phaser.Scene {
     if (!this.sprite || !this.cursors) return;
 
     const isMoving = this.handleMovement();
+    this.syncOfficeSpriteDepth(this.sprite);
+    if (this.mapKind === MAPS.OFFICE && this.nameText) {
+      this.nameText.setDepth(this.sprite.depth + 0.01);
+    }
 
     this.positionCamera();
 

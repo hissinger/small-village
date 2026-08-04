@@ -20,6 +20,7 @@
  * 맵을 써야 좌표가 어긋나지 않는다(그래서 방별 속성이지 개인 설정이 아니다).
  *  - VILLAGE: village-bg 픽셀아트 이미지 월드(로비 첫 화면과 동일). 기본값.
  *  - TILEMAP: 기존 Serene Village 타일맵(레이어드, 타일 기반 충돌).
+ *  - OFFICE: Tiny Top Down + Pixel Office 에셋으로 만든 사무실 타일맵.
  */
 // ⚠️ 맵을 추가/변경하면 Edge Function 의 화이트리스트
 //    (supabase/functions/create-meeting/index.ts 의 ALLOWED_MAPS)도 같이 고쳐야 한다.
@@ -27,6 +28,7 @@
 export const MAPS = {
   VILLAGE: "village",
   TILEMAP: "tilemap",
+  OFFICE: "office",
 } as const;
 
 export type MapKind = (typeof MAPS)[keyof typeof MAPS];
@@ -37,6 +39,7 @@ export const DEFAULT_MAP: MapKind = MAPS.VILLAGE;
 export const MAP_LABELS: Record<MapKind, string> = {
   [MAPS.VILLAGE]: "Village",
   [MAPS.TILEMAP]: "Classic",
+  [MAPS.OFFICE]: "Office",
 };
 
 /**

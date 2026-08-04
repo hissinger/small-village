@@ -20,6 +20,7 @@ describe("resolveMap", () => {
   it("유효한 맵 값은 그대로 통과시킨다", () => {
     expect(resolveMap("village")).toBe(MAPS.VILLAGE);
     expect(resolveMap("tilemap")).toBe(MAPS.TILEMAP);
+    expect(resolveMap("office")).toBe(MAPS.OFFICE);
   });
 
   it("null/undefined 는 기본 맵으로 폴백한다(오래된 rooms row 방어)", () => {
