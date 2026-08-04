@@ -68,7 +68,7 @@ export default class CharacterPreviewScene extends Phaser.Scene {
     }
 
     this.sprite = this.add.sprite(60, 50, `character_${index}`, 0);
-    this.sprite.setScale(2);
+    this.sprite.setScale(3);
     this.sprite.setOrigin(0.5, 0.5);
     this.sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.sprite.play(`walk_${index}`); // 애니메이션 실행
