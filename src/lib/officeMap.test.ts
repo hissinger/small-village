@@ -26,7 +26,7 @@ type TileLayer = {
 type ObjectLayer = {
   name: string;
   type: "objectgroup";
-  objects: Array<{ x?: number; y?: number }>;
+  objects: Array<{ name?: string; type?: string; x?: number; y?: number }>;
 };
 
 const map = JSON.parse(
@@ -99,5 +99,50 @@ describe("office Tiled map", () => {
       expect(tile(15, y)).toBe(0);
       expect(tile(16, y)).toBe(0);
     });
+  });
+
+  it("가구가 세로 벽면 타일을 덮어쓰지 않는다", () => {
+    const collisionLayer = map.layers.find(
+      (layer: TileLayer) => layer.name === "decoration_0"
+    ) as TileLayer;
+    const tile = (x: number, y: number) =>
+      collisionLayer.data[y * map.width + x];
+    const passages = new Set([6, 7, 16, 17]);
+
+    for (let y = 2; y < map.height; y += 1) {
+      if (!passages.has(y)) {
+        expect(tile(16, y)).toBe(20);
+      }
+    }
+  });
+
+  it("방향 변환 플래그 없이 원본 투시를 유지한다", () => {
+    const transformFlags = 0xe0000000;
+    map.layers
+      .filter((layer: TileLayer | ObjectLayer) => layer.type === "tilelayer")
+      .forEach((layer: TileLayer) =>
+        layer.data.forEach((gid) => expect(gid & transformFlags).toBe(0))
+      );
+  });
+
+  it("네 업무 구역만 정의하고 캐릭터를 맵 데이터에 넣지 않는다", () => {
+    const zones = map.layers.find(
+      (layer: ObjectLayer) => layer.name === "zones"
+    ) as ObjectLayer;
+
+    expect(zones.objects.map(({ name }) => name)).toEqual([
+      "Reception",
+      "Open Workspace",
+      "Focus Room",
+      "Lounge",
+    ]);
+    expect(
+      map.layers
+        .filter(
+          (layer: TileLayer | ObjectLayer) => layer.type === "objectgroup"
+        )
+        .flatMap((layer: ObjectLayer) => layer.objects)
+        .some((object: { type?: string }) => object.type === "character")
+    ).toBe(false);
   });
 });

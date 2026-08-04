@@ -47,10 +47,13 @@ SPRITES = {
     "bin_blue": (136, 143, 145, 157),
 }
 
-WORKSTATION_PIECES = {
+PREFAB_PIECES = {
+    "partition": (171, 44, 250, 61),
     "desk": (85, 47, 111, 63),
     "chair": (71, 41, 82, 63),
     "computer": (233, 106, 248, 125),
+    "terminal": (169, 95, 177, 102),
+    "tower": (159, 91, 166, 102),
 }
 
 
@@ -85,32 +88,42 @@ class OfficeAtlas:
                 Image.Resampling.NEAREST,
             )
 
-        if name in {"chair_up", "chair_down"}:
-            angle = 90 if name == "chair_up" else 270
-            return scaled(SPRITES["chair"]).rotate(
-                angle,
-                expand=True,
-                resample=Image.Resampling.NEAREST,
-            )
-
-        if name != "workstation":
+        if name in SPRITES:
             return scaled(SPRITES[name])
 
-        # Keep the desk vertical, but flip it 180 degrees from the previous
-        # vertical orientation (270 degrees from the source). The computer,
-        # keyboard, and chair retain their original pixel-art direction.
-        desk = scaled(WORKSTATION_PIECES["desk"]).rotate(
-            270,
-            expand=True,
-            resample=Image.Resampling.NEAREST,
-        )
-        chair = scaled(WORKSTATION_PIECES["chair"])
-        computer = scaled(WORKSTATION_PIECES["computer"])
-        workstation = Image.new("RGBA", (58, 56))
-        workstation.alpha_composite(desk, (24, 2))
-        workstation.alpha_composite(chair, (0, 6))
-        workstation.alpha_composite(computer, (26, 4))
-        return workstation
+        if name in {"workstation_left", "workstation_right"}:
+            # Pixel Office is a scene-asset pack, not a directional tileset.
+            # Preserve the source perspective and reproduce its demonstrated
+            # cubicle composition instead of rotating individual pieces.
+            partition = scaled(PREFAB_PIECES["partition"])
+            desk = scaled(PREFAB_PIECES["desk"])
+            chair = scaled(PREFAB_PIECES["chair"])
+            computer = scaled(PREFAB_PIECES["computer"])
+            workstation = Image.new("RGBA", (158, 60))
+            workstation.alpha_composite(partition, (0, 0))
+            if name == "workstation_left":
+                chair_x, desk_x, computer_x = 14, 44, 44
+            else:
+                # Keep the same chair-to-desk direction and shift the complete
+                # arrangement right within the partition. The source pack has
+                # no opposite-facing chair, so mirroring it would be invalid.
+                chair_x, desk_x, computer_x = 76, 104, 104
+            workstation.alpha_composite(chair, (chair_x, 14))
+            workstation.alpha_composite(desk, (desk_x, 28))
+            workstation.alpha_composite(computer, (computer_x, 8))
+            return workstation
+
+        if name == "service_counter":
+            desk = scaled(PREFAB_PIECES["desk"])
+            terminal = scaled(PREFAB_PIECES["terminal"])
+            tower = scaled(PREFAB_PIECES["tower"])
+            counter = Image.new("RGBA", (52, 42))
+            counter.alpha_composite(desk, (0, 10))
+            counter.alpha_composite(terminal, (4, 4))
+            counter.alpha_composite(tower, (34, 0))
+            return counter
+
+        raise ValueError(f"unknown office sprite or prefab: {name}")
 
     def definition_at(self, name: str, tile_x: float, tile_y: float):
         crop = self.sprite(name)
@@ -151,19 +164,11 @@ class OfficeAtlas:
                     self.tiles.append(chunk)
                 tile_ids.append(tile_row)
 
-            if name == "workstation":
-                collision_row = math.floor((offset_y + 53) / TILE_SIZE)
-                first_desk_column = math.floor(
-                    (offset_x + 24) / TILE_SIZE
-                )
-                last_desk_column = math.floor(
-                    (offset_x + 55) / TILE_SIZE
-                )
+            if name.startswith("workstation_"):
+                collision_row = grid_height - 1
                 collision_cells = [
                     (collision_row, column)
-                    for column in range(
-                        first_desk_column, last_desk_column + 1
-                    )
+                    for column in range(grid_width)
                 ]
             else:
                 collision_cells = [
@@ -319,56 +324,47 @@ def build_map(atlas: OfficeAtlas) -> dict:
             **kwargs,
         )
 
-    # Reception and waiting area. Visitors enter at x=7 and reach the
-    # reception desk without crossing the waiting seats or service corner.
-    place_at("couch_peach", 3.7, 4.0)
-    place_at("vending_machine", 1.3, 6.2)
+    # Reception and waiting area. All front-facing furniture backs onto a
+    # wall; the entrance axis at x=7..8 remains open to the internal passage.
+    place_at("couch_peach", 3.8, 4.1)
+    place_at("plant", 5.7, 4.1, decorative=True)
+    place_at("clock", 3.8, 1.7, collides=False)
+    place_at("calendar", 12.0, 1.85, collides=False)
+    place_at("service_counter", 11.7, 5.0)
+    place_at("bookshelf", 14.1, 5.0)
     place_at("water_cooler", 1.5, 8.8)
-    place_at("calendar", 13.5, 2.8, collides=False)
-    place_at("clock", 4.0, 2.7, collides=False)
-    place_at("workstation", 11.5, 5.6)
-    place_at("bookshelf", 14.0, 5.0)
-    place_at("plant", 13.5, 8.7, decorative=True)
-    place_at("bin_green", 10.4, 8.8, decorative=True)
+    place_at("bin_green", 10.3, 5.0, decorative=True)
 
-    # Open workspace: two vertical banks leave a wide center aisle from both
-    # the exterior door and the north/south passage. Storage and waste stay
-    # at the perimeter instead of interrupting circulation.
-    place_at("bookshelf", 17.3, 4.8)
-    place_at("clock", 27.8, 2.7, collides=False)
-    for x in (19.5, 28.5):
-        for y in (4.2, 6.8, 9.4):
-            place_at("workstation", x, y)
-    place_at("plant", 30.5, 9.3, decorative=True)
-    place_at("bin_blue", 17.7, 9.2, decorative=True)
+    # Open workspace: validated left/right cubicle modules repeat in two
+    # perimeter banks. Their source perspective is never rotated, and a
+    # four-tile center aisle connects the exterior and internal doors.
+    place_at("clock", 27.8, 1.7, collides=False)
+    for y in (5.0, 9.0):
+        place_at("workstation_left", 19.5, y)
+        place_at("workstation_right", 28.5, y)
+    place_at("bin_blue", 22.0, 9.1, decorative=True)
+    place_at("plant", 25.5, 9.1, decorative=True)
 
-    # Meeting room. Two real orange desks form one conference surface; the
-    # chairs face its long sides and the door-to-table approach stays clear.
-    place_at("bookshelf", 1.5, 15.0)
-    place_at("calendar", 3.8, 13.0, collides=False)
-    place_at("clock", 12.2, 13.0, collides=False)
-    place_at("long_desk", 6.75, 18.0)
-    place_at("long_desk", 8.25, 18.0)
-    for x in (5.7, 7.5, 9.3):
-        place_at("chair_down", x, 16.4)
-        place_at("chair_up", x, 19.3)
-    place_at("plant", 13.8, 20.0, decorative=True)
-    place_at("bin_red", 2.2, 20.2, decorative=True)
+    # Focus room. The pack has no perspective-correct conference set, so this
+    # room uses two quiet cubicles instead of fabricated rotated chairs.
+    place_at("calendar", 3.8, 11.85, collides=False)
+    place_at("clock", 12.2, 11.7, collides=False)
+    place_at("workstation_left", 4.0, 14.8)
+    place_at("workstation_right", 11.5, 14.8)
+    place_at("bookshelf", 1.5, 20.5)
+    place_at("plant", 13.8, 20.3, decorative=True)
+    place_at("bin_red", 11.8, 20.5, decorative=True)
 
-    # Lounge and support corner: refreshments and the shared terminal stay
-    # left, seating stays right, and x=23..24 remains a clear north/south path.
-    place_at("vending_machine", 18.0, 15.4)
-    place_at("water_cooler", 20.1, 15.4)
-    place_at("calendar", 18.0, 13.0, collides=False)
-    place_at("clock", 28.0, 13.0, collides=False)
-    place_at("bookshelf", 30.0, 15.3)
-    place_at("workstation", 20.0, 19.5)
-    place_at("couch_gray", 27.4, 16.2)
-    place_at("couch_blue", 27.4, 19.1)
-    place_at("plant", 30.2, 20.0, decorative=True)
-    place_at("bin_green", 18.2, 20.6, decorative=True)
-    place_at("bin_blue", 19.0, 20.6, decorative=True)
-    place_at("cat", 28.5, 20.5, decorative=True, collides=False)
+    # Lounge and refreshment corner. Service appliances share the left wall;
+    # the sofa backs onto the upper wall with clear usable space in front.
+    place_at("calendar", 18.5, 11.85, collides=False)
+    place_at("clock", 28.0, 11.7, collides=False)
+    place_at("vending_machine", 18.0, 14.4)
+    place_at("water_cooler", 20.2, 14.2)
+    place_at("bin_green", 21.8, 14.2, decorative=True)
+    place_at("couch_gray", 27.5, 14.0)
+    place_at("plant", 30.1, 14.0, decorative=True)
+    place_at("cat", 27.5, 18.5, decorative=True, collides=False)
 
     office_tile_count, atlas_size = atlas.save()
     atlas_width, atlas_height = atlas_size
@@ -428,8 +424,8 @@ def build_map(atlas: OfficeAtlas) -> dict:
                         (
                             ("Reception", 0, 0),
                             ("Open Workspace", 16, 0),
-                            ("Meeting Room", 0, 11),
-                            ("Lounge + IT", 16, 11),
+                            ("Focus Room", 0, 11),
+                            ("Lounge", 16, 11),
                         )
                     )
                 ],

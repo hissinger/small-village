@@ -37,3 +37,21 @@ The blue strip at `3,68,76,92` is part of the example scene's floor/platform,
 not a table. The gray strip at `171,44,250,61` is a cubicle/wall partition,
 not a cabinet. The white block at `84,70,110,90` is a wall panel. These scene
 construction pieces are intentionally not placed as freestanding furniture.
+
+## Composition rules
+
+Pixel Office is a scene-asset pack rather than a directional tileset. The map
+therefore does not rotate chairs, desks, computers, or sofas to invent missing
+views. `scripts/generate-office-map.py` builds only these source-compatible
+prefabs before placing furniture:
+
+- `workstation_left` — source-facing chair and adjacent desk/computer aligned
+  to the left side of a partition.
+- `workstation_right` — the same unrotated composition shifted to the right
+  side of a partition. It is not mirrored because no opposite-facing chair is
+  provided by the source pack.
+- `service_counter` — horizontal desk, small terminal, and tower.
+
+Wall decorations are anchored to wall faces. Front-facing sofas, bookcases,
+vending machines, water coolers, and plants are placed along perimeter walls
+with usable floor space left clear in front of them.
