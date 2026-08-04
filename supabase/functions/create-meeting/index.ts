@@ -69,22 +69,17 @@ Deno.serve(async (req) => {
   // write 하므로 rooms 가 없어 FK 위반(409)이 반복됐다. 생성 시점에 만들어 두면
   // 방은 태어날 때부터 존재하고, "방이 없으면 입장 불가" 규칙이 성립한다.
   // (webhook meeting.started 도 idempotent upsert 로 바뀌어 중복돼도 무해하다.)
-  let { error: roomError } = await supabase
+  const { error: roomError } = await supabase
     .from('rooms')
     .upsert({ id: data.id, title, map: roomMap })
-  // 하위호환: rooms.map 컬럼 마이그레이션 전에 이 함수가 배포돼도 방 생성이 깨지지 않게,
-  // map 컬럼 부재(PostgREST PGRST204 등)면 map 없이 1회 재시도한다. 이 경우 map 은
-  // 컬럼 기본값 or null 이 되고, 클라이언트 resolveMap 이 기본 맵으로 폴백한다.
-  if (roomError && (roomError.code === 'PGRST204' || String(roomError.message).includes("'map'"))) {
-    console.warn('rooms.map 컬럼 없음 — map 없이 재시도(마이그레이션 전 하위호환):', roomError.message)
-    ;({ error: roomError } = await supabase.from('rooms').upsert({ id: data.id, title }))
-  }
   if (roomError) {
     console.error('rooms upsert error:', roomError)
     return new Response(`DB error: ${roomError.message}`, { status: 500, headers: CORS_HEADERS })
   }
 
-  return new Response(JSON.stringify({ meeting_id: data.id }), {
+  // 클라이언트가 배포 버전 불일치나 저장 누락을 감지할 수 있도록 실제 저장한 맵을
+  // 함께 돌려준다. meeting_id만 반환하는 구버전 함수는 성공으로 간주하지 않는다.
+  return new Response(JSON.stringify({ meeting_id: data.id, map: roomMap }), {
     headers: {
       ...CORS_HEADERS,
       'Content-Type': 'application/json',
