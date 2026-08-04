@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   // 누락/무효면 기본('village')으로 폴백한다(클라 resolveMap 과 동일 규칙).
   // ⚠️ Deno 런타임이라 src 를 import 할 수 없다 — 이 목록은 src/lib/mapKind.ts 의 MAPS 와
   //    반드시 같이 유지한다(맵 추가 시 양쪽 수정).
-  const ALLOWED_MAPS = ['village', 'tilemap']
+  const ALLOWED_MAPS = ['village', 'tilemap', 'office']
   const roomMap = ALLOWED_MAPS.includes(map) ? map : 'village'
 
   // Cloudflare Realtime – Add Participant

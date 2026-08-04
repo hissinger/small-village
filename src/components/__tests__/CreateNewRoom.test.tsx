@@ -78,4 +78,22 @@ describe("CreateNewRoom room_created 계측", () => {
       expect.objectContaining({ id: "new-room-id", map: MAPS.TILEMAP })
     );
   });
+
+  it("Office 맵을 고르면 사무실 맵으로 방을 생성한다", async () => {
+    render(
+      <CreateNewRoom disabled={false} roomCount={0} onEnterRoom={() => {}} />
+    );
+    fireEvent.change(screen.getByPlaceholderText("Room title"), {
+      target: { value: "office room" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Office" }));
+    fireEvent.click(screen.getByRole("button", { name: /create/i }));
+
+    await waitFor(() =>
+      expect(createMeetingMock).toHaveBeenCalledWith(
+        "office room",
+        MAPS.OFFICE
+      )
+    );
+  });
 });
