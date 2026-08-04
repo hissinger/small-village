@@ -23,6 +23,7 @@ interface CharacterPreviewProps {
   onPrevious: () => void;
   onNext: () => void;
   currentIndex: number;
+  loading: boolean;
 }
 
 const arrowClass =
@@ -33,15 +34,30 @@ const CharacterPreview: React.FC<CharacterPreviewProps> = ({
   onPrevious,
   onNext,
   currentIndex,
+  loading,
 }) => (
   <div className="flex w-full flex-col items-center">
-    <div className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-orange-50/70 ring-1 ring-amber-900/10">
+    <div
+      data-testid="character-preview"
+      className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-orange-50/70 ring-1 ring-amber-900/10"
+    >
       <div ref={previewContainerRef} className="[image-rendering:pixelated]" />
+      {loading && (
+        <div
+          role="status"
+          aria-label="Loading character"
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-orange-50/80 text-stone-700 backdrop-blur-[1px]"
+        >
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-900/20 border-b-orange-700" />
+          <span className="mt-3 text-xs font-medium">Loading character...</span>
+        </div>
+      )}
       <button
         type="button"
         aria-label="Previous character"
         className={`left-2 ${arrowClass}`}
         onClick={onPrevious}
+        disabled={loading}
       >
         <ChevronLeft size={20} strokeWidth={2.5} />
       </button>
@@ -50,6 +66,7 @@ const CharacterPreview: React.FC<CharacterPreviewProps> = ({
         aria-label="Next character"
         className={`right-2 ${arrowClass}`}
         onClick={onNext}
+        disabled={loading}
       >
         <ChevronRight size={20} strokeWidth={2.5} />
       </button>

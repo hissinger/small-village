@@ -17,7 +17,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 
-import LoadingSpinner from "../components/LoadingSpinner";
 import CharacterPreviewScene from "../scenes/CharacterPreviewScene";
 import { NUM_CHARACTERS } from "../constants";
 import { useRooms } from "../hooks/useRooms";
@@ -152,6 +151,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 handlePrevious={handlePrevious}
                 handleNext={handleNext}
                 currentIndex={currentIndex}
+                loading={!readyScene}
                 name={name}
                 onNameChange={handleNameChange}
               />
@@ -181,12 +181,6 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 />
               </div>
             </div>
-
-            {!readyScene && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-stone-950/60 backdrop-blur-sm">
-                <LoadingSpinner message="Loading assets..." />
-              </div>
-            )}
           </div>
         </div>
       </div>

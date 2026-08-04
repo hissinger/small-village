@@ -16,7 +16,6 @@
 
 import { RefreshCw, Users } from "lucide-react";
 import { Room } from "../types";
-import LoadingSpinner from "./LoadingSpinner";
 import PixelHouse from "./PixelHouse";
 import { MAP_LABELS, resolveMap } from "../lib/mapKind";
 
@@ -59,8 +58,13 @@ const RoomList: React.FC<RoomListProps> = ({
     </div>
     <div className="relative h-[200px] overflow-y-auto pr-1">
       {loading ? (
-        <div className="flex h-full min-h-[100px] items-center justify-center">
-          <LoadingSpinner />
+        <div
+          role="status"
+          aria-label="Loading rooms"
+          className="flex h-full min-h-[100px] flex-col items-center justify-center text-orange-100/80"
+        >
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/15 border-b-orange-400" />
+          <span className="mt-3 text-xs font-medium">Loading rooms...</span>
         </div>
       ) : rooms.length > 0 ? (
         <ul className="flex list-none flex-col gap-2 p-0">
