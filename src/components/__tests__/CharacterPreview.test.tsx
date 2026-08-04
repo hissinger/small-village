@@ -45,4 +45,13 @@ describe("CharacterPreview", () => {
       screen.queryByRole("status", { name: "Loading character" })
     ).not.toBeInTheDocument();
   });
+
+  it("게임 맵의 잔디 배경과 캐릭터 바닥 그림자를 표시한다", () => {
+    render(<CharacterPreview {...defaultProps} loading={false} />);
+
+    expect(screen.getByTestId("character-preview")).toHaveStyle({
+      backgroundImage: 'url("/assets/village-bg.png")',
+    });
+    expect(screen.getByTestId("character-ground-shadow")).toBeInTheDocument();
+  });
 });

@@ -27,7 +27,7 @@ interface CharacterPreviewProps {
 }
 
 const arrowClass =
-  "absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-700 ring-1 ring-stone-900/10 transition hover:bg-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1";
+  "absolute top-1/2 z-30 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-700 ring-1 ring-stone-900/10 transition hover:bg-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 focus-visible:ring-offset-1";
 
 const CharacterPreview: React.FC<CharacterPreviewProps> = ({
   previewContainerRef,
@@ -39,14 +39,31 @@ const CharacterPreview: React.FC<CharacterPreviewProps> = ({
   <div className="flex w-full flex-col items-center">
     <div
       data-testid="character-preview"
-      className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-orange-50/70 ring-1 ring-amber-900/10"
+      className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-lime-700 bg-no-repeat ring-1 ring-lime-950/20"
+      style={{
+        backgroundImage: 'url("/assets/village-bg.png")',
+        backgroundPosition: "80% 84%",
+        backgroundSize: "1000% auto",
+      }}
     >
-      <div ref={previewContainerRef} className="[image-rendering:pixelated]" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-b from-lime-50/10 to-green-950/10"
+      />
+      <div
+        data-testid="character-ground-shadow"
+        aria-hidden="true"
+        className="absolute left-1/2 top-1/2 z-10 mt-11 h-3 w-14 -translate-x-1/2 rounded-[50%] bg-green-950/35 blur-[1px]"
+      />
+      <div
+        ref={previewContainerRef}
+        className="relative z-20 [image-rendering:pixelated]"
+      />
       {loading && (
         <div
           role="status"
           aria-label="Loading character"
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-orange-50/80 text-stone-700 backdrop-blur-[1px]"
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-lime-50/80 text-stone-700 backdrop-blur-[1px]"
         >
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-900/20 border-b-orange-700" />
           <span className="mt-3 text-xs font-medium">Loading character...</span>
