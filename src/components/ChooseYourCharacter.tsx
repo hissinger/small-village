@@ -23,6 +23,7 @@ interface ChooseYourCharacterProps {
   handlePrevious: () => void;
   handleNext: () => void;
   currentIndex: number;
+  loading: boolean;
   name: string;
   onNameChange: (value: string) => void;
 }
@@ -32,6 +33,7 @@ const ChooseYourCharacter: React.FC<ChooseYourCharacterProps> = ({
   handlePrevious,
   handleNext,
   currentIndex,
+  loading,
   name,
   onNameChange,
 }) => (
@@ -50,6 +52,7 @@ const ChooseYourCharacter: React.FC<ChooseYourCharacterProps> = ({
       onPrevious={handlePrevious}
       onNext={handleNext}
       currentIndex={currentIndex}
+      loading={loading}
     />
 
     <div className="mt-auto pt-6">
