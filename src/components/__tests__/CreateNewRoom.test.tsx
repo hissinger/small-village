@@ -40,7 +40,12 @@ describe("CreateNewRoom room_created 계측", () => {
   it("방 생성 성공 시 기본 맵(village)으로 room_created 를 push 한다", async () => {
     const spy = jest.spyOn(analytics, "pushEvent");
     render(
-      <CreateNewRoom disabled={false} roomCount={0} onEnterRoom={() => {}} />
+      <CreateNewRoom
+        disabled={false}
+        roomCount={0}
+        mapKind={MAPS.VILLAGE}
+        onEnterRoom={() => {}}
+      />
     );
     fireEvent.change(screen.getByPlaceholderText("Room title"), {
       target: { value: "my room" },
@@ -59,13 +64,16 @@ describe("CreateNewRoom room_created 계측", () => {
   it("Classic 맵을 고르면 그 맵으로 방을 생성하고 onEnterRoom 에 전달한다", async () => {
     const onEnterRoom = jest.fn();
     render(
-      <CreateNewRoom disabled={false} roomCount={0} onEnterRoom={onEnterRoom} />
+      <CreateNewRoom
+        disabled={false}
+        roomCount={0}
+        mapKind={MAPS.TILEMAP}
+        onEnterRoom={onEnterRoom}
+      />
     );
     fireEvent.change(screen.getByPlaceholderText("Room title"), {
       target: { value: "classic room" },
     });
-    // 맵 토글에서 Classic(tilemap) 선택
-    fireEvent.click(screen.getByRole("button", { name: "Classic" }));
     fireEvent.click(screen.getByRole("button", { name: /create/i }));
 
     await waitFor(() =>
@@ -81,12 +89,16 @@ describe("CreateNewRoom room_created 계측", () => {
 
   it("Office 맵을 고르면 사무실 맵으로 방을 생성한다", async () => {
     render(
-      <CreateNewRoom disabled={false} roomCount={0} onEnterRoom={() => {}} />
+      <CreateNewRoom
+        disabled={false}
+        roomCount={0}
+        mapKind={MAPS.OFFICE}
+        onEnterRoom={() => {}}
+      />
     );
     fireEvent.change(screen.getByPlaceholderText("Room title"), {
       target: { value: "office room" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Office" }));
     fireEvent.click(screen.getByRole("button", { name: /create/i }));
 
     await waitFor(() =>

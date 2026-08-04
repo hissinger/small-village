@@ -40510,13 +40510,6 @@
         0,
         0,
         0
-      ],
-      "properties": [
-        {
-          "name": "depth",
-          "type": "int",
-          "value": 10
-        }
       ]
     },
     {
@@ -41234,13 +41227,6 @@
         0,
         0,
         0
-      ],
-      "properties": [
-        {
-          "name": "depth",
-          "type": "int",
-          "value": 11
-        }
       ]
     },
     {

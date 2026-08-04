@@ -15,9 +15,9 @@
  */
 
 /*
- * E2E: 방별 맵 선택(village | tilemap). ?e2e 일 때만 켜지는 ?map= 오버라이드로 각 맵을
+ * E2E: 방별 맵 선택(village | tilemap | office). ?e2e 일 때만 켜지는 ?map= 오버라이드로 각 맵을
  * 강제 로드해, (1) 씬이 올바른 맵으로 뜨는지(window.__smallVillage.map()), (2) 월드 크기가
- * 맵별 기대값(village 1408x1152 / tilemap 1280x960)과 맞는지 assert + 스크린샷 저장.
+ * 맵별 기대값과 맞는지 assert + 스크린샷 저장.
  * 방 생성→입장 경로 자체는 room-flow 가 커버하므로, 여기선 "맵 분기"만 검증한다.
  * 실행: node e2e/map-select.mjs
  */
@@ -30,7 +30,7 @@ const supabase=createClient(env.REACT_APP_SUPABASE_URL,env.REACT_APP_SUPABASE_KE
 const ARGS=["--no-sandbox","--disable-dev-shm-usage","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist","--enable-webgl","--use-fake-ui-for-media-stream","--use-fake-device-for-media-stream"];
 let failed=false; const fail=m=>{console.error("❌ "+m);failed=true;};
 const titles=[];
-for (const map of ["village","tilemap"]) {
+for (const map of ["village","tilemap","office"]) {
   const title=`e2e-mapselect-${map}`; titles.push(title);
   const b=await chromium.launch({headless:true,args:ARGS});
   const p=await(await b.newContext({viewport:{width:1280,height:800}})).newPage();
@@ -47,8 +47,12 @@ for (const map of ["village","tilemap"]) {
     console.log(`[${map}]`,info);
     if(info.map!==map) fail(`[${map}] 씬 map 이 ${info.map} 로 로드됨`);
     else console.log(`✅ [${map}] 씬이 올바른 맵으로 로드`);
-    // 예상 월드 크기: village 1408x1152, tilemap 20*32*2=1280 x 15*32*2=960
-    const exp = map==="village"?{w:1408,h:1152}:{w:1280,h:960};
+    const expectedSizes = {
+      village: {w:1408,h:1152},
+      tilemap: {w:1280,h:960},
+      office: {w:2048,h:1408},
+    };
+    const exp = expectedSizes[map];
     if(info.size.width!==exp.w||info.size.height!==exp.h) fail(`[${map}] 월드 크기 ${info.size.width}x${info.size.height} != ${exp.w}x${exp.h}`);
     else console.log(`✅ [${map}] 월드 크기 ${info.size.width}x${info.size.height}`);
     await p.screenshot({path:`${SHOT}/map-${map}.png`});
@@ -56,4 +60,4 @@ for (const map of ["village","tilemap"]) {
 }
 // cleanup
 try{ for(const t of titles){ const rooms=(await supabase.from("rooms").select("id").eq("title",t)).data; for(const r of rooms||[]){await supabase.from("users").delete().eq("room_id",r.id);await supabase.from("rooms").delete().eq("id",r.id);} } }catch(e){console.warn("cleanup warn",e?.message);}
-if(failed) process.exit(1); console.log("✅ 두 맵 검증 통과");
+if(failed) process.exit(1); console.log("✅ 세 맵 검증 통과");

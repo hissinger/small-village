@@ -101,6 +101,30 @@ describe("office Tiled map", () => {
     );
   });
 
+  it("스폰의 실제 발 충돌체가 장애물과 겹치면 도달 가능으로 처리하지 않는다", () => {
+    const brokenMap = JSON.parse(JSON.stringify(map));
+    const checks = brokenMap.layers.find(
+      ({ name }: { name: string }) => name === "navigation_checks"
+    );
+    const spawn = checks.objects.find(
+      ({ name }: { name: string }) => name === "spawn"
+    );
+    const colliders = brokenMap.layers.find(
+      ({ name }: { name: string }) => name === "furniture_colliders"
+    );
+    colliders.objects.push({
+      name: "spawn-blocker",
+      x: spawn.x - 8,
+      y: spawn.y + 8,
+      width: 16,
+      height: 16,
+    });
+
+    expect(auditOfficeMapNavigation(brokenMap)).toContain(
+      "unreachable checkpoint: spawn"
+    );
+  });
+
   it("32x22 타일과 현재 렌더러가 요구하는 기본 레이어를 가진다", () => {
     expect(map).toMatchObject({
       type: "map",

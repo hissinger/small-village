@@ -30,7 +30,8 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "audit:office": "python3 scripts/generate-office-map.py && CI=true craco test --runInBand src/lib/officeMap.test.ts && python3 scripts/render-office-audit.py",
+    "generate:map-previews": "python3 scripts/generate-map-previews.py",
+    "audit:office": "python3 scripts/test_tiled_renderer.py && python3 scripts/generate-office-map.py && python3 scripts/generate-map-previews.py && CI=true craco test --runInBand src/lib/officeMap.test.ts && python3 scripts/render-office-audit.py",
     "test:e2e": "node e2e/room-flow.mjs",
     "eject": "react-scripts eject"
   },

@@ -42,6 +42,13 @@ export const MAP_LABELS: Record<MapKind, string> = {
   [MAPS.OFFICE]: "Office",
 };
 
+/** 방 생성 캐러셀에 표시할 실제 게임 맵 미리보기. */
+export const MAP_PREVIEW_IMAGES: Record<MapKind, string> = {
+  [MAPS.VILLAGE]: "/assets/village-bg.png",
+  [MAPS.TILEMAP]: "/assets/map-previews/classic.png",
+  [MAPS.OFFICE]: "/assets/map-previews/office.png",
+};
+
 /**
  * 외부에서 온 값(DB·localStorage·쿼리 등, 오래된 null 포함)을 유효한 MapKind 로 정규화한다.
  * 알 수 없는 값이면 DEFAULT_MAP 로 폴백해 렌더가 절대 깨지지 않게 한다.

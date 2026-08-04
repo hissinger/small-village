@@ -19,21 +19,22 @@ import { Room } from "../types";
 import { createMeeting } from "../lib/supabaseFunctions";
 import { pushEvent } from "../lib/analytics";
 import { ANALYTICS_EVENTS } from "../constants";
-import { DEFAULT_MAP, MAP_LABELS, MAPS, MapKind } from "../lib/mapKind";
+import { MapKind } from "../lib/mapKind";
 
 interface CreateNewRoomProps {
   disabled: boolean;
   onEnterRoom: (room: Room) => void;
   roomCount: number;
+  mapKind: MapKind;
 }
 
 const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
   disabled,
   onEnterRoom,
   roomCount,
+  mapKind,
 }) => {
   const [newRoomTitle, setNewRoomTitle] = useState("");
-  const [mapKind, setMapKind] = useState<MapKind>(DEFAULT_MAP);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -72,32 +73,6 @@ const CreateNewRoom: React.FC<CreateNewRoomProps> = ({
       >
         Create a New Room
       </label>
-
-      {/* 맵 선택(방별 고정): 같은 방 참가자는 모두 이 맵을 쓴다. */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-xs font-medium text-stone-300">Map</span>
-        <div
-          role="group"
-          aria-label="Map"
-          className="inline-flex overflow-hidden rounded-lg border border-white/15"
-        >
-          {(Object.values(MAPS) as MapKind[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mapKind === m}
-              onClick={() => setMapKind(m)}
-              className={`px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60 ${
-                mapKind === m
-                  ? "bg-orange-700 text-white"
-                  : "bg-stone-800/60 text-stone-300 hover:bg-white/10"
-              }`}
-            >
-              {MAP_LABELS[m]}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="flex gap-2">
         <input

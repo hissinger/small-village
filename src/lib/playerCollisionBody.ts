@@ -75,3 +75,11 @@ export function getPlayerSortY(
 ): number {
   return spriteY + displayHeight / 2;
 }
+
+/** 플레이어에 붙는 링 같은 오브젝트를 동적으로 변하는 스프라이트 depth에 맞춘다. */
+export function syncPlayerCompanionDepth(
+  companion: { setDepth: (depth: number) => unknown },
+  sprite: { depth: number }
+): void {
+  companion.setDepth(sprite.depth);
+}

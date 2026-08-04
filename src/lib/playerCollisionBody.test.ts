@@ -18,6 +18,7 @@ import {
   getPlayerCollisionBody,
   getPlayerCollisionFootprint,
   getPlayerSortY,
+  syncPlayerCompanionDepth,
 } from "./playerCollisionBody";
 
 describe("getPlayerCollisionBody", () => {
@@ -55,5 +56,15 @@ describe("getPlayerCollisionFootprint", () => {
 describe("getPlayerSortY", () => {
   it("캐릭터 중심이 아니라 화면에 표시된 발끝을 깊이 기준으로 사용한다", () => {
     expect(getPlayerSortY(280, 64)).toBe(312);
+  });
+});
+
+describe("syncPlayerCompanionDepth", () => {
+  it("Office에서 이동한 캐릭터의 현재 depth를 링에 반영한다", () => {
+    const companion = { setDepth: jest.fn() };
+
+    syncPlayerCompanionDepth(companion, { depth: 1.75 });
+
+    expect(companion.setDepth).toHaveBeenCalledWith(1.75);
   });
 });

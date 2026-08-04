@@ -56,7 +56,7 @@ const LobbyBackground: React.FC = () => {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-stone-900"
+      className="pointer-events-none fixed inset-0 overflow-hidden bg-stone-900"
     >
       {/* Integer-scaled pixel-art village — filling the whole screen, crisp (no blur) */}
       <div
