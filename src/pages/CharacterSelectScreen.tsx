@@ -25,10 +25,12 @@ import { Room } from "../types";
 import RoomList from "../components/RoomList";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
+import ChooseYourMap from "../components/ChooseYourMap";
 import LobbyBackground from "../components/LobbyBackground";
 import { getStoredName, setStoredName } from "../lib/storage";
 import { pushEvent } from "../lib/analytics";
 import { ANALYTICS_EVENTS } from "../constants";
+import { DEFAULT_MAP, MapKind } from "../lib/mapKind";
 
 interface CharacterSelectScreenProps {
   onEnterRoom: (characterIndex: number, name: string, room: Room) => void;
@@ -40,6 +42,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   // 지난 방문에서 저장해 둔 이름으로 초기화한다(없으면 빈 문자열).
   const [name, setName] = useState(() => getStoredName() ?? "");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [mapKind, setMapKind] = useState<MapKind>(DEFAULT_MAP);
 
   // 이름이 바뀔 때마다 localStorage 에 반영해 다음 방문에 그대로 보이게 한다.
   const handleNameChange = (value: string) => {
@@ -81,7 +84,8 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
       audio: {
         noAudio: true,
       },
-      backgroundColor: "#f0f0f0",
+      // 바깥 CharacterPreview 카드 색이 그대로 보이도록 캔버스 배경은 투명하게 둔다.
+      transparent: true,
     };
 
     const game = new Phaser.Game(config);
@@ -130,7 +134,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
 
       {/* Floating UI — no cards, content sits directly on the scrim */}
       <div className="relative flex min-h-full items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-6xl">
           {/* Hero title */}
           <h1 className="mb-8 text-center text-xl leading-relaxed text-orange-100 sv-font-pixel sv-pixel-shadow sm:text-2xl">
             Welcome to Small Village
@@ -140,9 +144,9 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               village: the background still reads through (bg-stone-900/70 +
               backdrop-blur), while the border + shadow give each block a clear
               "lobby window" edge that separates UI from scenery. */}
-          <div className="relative grid grid-cols-1 items-stretch gap-8 md:grid-cols-5">
+          <div className="relative grid grid-cols-1 items-stretch gap-4 lg:grid-cols-7">
             {/* Left panel: character + name */}
-            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-2">
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] lg:col-span-2">
               <ChooseYourCharacter
                 previewContainerRef={previewContainerRef}
                 handlePrevious={handlePrevious}
@@ -153,8 +157,13 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               />
             </div>
 
+            {/* Middle panel: map for newly created rooms */}
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] lg:col-span-2">
+              <ChooseYourMap mapKind={mapKind} onChange={setMapKind} />
+            </div>
+
             {/* Right panel: room list + create */}
-            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] md:col-span-3">
+            <div className="flex flex-col rounded-2xl border border-white/10 bg-stone-900/70 p-6 shadow-xl backdrop-blur-[2px] lg:col-span-3">
               <RoomList
                 disabled={!name}
                 rooms={rooms}
@@ -167,6 +176,7 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 <CreateNewRoom
                   disabled={!name}
                   roomCount={rooms.length}
+                  mapKind={mapKind}
                   onEnterRoom={handleEnterRoom}
                 />
               </div>

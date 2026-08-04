@@ -425,7 +425,6 @@ def make_tile_layer(
     layer_id: int,
     name: str,
     data: list[int],
-    depth=None,
     depth_y=None,
 ):
     layer = {
@@ -440,10 +439,6 @@ def make_tile_layer(
         "visible": True,
         "data": data,
     }
-    if depth is not None:
-        layer["properties"] = [
-            {"name": "depth", "type": "int", "value": depth}
-        ]
     if depth_y is not None:
         layer["properties"] = [
             {"name": "depthY", "type": "int", "value": depth_y}
@@ -725,8 +720,8 @@ def build_map(atlas: OfficeAtlas) -> dict:
                     dynamic_depth_layers
                 )
             ],
-            make_tile_layer(5, "above_0", above_0, 10),
-            make_tile_layer(6, "above_1", above_1, 11),
+            make_tile_layer(5, "above_0", above_0),
+            make_tile_layer(6, "above_1", above_1),
             {
                 "id": 7,
                 "name": "spawn",

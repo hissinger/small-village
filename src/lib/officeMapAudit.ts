@@ -146,6 +146,7 @@ function reachableCheckpoints(
   const startObject = checkpoints.find(({ name }) => name === "spawn");
   if (!startObject) return new Set();
   const start = cell(startObject.x ?? 0, startObject.y ?? 0);
+  if (blocked(start.column, start.row)) return new Set();
   const visited = new Uint8Array(columns * rows);
   const queue: Array<{ column: number; row: number }> = [start];
   visited[start.row * columns + start.column] = 1;

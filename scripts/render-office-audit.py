@@ -2,19 +2,14 @@
 """Render the generated Office map with navigation and collision overlays."""
 
 import argparse
-import json
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+from tiled_renderer import layer_data, properties, render_tilemap
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP_PATH = ROOT / "public" / "assets" / "tilemaps" / "office.json"
-
-
-def properties(item):
-    return {entry["name"]: entry["value"] for entry in item.get("properties", [])}
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,49 +20,18 @@ def main():
     )
     args = parser.parse_args()
 
-    tilemap = json.loads(MAP_PATH.read_text())
+    tilemap, canvas = render_tilemap(MAP_PATH)
     tile_width = tilemap["tilewidth"]
     tile_height = tilemap["tileheight"]
     world_width = tilemap["width"] * tile_width
     world_height = tilemap["height"] * tile_height
-    canvas = Image.new("RGBA", (world_width, world_height), (0, 0, 0, 0))
-
-    tilesets = []
     colliding_gids = set()
     for tileset in tilemap["tilesets"]:
-        source = (MAP_PATH.parent / tileset["image"]).resolve()
-        tilesets.append((tileset["firstgid"], tileset, Image.open(source).convert("RGBA")))
         for tile in tileset.get("tiles", []):
             if properties(tile).get("collides"):
                 colliding_gids.add(tileset["firstgid"] + tile["id"])
 
-    def tile_image(raw_gid):
-        gid = raw_gid & 0x1FFFFFFF
-        if gid == 0:
-            return None
-        firstgid, tileset, source = max(
-            (entry for entry in tilesets if entry[0] <= gid),
-            key=lambda entry: entry[0],
-        )
-        local_id = gid - firstgid
-        column = local_id % tileset["columns"]
-        row = local_id // tileset["columns"]
-        x = column * tile_width
-        y = row * tile_height
-        return source.crop((x, y, x + tile_width, y + tile_height))
-
     tile_layers = [layer for layer in tilemap["layers"] if layer["type"] == "tilelayer"]
-    for layer in tile_layers:
-        if layer["name"] == "decoration_0":
-            continue
-        for index, gid in enumerate(layer["data"]):
-            tile = tile_image(gid)
-            if tile is None:
-                continue
-            canvas.alpha_composite(
-                tile,
-                ((index % tilemap["width"]) * tile_width, (index // tilemap["width"]) * tile_height),
-            )
 
     overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
@@ -93,7 +57,7 @@ def main():
     for layer in tile_layers:
         if layer["name"] not in collision_layers:
             continue
-        for index, raw_gid in enumerate(layer["data"]):
+        for index, raw_gid in enumerate(layer_data(layer)):
             if (raw_gid & 0x1FFFFFFF) not in colliding_gids:
                 continue
             x = (index % tilemap["width"]) * tile_width

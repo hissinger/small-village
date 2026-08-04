@@ -29,6 +29,7 @@ import { DEFAULT_MAP, MAPS, MapKind, resolveMap } from "../lib/mapKind";
 import {
   getPlayerCollisionBody,
   getPlayerSortY,
+  syncPlayerCompanionDepth,
 } from "../lib/playerCollisionBody";
 
 const GAME_CONFIG = {
@@ -707,7 +708,7 @@ export default class SmallVillageScene extends Phaser.Scene {
         .setVisible(false);
       // 스프라이트와 같은 depth(0) 로 두되 표시목록에서 스프라이트 바로 뒤로 보낸다.
       // ground 레이어(depth 0, 먼저 삽입됨) 위·캐릭터 아래에 그려지게 한다.
-      ring.setDepth(sprite.depth);
+      syncPlayerCompanionDepth(ring, sprite);
       this.children.moveBelow(ring, sprite);
       this.speakerRings[userId] = { ring };
     }
@@ -741,6 +742,7 @@ export default class SmallVillageScene extends Phaser.Scene {
       const sprite = this.getSprite(userId);
       if (sprite) {
         ring.setPosition(sprite.x, sprite.y + GAME_CONFIG.RING.OFFSET_Y);
+        syncPlayerCompanionDepth(ring, sprite);
       }
     });
   }
@@ -778,7 +780,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     g.setPosition(this.sprite.x, this.sprite.y + c.OFFSET_Y);
     // 스프라이트와 같은 depth 로 두되 표시목록에서 스프라이트 바로 뒤로 보낸다.
     // decoration 타일 위·캐릭터 아래에 overlay 되게 한다(발화 링과 동일 패턴).
-    g.setDepth(this.sprite.depth);
+    syncPlayerCompanionDepth(g, this.sprite);
     this.children.moveBelow(g, this.sprite);
     this.proximityRing = g;
   }
@@ -815,6 +817,7 @@ export default class SmallVillageScene extends Phaser.Scene {
       this.sprite.x,
       this.sprite.y + GAME_CONFIG.PROXIMITY_RING.OFFSET_Y,
     );
+    syncPlayerCompanionDepth(this.proximityRing, this.sprite);
   }
 
   private removeSpeakerRing(userId: string) {
