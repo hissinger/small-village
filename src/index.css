@@ -27,3 +27,23 @@
 .sv-pixel-shadow {
   text-shadow: 3px 3px 0 rgba(120, 53, 15, 0.18);
 }
+
+/* 20x32 스프라이트시트의 오른쪽 걷기 프레임(6~8)을 제자리에서 반복한다. */
+.sv-character-walk-right {
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: sv-walk-right 0.72s steps(1) infinite;
+}
+
+@keyframes sv-walk-right {
+  0%,
+  100% {
+    background-position: 0 -64px;
+  }
+  33.333% {
+    background-position: -20px -64px;
+  }
+  66.666% {
+    background-position: -40px -64px;
+  }
+}
