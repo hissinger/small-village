@@ -19,7 +19,7 @@ import SmallVillage from "../components/SmallVillage";
 import { RoomProvider } from "../context/RoomContext";
 import { RoomParticipantsProvider } from "../context/RoomParticipantsContext";
 import SmallVillageScene from "../scenes/SmallVillageScene";
-import LoadingSpinner from "../components/LoadingSpinner";
+import EnteringRoomScreen from "../components/EnteringRoomScreen";
 import {
   RealtimeKitProvider,
   useRealtimeKitClient,
@@ -290,7 +290,11 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
       />
       <div className="absolute inset-0">
         {!isReady ? (
-          <LoadingSpinner message="Strolling into the Small Village..." />
+          <EnteringRoomScreen
+            map={room.map}
+            characterIndex={characterIndex}
+            message="Strolling into the Small Village..."
+          />
         ) : (
           <RealtimeKitProvider value={meeting}>
             <RoomProvider
