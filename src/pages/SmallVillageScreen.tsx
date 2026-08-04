@@ -33,6 +33,7 @@ import { deleteUserRow } from "../lib/leaveRoom";
 
 import { Room } from "../types";
 import BottomBar from "../components/BottomBar";
+import GameBackdrop from "../components/GameBackdrop";
 import { ANALYTICS_EVENTS, BOTTOM_BAR_HEIGHT } from "../constants";
 
 interface SmallVillageScreenProps {
@@ -127,7 +128,8 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
           debug: false,
         },
       },
-      backgroundColor: "#3a5a40",
+      // 맵 바깥은 DOM 의 확대·블러 배경이 비치도록 투명하게 둔다.
+      transparent: true,
       // 캔버스 크기는 뷰포트 전체가 아니라 게임 컨테이너(헤더 아래 영역) 기준으로 잡는다.
       // RESIZE 모드가 이후 부모 크기에 맞춰 자동 보정한다.
       width: parent.clientWidth,
@@ -283,6 +285,12 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
     <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
       {/* 게임 캔버스는 헤더 아래 ~ 하단 바(BottomBar) 위 영역만 채운다.
           하단 바가 캔버스를 덮으면 맵의 상/하 여백이 비대칭으로 보이므로 바 높이만큼 예약. */}
+      <div
+        className="absolute inset-x-0 top-0"
+        style={{ bottom: BOTTOM_BAR_HEIGHT }}
+      >
+        <GameBackdrop map={room.map} />
+      </div>
       <div
         ref={gameContainerRef}
         className="absolute inset-x-0 top-0 overflow-hidden"
