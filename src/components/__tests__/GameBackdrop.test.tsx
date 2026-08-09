@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
+import fs from "fs";
+import path from "path";
 import { render, screen } from "@testing-library/react";
 import GameBackdrop from "../GameBackdrop";
+
+const readSource = (relative: string) =>
+  fs.readFileSync(path.join(__dirname, "../..", relative), "utf8");
 
 describe("GameBackdrop", () => {
   it("선택한 맵 이미지를 확대·블러 배경으로 표시한다", () => {
@@ -36,5 +41,34 @@ describe("GameBackdrop", () => {
       "src",
       "/assets/village-bg.png"
     );
+  });
+
+  // 게임 화면은 캔버스가 배경을 덮으면 이 컴포넌트가 아예 보이지 않는다. Phaser 는
+  // React 밖 명령형 코드라 렌더 결과로 확인할 수 없으므로 설정을 소스에서 검사한다.
+  describe("게임 화면이 배경을 가리지 않는다", () => {
+    it("Phaser 캔버스를 투명하게 만든다", () => {
+      const source = readSource("pages/SmallVillageScreen.tsx");
+
+      expect(source).toContain("transparent: true");
+      expect(source).not.toMatch(/backgroundColor:\s*"#/);
+    });
+
+    it("캔버스보다 먼저 배경을 깐다", () => {
+      // 순서가 뒤집히면 배경이 게임을 덮는다. 둘 다 absolute 라 DOM 순서가 곧 페인트 순서다.
+      const source = readSource("pages/SmallVillageScreen.tsx");
+      const backdrop = source.indexOf("<GameBackdrop");
+      const canvas = source.indexOf("ref={gameContainerRef}");
+
+      expect(backdrop).toBeGreaterThan(-1);
+      expect(canvas).toBeGreaterThan(-1);
+      expect(backdrop).toBeLessThan(canvas);
+    });
+
+    it("카메라가 월드 바깥을 칠하지 않는다", () => {
+      // Phaser 카메라 기본 배경이 rgba(0,0,0,0) 이므로 아무것도 지정하지 않는 게 정답이다.
+      expect(readSource("scenes/SmallVillageScene.ts")).not.toContain(
+        "setBackgroundColor"
+      );
+    });
   });
 });

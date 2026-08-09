@@ -304,8 +304,8 @@ export default class SmallVillageScene extends Phaser.Scene {
     const { width, height, spawn } = world;
 
     this.physics.world.setBounds(0, 0, width, height);
-    const cam = this.cameras.main;
-    cam.setBackgroundColor("#3a5a40");
+    // 카메라 배경은 지정하지 않는다 — 기본값이 투명이라 월드 바깥 여백으로 DOM 의
+    // GameBackdrop(같은 맵의 확대·블러)이 그대로 비친다. 단색으로 칠하면 그게 가려진다.
 
     const playerBody = getPlayerCollisionBody(
       GAME_CONFIG.SPRITE.FRAME_WIDTH,
