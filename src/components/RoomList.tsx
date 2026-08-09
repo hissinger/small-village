@@ -90,7 +90,7 @@ const RoomList: React.FC<RoomListProps> = ({
                       </span>
                     ) : (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-stone-500/15 px-1.5 py-0.5 text-xs font-medium text-stone-500">
-                        비어 있음
+                        Empty
                       </span>
                     )}
                   </div>

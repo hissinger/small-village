@@ -16,6 +16,7 @@
 
 import { render, screen } from "@testing-library/react";
 import RoomList from "../RoomList";
+import { Room } from "../../types";
 
 describe("RoomList", () => {
   it("방 목록 로딩 상태를 흰색 오버레이 없이 목록 영역 안에 표시한다", () => {
@@ -34,5 +35,27 @@ describe("RoomList", () => {
 
     expect(loading).toHaveTextContent("Loading rooms...");
     expect(loading).not.toHaveClass("absolute", "bg-white");
+  });
+
+  it("참가자가 없는 방의 배지를 영어(Empty)로 표기한다", () => {
+    const room: Room = {
+      id: "room-1",
+      title: "111",
+      created_at: "2026-08-09T11:42:11.000Z",
+    } as Room;
+
+    render(
+      <RoomList
+        disabled={false}
+        rooms={[room]}
+        counts={{}}
+        onEnterRoom={() => {}}
+        loading={false}
+        refetch={async () => {}}
+      />
+    );
+
+    expect(screen.getByText("Empty")).toBeInTheDocument();
+    expect(screen.queryByText("비어 있음")).not.toBeInTheDocument();
   });
 });
