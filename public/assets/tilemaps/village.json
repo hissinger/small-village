@@ -1,78 +1,1523 @@
 {
   "compressionlevel": -1,
-  "width": 22,
   "height": 18,
-  "tilewidth": 32,
-  "tileheight": 32,
   "infinite": false,
-  "orientation": "orthogonal",
-  "renderorder": "right-down",
-  "type": "map",
-  "version": "1.10",
-  "tiledversion": "1.10.2",
-  "nextlayerid": 5,
-  "nextobjectid": 16,
-  "tilesets": [],
   "layers": [
     {
-      "type": "imagelayer",
       "id": 1,
-      "name": "background",
       "image": "../village-bg.png",
-      "imagewidth": 704,
       "imageheight": 576,
+      "imagewidth": 704,
+      "name": "background",
       "opacity": 1,
+      "repeatx": false,
+      "repeaty": false,
+      "type": "imagelayer",
       "visible": true,
       "x": 0,
       "y": 0
     },
     {
-      "type": "objectgroup",
       "id": 2,
-      "name": "colliders",
-      "opacity": 1,
-      "visible": true,
-      "x": 0,
-      "y": 0,
-      "objects": [
-        { "id": 1, "name": "waterfall-pond", "type": "", "x": 0, "y": 0, "width": 150, "height": 200, "rotation": 0, "visible": true },
-        { "id": 2, "name": "pines-top-center", "type": "", "x": 175, "y": 0, "width": 300, "height": 140, "rotation": 0, "visible": true },
-        { "id": 3, "name": "pines-top-right", "type": "", "x": 590, "y": 0, "width": 114, "height": 145, "rotation": 0, "visible": true },
-        { "id": 4, "name": "inn-base", "type": "", "x": 235, "y": 285, "width": 210, "height": 70, "rotation": 0, "visible": true },
-        { "id": 5, "name": "lower-center-building", "type": "", "x": 325, "y": 420, "width": 120, "height": 105, "rotation": 0, "visible": true },
-        { "id": 6, "name": "bottom-left-building", "type": "", "x": 30, "y": 505, "width": 295, "height": 71, "rotation": 0, "visible": true },
-        { "id": 7, "name": "right-hut-field", "type": "", "x": 585, "y": 255, "width": 119, "height": 105, "rotation": 0, "visible": true },
-        { "id": 8, "name": "bottom-right-rocks", "type": "", "x": 585, "y": 515, "width": 119, "height": 61, "rotation": 0, "visible": true }
-      ]
-    },
-    {
-      "type": "objectgroup",
-      "id": 3,
+      "image": "../village-above.png",
+      "imageheight": 576,
+      "imagewidth": 704,
       "name": "above",
       "opacity": 1,
+      "repeatx": false,
+      "repeaty": false,
+      "type": "imagelayer",
       "visible": true,
       "x": 0,
-      "y": 0,
-      "objects": [
-        { "id": 9, "name": "rocks-top", "type": "", "x": 0, "y": 0, "width": 150, "height": 130, "rotation": 0, "visible": true },
-        { "id": 10, "name": "pines-canopy-center", "type": "", "x": 175, "y": 0, "width": 300, "height": 120, "rotation": 0, "visible": true },
-        { "id": 11, "name": "pines-canopy-right", "type": "", "x": 590, "y": 0, "width": 114, "height": 120, "rotation": 0, "visible": true },
-        { "id": 12, "name": "inn-roof", "type": "", "x": 235, "y": 150, "width": 210, "height": 150, "rotation": 0, "visible": true },
-        { "id": 13, "name": "lower-center-roof", "type": "", "x": 325, "y": 355, "width": 120, "height": 75, "rotation": 0, "visible": true },
-        { "id": 14, "name": "bottom-left-roof", "type": "", "x": 30, "y": 450, "width": 295, "height": 65, "rotation": 0, "visible": true }
-      ]
+      "y": 0
     },
     {
-      "type": "objectgroup",
-      "id": 4,
-      "name": "spawn",
+      "draworder": "index",
+      "id": 3,
+      "name": "objects",
+      "objects": [
+        {
+          "height": 64,
+          "id": 100,
+          "name": "barrel-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 448,
+          "y": 288
+        },
+        {
+          "height": 32,
+          "id": 101,
+          "name": "barrel-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 256,
+          "y": 320
+        },
+        {
+          "height": 160,
+          "id": 102,
+          "name": "building-shadow-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 448,
+          "y": 192
+        },
+        {
+          "height": 160,
+          "id": 103,
+          "name": "building-shadow-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 448,
+          "y": 416
+        },
+        {
+          "height": 32,
+          "id": 104,
+          "name": "crate",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 608,
+          "y": 256
+        },
+        {
+          "height": 160,
+          "id": 105,
+          "name": "gable-roof",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 352,
+          "y": 288
+        },
+        {
+          "height": 64,
+          "id": 106,
+          "name": "gable-wall",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 352,
+          "y": 448
+        },
+        {
+          "height": 128,
+          "id": 107,
+          "name": "garden-fence-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 224,
+          "x": 32,
+          "y": 224
+        },
+        {
+          "height": 32,
+          "id": 108,
+          "name": "garden-fence-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 576,
+          "y": 224
+        },
+        {
+          "height": 64,
+          "id": 109,
+          "name": "garden-fence-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 416,
+          "y": 480
+        },
+        {
+          "height": 96,
+          "id": 110,
+          "name": "inn-roof-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 192,
+          "x": 256,
+          "y": 128
+        },
+        {
+          "height": 96,
+          "id": 111,
+          "name": "inn-roof-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 256,
+          "x": 96,
+          "y": 416
+        },
+        {
+          "height": 128,
+          "id": 112,
+          "name": "inn-wall-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 192,
+          "x": 256,
+          "y": 224
+        },
+        {
+          "height": 64,
+          "id": 113,
+          "name": "inn-wall-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 288,
+          "x": 96,
+          "y": 512
+        },
+        {
+          "height": 64,
+          "id": 114,
+          "name": "inn-wall-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 416,
+          "y": 512
+        },
+        {
+          "height": 96,
+          "id": 115,
+          "name": "inn-wall-annex",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 384,
+          "y": 480
+        },
+        {
+          "height": 128,
+          "id": 116,
+          "name": "lone-pine-canopy",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 640,
+          "y": 288
+        },
+        {
+          "height": 160,
+          "id": 117,
+          "name": "pine-canopy-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 320,
+          "x": 192,
+          "y": 0
+        },
+        {
+          "height": 160,
+          "id": 118,
+          "name": "pine-canopy-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 608,
+          "y": 32
+        },
+        {
+          "height": 64,
+          "id": 119,
+          "name": "pine-trunks-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 64,
+          "x": 192,
+          "y": 160
+        },
+        {
+          "height": 64,
+          "id": 120,
+          "name": "pine-trunks-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 64,
+          "x": 448,
+          "y": 160
+        },
+        {
+          "height": 64,
+          "id": 121,
+          "name": "pine-trunks-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 608,
+          "y": 192
+        },
+        {
+          "height": 32,
+          "id": 122,
+          "name": "pine-trunks-4",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 160,
+          "y": 384
+        },
+        {
+          "height": 32,
+          "id": 123,
+          "name": "stacked-stone-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 32,
+          "id": 124,
+          "name": "stacked-stone-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 96,
+          "y": 32
+        },
+        {
+          "height": 64,
+          "id": 125,
+          "name": "stacked-stone-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 608,
+          "y": 320
+        },
+        {
+          "height": 64,
+          "id": 126,
+          "name": "stacked-stone-narrow-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 64,
+          "x": 0,
+          "y": 64
+        },
+        {
+          "height": 64,
+          "id": 127,
+          "name": "stacked-stone-narrow-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 96,
+          "y": 64
+        },
+        {
+          "height": 64,
+          "id": 128,
+          "name": "stacked-stone-narrow-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 64,
+          "x": 640,
+          "y": 320
+        },
+        {
+          "height": 128,
+          "id": 129,
+          "name": "stone-wall-1",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 128,
+          "y": 0
+        },
+        {
+          "height": 32,
+          "id": 130,
+          "name": "stone-wall-2",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 0,
+          "y": 32
+        },
+        {
+          "height": 32,
+          "id": 131,
+          "name": "stone-wall-3",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 0,
+          "y": 128
+        },
+        {
+          "height": 160,
+          "id": 132,
+          "name": "stone-wall-4",
+          "rotation": 0,
+          "visible": true,
+          "width": 128,
+          "x": 576,
+          "y": 256
+        },
+        {
+          "height": 128,
+          "id": 133,
+          "name": "stream",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 64,
+          "y": 0
+        },
+        {
+          "height": 64,
+          "id": 134,
+          "name": "water-body",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 32,
+          "y": 128
+        }
+      ],
       "opacity": 1,
+      "type": "objectgroup",
       "visible": true,
       "x": 0,
-      "y": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 4,
+      "name": "colliders",
       "objects": [
-        { "id": 15, "name": "spawn", "type": "", "x": 110, "y": 415, "width": 0, "height": 0, "point": true, "rotation": 0, "visible": true }
-      ]
+        {
+          "height": 128,
+          "id": 200,
+          "name": "solid-00",
+          "rotation": 0,
+          "visible": true,
+          "width": 192,
+          "x": 256,
+          "y": 224
+        },
+        {
+          "height": 64,
+          "id": 201,
+          "name": "solid-01",
+          "rotation": 0,
+          "visible": true,
+          "width": 352,
+          "x": 96,
+          "y": 512
+        },
+        {
+          "height": 96,
+          "id": 202,
+          "name": "solid-02",
+          "rotation": 0,
+          "visible": true,
+          "width": 128,
+          "x": 576,
+          "y": 288
+        },
+        {
+          "height": 126,
+          "id": 203,
+          "name": "solid-03",
+          "rotation": 0,
+          "visible": true,
+          "width": 62,
+          "x": 64,
+          "y": 64
+        },
+        {
+          "height": 64,
+          "id": 204,
+          "name": "solid-04",
+          "rotation": 0,
+          "visible": true,
+          "width": 96,
+          "x": 352,
+          "y": 448
+        },
+        {
+          "height": 128,
+          "id": 205,
+          "name": "solid-05",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 128,
+          "y": 0
+        },
+        {
+          "height": 62,
+          "id": 206,
+          "name": "solid-06",
+          "rotation": 0,
+          "visible": true,
+          "width": 52,
+          "x": 0,
+          "y": 64
+        },
+        {
+          "height": 14,
+          "id": 207,
+          "name": "solid-07",
+          "rotation": 0,
+          "visible": true,
+          "width": 224,
+          "x": 32,
+          "y": 336
+        },
+        {
+          "height": 62,
+          "id": 208,
+          "name": "solid-08",
+          "rotation": 0,
+          "visible": true,
+          "width": 28,
+          "x": 36,
+          "y": 128
+        },
+        {
+          "height": 62,
+          "id": 209,
+          "name": "solid-09",
+          "rotation": 0,
+          "visible": true,
+          "width": 24,
+          "x": 68,
+          "y": 2
+        },
+        {
+          "height": 112,
+          "id": 210,
+          "name": "solid-10",
+          "rotation": 0,
+          "visible": true,
+          "width": 12,
+          "x": 32,
+          "y": 224
+        },
+        {
+          "height": 6,
+          "id": 211,
+          "name": "solid-11",
+          "rotation": 0,
+          "visible": true,
+          "width": 112,
+          "x": 592,
+          "y": 384
+        },
+        {
+          "height": 20,
+          "id": 212,
+          "name": "solid-12",
+          "rotation": 0,
+          "visible": true,
+          "width": 24,
+          "x": 452,
+          "y": 294
+        },
+        {
+          "height": 20,
+          "id": 213,
+          "name": "solid-13",
+          "rotation": 0,
+          "visible": true,
+          "width": 24,
+          "x": 452,
+          "y": 326
+        },
+        {
+          "height": 14,
+          "id": 214,
+          "name": "solid-14",
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 0,
+          "y": 50
+        },
+        {
+          "height": 6,
+          "id": 215,
+          "name": "solid-15",
+          "rotation": 0,
+          "visible": true,
+          "width": 28,
+          "x": 8,
+          "y": 128
+        },
+        {
+          "height": 84,
+          "id": 216,
+          "name": "solid-16",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 126,
+          "y": 64
+        },
+        {
+          "height": 8,
+          "id": 217,
+          "name": "solid-17",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 266,
+          "y": 352
+        },
+        {
+          "height": 12,
+          "id": 218,
+          "name": "solid-18",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 192,
+          "y": 174
+        },
+        {
+          "height": 12,
+          "id": 219,
+          "name": "solid-19",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 224,
+          "y": 174
+        },
+        {
+          "height": 12,
+          "id": 220,
+          "name": "solid-20",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 448,
+          "y": 174
+        },
+        {
+          "height": 12,
+          "id": 221,
+          "name": "solid-21",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 480,
+          "y": 174
+        },
+        {
+          "height": 12,
+          "id": 222,
+          "name": "solid-22",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 204,
+          "y": 192
+        },
+        {
+          "height": 12,
+          "id": 223,
+          "name": "solid-23",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 236,
+          "y": 192
+        },
+        {
+          "height": 12,
+          "id": 224,
+          "name": "solid-24",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 492,
+          "y": 192
+        },
+        {
+          "height": 12,
+          "id": 225,
+          "name": "solid-25",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 608,
+          "y": 206
+        },
+        {
+          "height": 12,
+          "id": 226,
+          "name": "solid-26",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 640,
+          "y": 206
+        },
+        {
+          "height": 12,
+          "id": 227,
+          "name": "solid-27",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 672,
+          "y": 206
+        },
+        {
+          "height": 12,
+          "id": 228,
+          "name": "solid-28",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 620,
+          "y": 224
+        },
+        {
+          "height": 12,
+          "id": 229,
+          "name": "solid-29",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 652,
+          "y": 224
+        },
+        {
+          "height": 12,
+          "id": 230,
+          "name": "solid-30",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 684,
+          "y": 224
+        },
+        {
+          "height": 12,
+          "id": 231,
+          "name": "solid-31",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 652,
+          "y": 434
+        },
+        {
+          "height": 4,
+          "id": 232,
+          "name": "solid-32",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 456,
+          "y": 290
+        },
+        {
+          "height": 4,
+          "id": 233,
+          "name": "solid-33",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 456,
+          "y": 314
+        },
+        {
+          "height": 4,
+          "id": 234,
+          "name": "solid-34",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 456,
+          "y": 322
+        },
+        {
+          "height": 4,
+          "id": 235,
+          "name": "solid-35",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 456,
+          "y": 346
+        },
+        {
+          "height": 30,
+          "id": 236,
+          "name": "solid-36",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 44,
+          "y": 244
+        },
+        {
+          "height": 30,
+          "id": 237,
+          "name": "solid-37",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 44,
+          "y": 276
+        },
+        {
+          "height": 28,
+          "id": 238,
+          "name": "solid-38",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 92,
+          "y": 36
+        },
+        {
+          "height": 14,
+          "id": 239,
+          "name": "solid-39",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 32,
+          "y": 134
+        },
+        {
+          "height": 2,
+          "id": 240,
+          "name": "solid-40",
+          "rotation": 0,
+          "visible": true,
+          "width": 24,
+          "x": 66,
+          "y": 0
+        },
+        {
+          "height": 4,
+          "id": 241,
+          "name": "solid-41",
+          "rotation": 0,
+          "visible": true,
+          "width": 10,
+          "x": 22,
+          "y": 46
+        },
+        {
+          "height": 2,
+          "id": 242,
+          "name": "solid-42",
+          "rotation": 0,
+          "visible": true,
+          "width": 20,
+          "x": 32,
+          "y": 126
+        },
+        {
+          "height": 10,
+          "id": 243,
+          "name": "solid-43",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 48,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 244,
+          "name": "solid-44",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 56,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 245,
+          "name": "solid-45",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 64,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 246,
+          "name": "solid-46",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 72,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 247,
+          "name": "solid-47",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 80,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 248,
+          "name": "solid-48",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 88,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 249,
+          "name": "solid-49",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 102,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 250,
+          "name": "solid-50",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 110,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 251,
+          "name": "solid-51",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 118,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 252,
+          "name": "solid-52",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 134,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 253,
+          "name": "solid-53",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 142,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 254,
+          "name": "solid-54",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 150,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 255,
+          "name": "solid-55",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 160,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 256,
+          "name": "solid-56",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 168,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 257,
+          "name": "solid-57",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 176,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 258,
+          "name": "solid-58",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 184,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 259,
+          "name": "solid-59",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 192,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 260,
+          "name": "solid-60",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 200,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 261,
+          "name": "solid-61",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 208,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 262,
+          "name": "solid-62",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 216,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 263,
+          "name": "solid-63",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 224,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 264,
+          "name": "solid-64",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 232,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 265,
+          "name": "solid-65",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 240,
+          "y": 326
+        },
+        {
+          "height": 10,
+          "id": 266,
+          "name": "solid-66",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 248,
+          "y": 326
+        },
+        {
+          "height": 18,
+          "id": 267,
+          "name": "solid-67",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 34,
+          "y": 172
+        },
+        {
+          "height": 18,
+          "id": 268,
+          "name": "solid-68",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 44,
+          "y": 224
+        },
+        {
+          "height": 8,
+          "id": 269,
+          "name": "solid-69",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 64,
+          "y": 56
+        },
+        {
+          "height": 2,
+          "id": 270,
+          "name": "solid-70",
+          "rotation": 0,
+          "visible": true,
+          "width": 16,
+          "x": 100,
+          "y": 190
+        },
+        {
+          "height": 2,
+          "id": 271,
+          "name": "solid-71",
+          "rotation": 0,
+          "visible": true,
+          "width": 14,
+          "x": 0,
+          "y": 48
+        },
+        {
+          "height": 12,
+          "id": 272,
+          "name": "solid-72",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 34,
+          "y": 148
+        },
+        {
+          "height": 12,
+          "id": 273,
+          "name": "solid-73",
+          "rotation": 0,
+          "visible": true,
+          "width": 2,
+          "x": 44,
+          "y": 308
+        },
+        {
+          "height": 4,
+          "id": 274,
+          "name": "solid-74",
+          "rotation": 0,
+          "visible": true,
+          "width": 4,
+          "x": 4,
+          "y": 128
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 5,
+      "name": "spawn",
+      "objects": [
+        {
+          "height": 0,
+          "id": 300,
+          "name": "spawn",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 200,
+          "y": 400
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 6,
+      "name": "navigation_checks",
+      "objects": [
+        {
+          "height": 0,
+          "id": 400,
+          "name": "spawn",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 200,
+          "y": 400
+        },
+        {
+          "height": 0,
+          "id": 401,
+          "name": "west-path",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 72,
+          "y": 400
+        },
+        {
+          "height": 0,
+          "id": 402,
+          "name": "road-crossing",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 556,
+          "y": 400
+        },
+        {
+          "height": 0,
+          "id": 403,
+          "name": "north-path",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 556,
+          "y": 40
+        },
+        {
+          "height": 0,
+          "id": 404,
+          "name": "south-path",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 556,
+          "y": 552
+        },
+        {
+          "height": 0,
+          "id": 405,
+          "name": "east-meadow",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 672,
+          "y": 500
+        },
+        {
+          "height": 0,
+          "id": 406,
+          "name": "gable-shadow",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 464,
+          "y": 470
+        },
+        {
+          "height": 0,
+          "id": 407,
+          "name": "inn-shadow",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 464,
+          "y": 240
+        },
+        {
+          "height": 0,
+          "id": 408,
+          "name": "pine-gap",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 226,
+          "y": 186
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 7,
+      "name": "navigation_corridors",
+      "objects": [
+        {
+          "height": 32,
+          "id": 500,
+          "name": "east-west-path",
+          "properties": [
+            {
+              "name": "axis",
+              "type": "string",
+              "value": "horizontal"
+            },
+            {
+              "name": "minClearance",
+              "type": "int",
+              "value": 32
+            }
+          ],
+          "rotation": 0,
+          "visible": true,
+          "width": 544,
+          "x": 32,
+          "y": 384
+        },
+        {
+          "height": 576,
+          "id": 501,
+          "name": "north-south-path",
+          "properties": [
+            {
+              "name": "axis",
+              "type": "string",
+              "value": "vertical"
+            },
+            {
+              "name": "minClearance",
+              "type": "int",
+              "value": 32
+            }
+          ],
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 544,
+          "y": 0
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 8,
+      "name": "blocked_checks",
+      "objects": [
+        {
+          "height": 0,
+          "id": 600,
+          "name": "gable-house-flowerbox",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 400,
+          "y": 490
+        },
+        {
+          "height": 0,
+          "id": 601,
+          "name": "gable-house-panel-gap",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 368,
+          "y": 472
+        },
+        {
+          "height": 0,
+          "id": 602,
+          "name": "gable-house-nook",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 432,
+          "y": 528
+        },
+        {
+          "height": 0,
+          "id": 603,
+          "name": "gable-house-ground-floor",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 400,
+          "y": 540
+        },
+        {
+          "height": 0,
+          "id": 604,
+          "name": "inn-front-wall",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 300,
+          "y": 300
+        },
+        {
+          "height": 0,
+          "id": 605,
+          "name": "pine-trunk-foot",
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "width": 0,
+          "x": 209,
+          "y": 186
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "index",
+      "id": 9,
+      "name": "sorted_overlays",
+      "objects": [
+        {
+          "height": 32,
+          "id": 700,
+          "name": "sorted_fence",
+          "properties": [
+            {
+              "name": "depthY",
+              "type": "int",
+              "value": 352
+            }
+          ],
+          "rotation": 0,
+          "visible": true,
+          "width": 224,
+          "x": 32,
+          "y": 320
+        },
+        {
+          "height": 32,
+          "id": 701,
+          "name": "sorted_barrel_back",
+          "properties": [
+            {
+              "name": "depthY",
+              "type": "int",
+              "value": 320
+            }
+          ],
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 448,
+          "y": 288
+        },
+        {
+          "height": 32,
+          "id": 702,
+          "name": "sorted_barrel_front",
+          "properties": [
+            {
+              "name": "depthY",
+              "type": "int",
+              "value": 352
+            }
+          ],
+          "rotation": 0,
+          "visible": true,
+          "width": 32,
+          "x": 448,
+          "y": 320
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
-  ]
+  ],
+  "nextlayerid": 10,
+  "nextobjectid": 800,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "assetSource",
+      "type": "string",
+      "value": "tiny-rpg-town-files/tileset/tileset.png"
+    },
+    {
+      "name": "assetCredit",
+      "type": "string",
+      "value": "Tiny RPG Town \u2014 artwork by Luis Zuno (@ansimuz), GameDev Market Pro Licence"
+    },
+    {
+      "name": "layoutSource",
+      "type": "string",
+      "value": "scripts/assets/village.tmj"
+    },
+    {
+      "name": "referenceUsedForPixels",
+      "type": "bool",
+      "value": false
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.10.2",
+  "tileheight": 32,
+  "tilesets": [],
+  "tilewidth": 32,
+  "type": "map",
+  "version": "1.10",
+  "width": 22
 }

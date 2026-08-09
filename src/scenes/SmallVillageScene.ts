@@ -24,7 +24,11 @@ import {
 import { sendPosition, subscribePositions } from "../lib/positionChannel";
 import { proximityRingRadii } from "../lib/proximityRing";
 import { SpeechBubble } from "./SpeechBubble";
-import { Rect, VILLAGE_SCALE, scaleRect } from "../lib/villageWorld";
+import {
+  Rect,
+  VILLAGE_SCALE,
+  scaleRect,
+} from "../lib/villageWorld";
 import { DEFAULT_MAP, MAPS, MapKind, resolveMap } from "../lib/mapKind";
 import {
   getPlayerCollisionBody,
@@ -101,6 +105,17 @@ const GAME_CONFIG = {
     EDGE_GAP: 12, // dash 간격(px)
   },
 } as const;
+
+// Tiled 레이어·오브젝트의 depthY 속성 → 발치 y. Office 워크스테이션과 village 의
+// sorted_* 오버레이가 같은 규칙을 쓰므로 읽는 곳도 하나로 둔다.
+// 속성이 없으면 undefined(그 레이어는 Y 정렬 대상이 아니다), 있는데 숫자가 아니면 null.
+function readDepthY(properties: unknown): number | null | undefined {
+  const found = (properties as Array<{ name?: string; value?: unknown }> | undefined)
+    ?.find(({ name }) => name === "depthY");
+  if (!found) return undefined;
+  const depthY = Number(found.value);
+  return Number.isFinite(depthY) ? depthY : null;
+}
 
 type LayeredMapKind = typeof MAPS.TILEMAP | typeof MAPS.OFFICE;
 
@@ -198,10 +213,8 @@ export default class SmallVillageScene extends Phaser.Scene {
   // 타일맵 모드에서 충돌을 걸 decoration 레이어들(applyWorldCollisions 가 사용).
   private decorationLayers: Phaser.Tilemaps.TilemapLayer[] = [];
   private officeFurnitureColliders: Rect[] = [];
-  // village 맵: village.json 오브젝트 레이어에서 읽은 충돌·가림 사각형(원본 px).
-  // buildVillageWorld 에서 채우고 createWorldColliders/Overlays·e2e 훅이 쓴다.
+  // village 맵: village.json 오브젝트 레이어에서 읽은 충돌 사각형(원본 px).
   private villageColliders: Rect[] = [];
-  private villageAbove: Rect[] = [];
   private onUserClick: (user: User) => void;
   // rooms row 보장 + 최초 users 등록이 끝나기 전에는 이동 write 를 막는 플래그.
   // 초기화 중 움직이면 users write 가 rooms 보장보다 앞서 FK 위반(409)을 낼 수 있다.
@@ -269,9 +282,11 @@ export default class SmallVillageScene extends Phaser.Scene {
       );
       this.load.tilemapTiledJSON(layeredMap.mapKey, layeredMap.json);
     } else {
-      // 로비 첫 화면과 동일한 마을 픽셀아트 이미지(다른 게임 애셋과 같이 public/assets 에서 로드).
+      // Placement Tool 레이아웃을 합성한 배경과, 그중 above 레이어만 남긴 가림 오버레이.
       this.load.image("village-bg", "/assets/village-bg.png");
-      // 월드 데이터(충돌·가림·스폰)는 default.json 과 같은 Tiled 형식 파일에서 읽는다.
+      this.load.image("village-above", "/assets/village-above.png");
+      this.load.image("village-sorted", "/assets/village-sorted.png");
+      // 월드 데이터(충돌·스폰)는 default.json 과 같은 Tiled 형식 파일에서 읽는다.
       this.load.tilemapTiledJSON("village-map", "/assets/tilemaps/village.json");
     }
   }
@@ -315,7 +330,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     // 스크롤이 0 으로 클램프돼 맵이 한쪽에 붙는 문제가 있다.)
     this.mapWidth = width;
     this.mapHeight = height;
-    this.syncOfficeSpriteDepth(this.sprite);
+    this.syncWorldSpriteDepth(this.sprite);
     this.positionCamera();
 
     this.nameText = this.add
@@ -332,7 +347,7 @@ export default class SmallVillageScene extends Phaser.Scene {
         }
       )
       .setOrigin(0.5, 0.5);
-    if (this.mapKind === MAPS.OFFICE) {
+    if (this.usesWorldDepthSorting()) {
       this.nameText.setDepth(this.sprite.depth + 0.01);
     }
 
@@ -393,10 +408,13 @@ export default class SmallVillageScene extends Phaser.Scene {
   }
 
   /**
-   * village 맵: 로비 첫 화면과 동일한 village-bg 픽셀아트를 통짜 이미지로 깔고,
-   * above 가림 오버레이를 얹는다. 월드 크기 + 스폰을 돌려준다.
-   * 치수·충돌·가림·스폰은 모두 village.json(Tiled 형식)에서 읽는다
-   * (스폰은 spawn 레이어의 point — 월드 중앙은 INN 위라 개방된 길에 찍어 뒀다).
+   * village 맵: Tiled 배치를 합성한 village-bg 를 깔고, above 레이어만 남긴
+   * village-above 를 캐릭터 위에 겹친다(Classic 의 above_0/1 과 같은 규칙).
+   * 바닥에 선 가림 물건은 village-sorted 로 따로 굽고, Tiled 의 sorted_* 레이어가
+   * 적어 둔 depthY 로 캐릭터와 Y 정렬한다(Office 의 depthY 와 같은 규칙).
+   * 두 이미지가 같은 좌표계·배율이라 지붕·수관 뒤로 걸어 들어가면 정확히 가려진다.
+   * 치수·충돌·스폰은 모두 village.json(Tiled 형식)에서 읽는다
+   * (스폰은 spawn 레이어의 point — 월드 중앙은 건물 위라 개방된 길에 찍어 뒀다).
    * village.json 로드 실패 시 빈 맵(width 0)이 되므로 buildTilemapWorld 와 대칭으로 null 을 돌려준다.
    */
   private buildVillageWorld(): {
@@ -415,11 +433,35 @@ export default class SmallVillageScene extends Phaser.Scene {
     const height = map.heightInPixels * scale;
 
     this.add.image(0, 0, "village-bg").setOrigin(0, 0).setScale(scale);
+    // 가림은 Classic 맵과 같은 규칙이다 — above 는 고정 depth 로 캐릭터 위에 덮는다.
+    // 그래서 **머리 위로 지나가는 것만** 여기 들어간다(지붕·수관).
+    this.add
+      .image(0, 0, "village-above")
+      .setOrigin(0, 0)
+      .setScale(scale)
+      .setDepth(10);
+    // 울타리·통처럼 **바닥에 선** 가림 물건은 고정 depth 로 덮으면 그 앞에 서도 캐릭터가
+    // 가려진다. Office 의 depthY 레이어와 같은 규칙으로, Tiled 의 sorted_* 레이어에
+    // 적어 둔 발치 y 로 캐릭터와 같은 축에 놓는다 — 무엇을 어떻게 정렬할지는 전부
+    // 레이어가 정하고, 여기서는 그 값을 읽어 쓰기만 한다.
+    for (const band of map.getObjectLayer("sorted_overlays")?.objects ?? []) {
+      const depthY = readDepthY(band.properties);
+      if (depthY === undefined || depthY === null) {
+        console.error(`Invalid village sorted overlay: ${band.name}`);
+        continue;
+      }
+      this.add
+        .image(0, 0, "village-sorted")
+        .setOrigin(0, 0)
+        .setScale(scale)
+        // 밴드 좌표와 village-sorted.png 은 둘 다 맵 원본 px(704x576)다 — 여기서 배율로
+        // 나누면 엉뚱한 곳을 잘라 오버레이가 통째로 안 보인다.
+        .setCrop(band.x ?? 0, band.y ?? 0, band.width ?? 0, band.height ?? 0)
+        .setDepth(1 + (depthY * scale) / height);
+    }
 
-    // 오브젝트 레이어 → 원본 px 사각형. 충돌/가림에서 각각 소비한다.
+    // 오브젝트 레이어 → 원본 px 사각형. 충돌에서 소비한다.
     this.villageColliders = this.readObjectRects(map, "colliders");
-    this.villageAbove = this.readObjectRects(map, "above");
-    this.createWorldOverlays();
 
     // 스폰 point(원본 px) → 월드 좌표. 없으면 월드 중앙 폴백.
     const spawnObj = map.getObjectLayer("spawn")?.objects?.[0];
@@ -507,13 +549,10 @@ export default class SmallVillageScene extends Phaser.Scene {
       );
       const worldHeight = map.heightInPixels * L.SCALE;
       for (const layerData of map.layers) {
-        const depthProperty = (
-          layerData.properties as Array<{ name?: string; value?: unknown }>
-        ).find(({ name }) => name === "depthY");
-        if (!depthProperty) continue;
-        const depthY = Number(depthProperty?.value);
+        const depthY = readDepthY(layerData.properties);
+        if (depthY === undefined) continue;
         const workstationLayer = layer(layerData.name);
-        if (!workstationLayer || !Number.isFinite(depthY)) {
+        if (!workstationLayer || depthY === null) {
           console.error(`Invalid Office depth layer: ${layerData.name}`);
           return null;
         }
@@ -562,28 +601,14 @@ export default class SmallVillageScene extends Phaser.Scene {
     }
   }
 
-  private syncOfficeSpriteDepth(sprite: Phaser.GameObjects.Sprite): void {
-    if (this.mapKind !== MAPS.OFFICE || this.mapHeight <= 0) return;
-    const footY = getPlayerSortY(sprite.y, sprite.displayHeight);
-    sprite.setDepth(1 + footY / this.mapHeight);
+  private usesWorldDepthSorting(): boolean {
+    return this.mapKind === MAPS.OFFICE || this.mapKind === MAPS.VILLAGE;
   }
 
-  /**
-   * above(가림) 오버레이 생성. 같은 village-bg 텍스처를 VILLAGE_ABOVE_REGIONS 각 영역만
-   * setCrop 으로 잘라 캐릭터 위(depth 10)에 다시 얹는다. 원본과 동일 위치·배율이라 정확히
-   * 겹친다. 캐릭터가 밑동으로 들어가면 이 조각이 위를 덮어 가림 입체감을 만든다.
-   */
-  private createWorldOverlays(): void {
-    const scale = VILLAGE_SCALE;
-    this.villageAbove.forEach((region) => {
-      // setCrop 은 텍스처 원본 px 좌표계라 미확대 region 을 그대로 쓴다.
-      this.add
-        .image(0, 0, "village-bg")
-        .setOrigin(0, 0)
-        .setScale(scale)
-        .setCrop(region.x, region.y, region.w, region.h)
-        .setDepth(10);
-    });
+  private syncWorldSpriteDepth(sprite: Phaser.GameObjects.Sprite): void {
+    if (!this.usesWorldDepthSorting() || this.mapHeight <= 0) return;
+    const footY = getPlayerSortY(sprite.y, sprite.displayHeight);
+    sprite.setDepth(1 + footY / this.mapHeight);
   }
 
   /**
@@ -922,7 +947,7 @@ export default class SmallVillageScene extends Phaser.Scene {
     );
     userSprite.setScale(GAME_CONFIG.SPRITE.SCALE);
     userSprite.setOrigin(0.5, 0.5);
-    this.syncOfficeSpriteDepth(userSprite);
+    this.syncWorldSpriteDepth(userSprite);
 
     // 클릭 이벤트 추가
     userSprite.setInteractive().on("pointerdown", () => {
@@ -938,7 +963,7 @@ export default class SmallVillageScene extends Phaser.Scene {
         strokeThickness: GAME_CONFIG.NAME.STROKE_THICKNESS,
       })
       .setOrigin(0.5, 0.5);
-    if (this.mapKind === MAPS.OFFICE) {
+    if (this.usesWorldDepthSorting()) {
       nameText.setDepth(userSprite.depth + 0.01);
     }
 
@@ -1040,8 +1065,8 @@ export default class SmallVillageScene extends Phaser.Scene {
       const userData = this.users.find((u) => u.id === userId);
       if (userData) {
         const sprite = userSprite.sprite;
-        this.syncOfficeSpriteDepth(sprite);
-        if (this.mapKind === MAPS.OFFICE) {
+        this.syncWorldSpriteDepth(sprite);
+        if (this.usesWorldDepthSorting()) {
           userSprite.nameText.setDepth(sprite.depth + 0.01);
         }
         const target = this.remotePositions.get(userId) ?? {
@@ -1131,8 +1156,8 @@ export default class SmallVillageScene extends Phaser.Scene {
     if (!this.sprite || !this.cursors) return;
 
     const isMoving = this.handleMovement();
-    this.syncOfficeSpriteDepth(this.sprite);
-    if (this.mapKind === MAPS.OFFICE && this.nameText) {
+    this.syncWorldSpriteDepth(this.sprite);
+    if (this.usesWorldDepthSorting() && this.nameText) {
       this.nameText.setDepth(this.sprite.depth + 0.01);
     }
 

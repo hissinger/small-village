@@ -32,6 +32,8 @@
     "test": "craco test",
     "generate:map-previews": "python3 scripts/generate-map-previews.py",
     "audit:office": "python3 scripts/test_tiled_renderer.py && python3 scripts/generate-office-map.py && python3 scripts/generate-map-previews.py && CI=true craco test --runInBand src/lib/officeMap.test.ts && python3 scripts/render-office-audit.py",
+    "audit:village": "python3 scripts/build-village-tiles.py && python3 scripts/build-village-map.py && CI=true craco test --runInBand src/lib/villageWorld.test.ts && python3 scripts/render-village-audit.py",
+    "build:village-tiles": "python3 scripts/build-village-tiles.py",
     "test:e2e": "node e2e/room-flow.mjs",
     "eject": "react-scripts eject"
   },

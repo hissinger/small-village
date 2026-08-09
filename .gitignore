@@ -30,3 +30,11 @@ yarn-error.log*
 
 # Local end-to-end test media
 test-fixtures/
+
+# Licensed artwork — buy/download it yourself, see scripts/assets/README.md.
+# The Tiny RPG Town Pro Licence forbids redistributing the asset (or a derivative
+# of it) outside the game itself, so these files must never be committed here.
+/tiny-rpg-town-files/
+
+# Map audit renders (dev only, derived from the licensed artwork)
+/.audit/

@@ -51,6 +51,7 @@ describe("getPlayerCollisionFootprint", () => {
       height: 10,
     });
   });
+
 });
 
 describe("getPlayerSortY", () => {
