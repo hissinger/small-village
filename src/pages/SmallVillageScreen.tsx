@@ -44,6 +44,12 @@ interface SmallVillageScreenProps {
   onExit: () => void;
 }
 
+// 게임 캔버스는 헤더 아래 ~ 하단 바(BottomBar) 위 영역만 채운다. 하단 바가 캔버스를 덮으면
+// 맵의 상/하 여백이 비대칭으로 보이므로 바 높이만큼 예약한다. 캔버스 뒤에 깔리는
+// GameBackdrop 도 같은 영역이어야 블러 배경이 맵과 맞물린다 — 그래서 한 곳에서 관리한다.
+const GAME_AREA_CLASS = "absolute inset-x-0 top-0 overflow-hidden";
+const GAME_AREA_STYLE = { bottom: BOTTOM_BAR_HEIGHT };
+
 const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
   userId,
   characterIndex,
@@ -284,19 +290,15 @@ const SmallVillageScreen: React.FC<SmallVillageScreenProps> = ({
 
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-      {/* 게임 캔버스는 헤더 아래 ~ 하단 바(BottomBar) 위 영역만 채운다.
-          하단 바가 캔버스를 덮으면 맵의 상/하 여백이 비대칭으로 보이므로 바 높이만큼 예약.
-          캔버스가 투명이라 맵 바깥 여백은 뒤에 깔린 GameBackdrop 이 채운다. */}
-      <div
-        className="absolute inset-x-0 top-0 overflow-hidden"
-        style={{ bottom: BOTTOM_BAR_HEIGHT }}
-      >
+      {/* 캔버스가 투명이라 맵 바깥 여백은 뒤에 깔린 GameBackdrop 이 채운다.
+          순서를 바꾸면 배경이 게임을 덮으므로 배경이 먼저 와야 한다. */}
+      <div className={GAME_AREA_CLASS} style={GAME_AREA_STYLE}>
         <GameBackdrop map={room.map} />
       </div>
       <div
         ref={gameContainerRef}
-        className="absolute inset-x-0 top-0 overflow-hidden"
-        style={{ bottom: BOTTOM_BAR_HEIGHT }}
+        className={GAME_AREA_CLASS}
+        style={GAME_AREA_STYLE}
       />
       <div className="absolute inset-0">
         {!isReady ? (

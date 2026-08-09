@@ -51,14 +51,23 @@ describe("GameBackdrop", () => {
 
       expect(source).toContain("transparent: true");
       expect(source).not.toMatch(/backgroundColor:\s*"#/);
-      expect(source).toContain("<GameBackdrop");
     });
 
-    it("카메라가 월드 바깥을 단색으로 칠하지 않는다", () => {
-      const source = readSource("scenes/SmallVillageScene.ts");
+    it("캔버스보다 먼저 배경을 깐다", () => {
+      // 순서가 뒤집히면 배경이 게임을 덮는다. 둘 다 absolute 라 DOM 순서가 곧 페인트 순서다.
+      const source = readSource("pages/SmallVillageScreen.tsx");
+      const backdrop = source.indexOf("<GameBackdrop");
+      const canvas = source.indexOf("ref={gameContainerRef}");
 
-      expect(source).toMatch(
-        /setBackgroundColor\(\s*"rgba\(0,\s*0,\s*0,\s*0\)"\s*\)/
+      expect(backdrop).toBeGreaterThan(-1);
+      expect(canvas).toBeGreaterThan(-1);
+      expect(backdrop).toBeLessThan(canvas);
+    });
+
+    it("카메라가 월드 바깥을 칠하지 않는다", () => {
+      // Phaser 카메라 기본 배경이 rgba(0,0,0,0) 이므로 아무것도 지정하지 않는 게 정답이다.
+      expect(readSource("scenes/SmallVillageScene.ts")).not.toContain(
+        "setBackgroundColor"
       );
     });
   });
