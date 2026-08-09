@@ -46,13 +46,35 @@ npm start
 - [Using WebRTC + React + WebAudio to create spatial audio](https://blog.livekit.io/tutorial-using-webrtc-react-webaudio-to-create-spatial-audio/)
 
 ## Assets
-- https://itch.io/
-- https://limezu.itch.io/serenevillagerevamped
-- https://gamebetweenthelines.itch.io/top-down-pixel-art-characters
+
+The artwork is **not** covered by this repository's Apache-2.0 licence — see
+[License](#license) below. Each pack keeps its own terms:
+
+| Used for | Pack | Author | Licence | In this repo? |
+| --- | --- | --- | --- | --- |
+| Classic map | [Serene Village – revamped](https://limezu.itch.io/serenevillagerevamped) | LimeZu | **CC BY 4.0** — attribution required | yes (redistribution allowed) |
+| Characters | [Top Down Pixel Art Characters](https://gamebetweenthelines.itch.io/top-down-pixel-art-characters) | Jephed, Game Between The Lines | free for commercial use | yes |
+| Village map | [Tiny RPG Town](https://ansimuz.com) | Luis Zuno (@ansimuz) | GameDev Market **Pro Licence** — redistribution forbidden | **no** — [how to obtain](scripts/assets/README.md) |
+| Office map | [Tiny Top Down Pack](https://screamingbrainstudios.itch.io/tiny-top-down-pack) | Screaming Brain Studios | CC0 | yes |
+| Office map | [Pixel Office Asset Pack](https://2dpig.itch.io/pixel-office) | 2D Pig | CC0 | yes |
+
+Serene Village is **CC BY 4.0**, so attribution is a licence obligation rather
+than a courtesy — the credits are shown in the lobby
+([AssetCredits.tsx](src/components/AssetCredits.tsx)) as well as here. Keep the
+two lists in sync when a pack is added or replaced; a test enforces it.
+
+The Tiny RPG Town Pro Licence permits modifying the art and shipping it inside
+the game, but forbids redistributing the asset or a derivative of it outside the
+game. So its source files live outside this repo (gitignored) and only the baked
+map (`public/assets/village-bg.png`, `village-above.png`) is committed —
+regenerate it with `npm run audit:village` once you have the pack locally.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0.  
+The **source code** in this repository is licensed under the Apache License,
+Version 2.0. It does **not** grant any rights to the third-party artwork under
+`public/assets/` — see [Assets](#assets) for each pack's terms.
+
 You may use, modify, and distribute this software in compliance with the License.  
 
 A copy of the License is available at:  

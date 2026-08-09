@@ -25,6 +25,7 @@ import RoomList from "../components/RoomList";
 import CreateNewRoom from "../components/CreateNewRoom";
 import ChooseYourCharacter from "../components/ChooseYourCharacter";
 import ChooseYourMap from "../components/ChooseYourMap";
+import AssetCredits from "../components/AssetCredits";
 import LobbyBackground from "../components/LobbyBackground";
 import { getStoredName, setStoredName } from "../lib/storage";
 import { pushEvent } from "../lib/analytics";
@@ -182,6 +183,9 @@ const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 아트 저작자 표시 — Classic 타일셋이 CC-BY 4.0 이라 라이선스 의무다. */}
+          <AssetCredits />
         </div>
       </div>
     </div>
